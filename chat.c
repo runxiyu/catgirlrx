@@ -294,14 +294,38 @@ static void handleTopic(char *prefix, char *params) {
 	uiTopic(topic);
 }
 
-static void handle353(char *prefix, char *params) {
+static void handle366(char *prefix, char *params) {
+	(void)prefix;
+	shift(&params);
+	char *chan = shift(&params);
+	clientFmt("WHO %s\r\n", chan);
+}
+
+static char whoBuf[4096];
+static size_t whoLen;
+static void handle352(char *prefix, char *params) {
 	(void)prefix;
 	shift(&params);
 	shift(&params);
+	char *user = shift(&params);
+	shift(&params);
+	shift(&params);
+	char *nick = shift(&params);
+	whoLen += snprintf(
+		&whoBuf[whoLen], sizeof(whoBuf) - whoLen,
+		"%s\3%d%s\3",
+		(whoLen ? ", " : ""), color(user), nick
+	);
+}
+static void handle315(char *prefix, char *params) {
+	(void)prefix;
+	shift(&params);
 	char *chan = shift(&params);
-	char *names = shift(&params);
-	// TODO: Do a WHO instead to get usernames
-	uiFmt("In %s are %s", chan, names);
+	whoLen = 0;
+	uiFmt(
+		"In \3%d%s\3 are %s",
+		color(chan), chan, whoBuf
+	);
 }
 
 static void handlePrivmsg(char *prefix, char *params) {
@@ -324,8 +348,10 @@ static const struct {
 	Handler handler;
 } HANDLERS[] = {
 	{ "001", handle001 },
+	{ "315", handle315 },
 	{ "332", handle332 },
-	{ "353", handle353 },
+	{ "352", handle352 },
+	{ "366", handle366 },
 	{ "JOIN", handleJoin },
 	{ "NOTICE", handleNotice },
 	{ "PART", handlePart },
