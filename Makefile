@@ -2,7 +2,7 @@ USER = chat
 CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
-LDLIBS = -lcurses -ltls
+LDLIBS = -lcursesw -ltls
 
 all: tags chat
 
@@ -27,7 +27,6 @@ chroot.tar: chat
 	install -o root -g wheel -m 555 /libexec/ld-elf.so.1 root/libexec
 	install -o root -g wheel -m 444 \
 		/lib/libc.so.7 \
-		/lib/libncurses.so.8 \
 		/lib/libncursesw.so.8 \
 		/lib/libthr.so.3 \
 		/usr/local/lib/libcrypto.so.43 \
