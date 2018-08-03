@@ -60,6 +60,8 @@ static void uiInit(void) {
 	ui.input = newwin(2, COLS, LINES - 2, 0);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, COLS);
 	wmove(ui.input, 1, 0);
+	cbreak();
+	noecho();
 }
 
 static void uiDraw(void) {
@@ -322,12 +324,21 @@ int main(int argc, char *argv[]) {
 		client.nick = strdup(buf);
 	}
 	erase();
-	cbreak();
-	noecho();
 
 	uiInit();
 	uiChat("=== Traveling...");
 	uiDraw();
+
+	struct tls_config *config = tls_config_new();
+	error = tls_config_set_ciphers(config, "compat");
+	if (error) errx(EX_SOFTWARE, "tls_config: %s", tls_config_error(config));
+
+	client.tls = tls_client();
+	if (!client.tls) errx(EX_SOFTWARE, "tls_client");
+
+	error = tls_configure(client.tls, config);
+	if (error) errx(EX_SOFTWARE, "tls_configure");
+	tls_config_free(config);
 
 	struct addrinfo *ai;
 	struct addrinfo hints = {
@@ -344,14 +355,6 @@ int main(int argc, char *argv[]) {
 	error = connect(client.sock, ai->ai_addr, ai->ai_addrlen);
 	if (error) err(EX_UNAVAILABLE, "connect");
 	freeaddrinfo(ai);
-
-	client.tls = tls_client();
-	if (!client.tls) errx(EX_OSERR, "tls_client");
-
-	struct tls_config *config = tls_config_new();
-	error = tls_configure(client.tls, config);
-	if (error) errx(EX_OSERR, "tls_configure");
-	tls_config_free(config);
 
 	error = tls_connect_socket(client.tls, client.sock, host);
 	if (error) err(EX_PROTOCOL, "tls_connect");
