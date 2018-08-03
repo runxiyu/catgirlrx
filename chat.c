@@ -109,17 +109,17 @@ static void uiAdd(WINDOW *win, const char *str) {
 	short colorPair = -1;
 	attr_t colorAttr = A_NORMAL;
 	for (;;) {
-		size_t cc = strcspn(str, "\x02\x03\x1D\x1F");
+		size_t cc = strcspn(str, "\2\3\35\37");
 		wattr_set(win, attr | colorAttr, 1 + colorPair, NULL);
 		waddnstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
-			break; case 0x02: attr ^= A_BOLD;
-			break; case 0x1D: attr ^= A_ITALIC;
-			break; case 0x1F: attr ^= A_UNDERLINE;
-			break; case 0x03: {
+			break; case '\2':  attr ^= A_BOLD;
+			break; case '\35': attr ^= A_ITALIC;
+			break; case '\37': attr ^= A_UNDERLINE;
+			break; case '\3': {
 				short fg = 0;
 				short bg = 0;
 
