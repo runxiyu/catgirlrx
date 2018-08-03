@@ -333,7 +333,12 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *user = prift(&prefix);
 	shift(&params);
 	char *mesg = shift(&params);
-	uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
+	if (mesg[0] == '\1') {
+		strsep(&mesg, " ");
+		uiFmt("* \3%d%s\3 %s", color(user), nick, strsep(&mesg, "\1"));
+	} else {
+		uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
+	}
 }
 static void handleNotice(char *prefix, char *params) {
 	char *nick = prift(&prefix);
@@ -423,7 +428,10 @@ static void webirc(const char *pass) {
 	const char *ssh = getenv("SSH_CLIENT");
 	if (!ssh) return;
 	int len = strchrnul(ssh, ' ') - ssh;
-	clientFmt("WEBIRC %s %s %.*s %.*s\r\n", pass, client.nick, len, ssh, len, ssh);
+	clientFmt(
+		"WEBIRC %s %s %.*s %.*s\r\n",
+		pass, client.nick, len, ssh, len, ssh
+	);
 }
 
 int main(int argc, char *argv[]) {
