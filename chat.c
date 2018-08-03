@@ -177,6 +177,16 @@ static void uiFmt(const char *format, ...) {
 	free(buf);
 }
 
+static int color(const char *s) {
+	if (!s) return 0;
+	int x = 0;
+	for (; s[0]; ++s) {
+		x ^= s[0];
+	}
+	x &= 15;
+	return (x == 1) ? 0 : x;
+}
+
 static struct {
 	int sock;
 	struct tls *tls;
@@ -233,19 +243,32 @@ static void handlePing(char *prefix, char *params) {
 
 static void handleJoin(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	char *chan = shift(&params);
-	uiFmt("--> %s arrived in %s", nick, chan);
+	uiFmt(
+		"\3%d%s\3 arrived in \3%d%s\3",
+		color(user), nick, color(chan), chan
+	);
 }
 static void handlePart(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	char *chan = shift(&params);
 	char *mesg = shift(&params);
-	uiFmt("<-- %s left %s, \"%s\"", nick, chan, mesg);
+	uiFmt(
+		"\3%d%s\3 left \3%d%s\3, \"%s\"",
+		color(user), nick, color(chan), chan, mesg
+	);
 }
 static void handleQuit(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	char *mesg = shift(&params);
-	uiFmt("<-- %s left, \"%s\"", nick, mesg);
+	char *quot = (mesg[0] == '"') ? "" : "\"";
+	uiFmt(
+		"\3%d%s\3 left, %s%s%s",
+		color(user), nick, quot, mesg, quot
+	);
 }
 
 static void handle332(char *prefix, char *params) {
@@ -253,14 +276,21 @@ static void handle332(char *prefix, char *params) {
 	shift(&params);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
-	uiFmt("--- The sign in %s reads, \"%s\"", chan, topic);
+	uiFmt(
+		"The sign in \3%d%s\3 reads, \"%s\"",
+		color(chan), chan, topic
+	);
 	uiTopic(topic);
 }
 static void handleTopic(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
-	uiFmt("--- %s placed a new sign in %s, \"%s\"", nick, chan, topic);
+	uiFmt(
+		"\3%d%s\3 placed a new sign in \3%d%s\3, \"%s\"",
+		color(user), nick, color(chan), chan, topic
+	);
 	uiTopic(topic);
 }
 
@@ -270,21 +300,23 @@ static void handle353(char *prefix, char *params) {
 	shift(&params);
 	char *chan = shift(&params);
 	char *names = shift(&params);
-	// TODO: Clean up names (add commas, remove sigils)
-	uiFmt("--- In %s are %s", chan, names);
+	// TODO: Do a WHO instead to get usernames
+	uiFmt("In %s are %s", chan, names);
 }
 
 static void handlePrivmsg(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	shift(&params);
-	char *message = shift(&params);
-	uiFmt("<%s> %s", nick, message);
+	char *mesg = shift(&params);
+	uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
 }
 static void handleNotice(char *prefix, char *params) {
 	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
 	shift(&params);
 	char *message = shift(&params);
-	uiFmt("-%s- %s", nick, message);
+	uiFmt("-\3%d%s\3- %s", color(user), nick, message);
 }
 
 static const struct {
@@ -350,7 +382,7 @@ static void uiRead(void) {
 		asprintf(&params, "%s :%s", client.chan, buf);
 		if (!params) err(EX_OSERR, "asprintf");
 		clientFmt("PRIVMSG %s\r\n", params);
-		handlePrivmsg(client.nick, params);
+		handlePrivmsg(client.nick, params); // FIXME: username
 		free(params);
 		fill = 0;
 		wmove(ui.input, 1, 0);
@@ -411,7 +443,7 @@ int main(int argc, char *argv[]) {
 	erase();
 
 	uiInit();
-	uiChat("=== Traveling...");
+	uiChat("Traveling...");
 	uiDraw();
 
 	struct tls_config *config = tls_config_new();
