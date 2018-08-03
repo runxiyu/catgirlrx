@@ -38,7 +38,14 @@ static void curse(void) {
 	initscr();
 	keypad(stdscr, true);
 	start_color();
-	assume_default_colors(-1, -1);
+	use_default_colors();
+	for (short pair = 0; pair < 077; ++pair) {
+		if (pair < 010) {
+			init_pair(1 + pair, pair, -1);
+		} else {
+			init_pair(1 + pair, pair & 007, (pair & 070) >> 3);
+		}
+	}
 }
 
 static const int CHAT_LINES = 100;
@@ -75,22 +82,77 @@ static void uiDraw(void) {
 	doupdate();
 }
 
+static const struct {
+	attr_t attr;
+	short color;
+} MIRC_COLORS[16] = {
+	{ A_BOLD,   COLOR_WHITE },   // white
+	{ A_NORMAL, COLOR_BLACK },   // black
+	{ A_NORMAL, COLOR_BLUE },    // blue
+	{ A_NORMAL, COLOR_GREEN },   // green
+	{ A_BOLD,   COLOR_RED },     // red
+	{ A_NORMAL, COLOR_RED },     // "brown"
+	{ A_NORMAL, COLOR_MAGENTA }, // magenta
+	{ A_NORMAL, COLOR_YELLOW },  // "orange"
+	{ A_BOLD,   COLOR_YELLOW },  // yellow
+	{ A_BOLD,   COLOR_GREEN },   // light green
+	{ A_NORMAL, COLOR_CYAN },    // cyan
+	{ A_BOLD,   COLOR_CYAN },    // light cyan
+	{ A_BOLD,   COLOR_BLUE },    // light blue
+	{ A_BOLD,   COLOR_MAGENTA }, // "pink"
+	{ A_BOLD,   COLOR_BLACK },   // grey
+	{ A_NORMAL, COLOR_WHITE },   // light grey
+};
+
 static void uiAdd(WINDOW *win, const char *str) {
-	attr_t attrs = A_NORMAL;
-	short pair = 0;
+	attr_t attr = A_NORMAL;
+	short colorPair = -1;
+	attr_t colorAttr = A_NORMAL;
 	for (;;) {
 		size_t cc = strcspn(str, "\x02\x03\x1D\x1F");
-		wattr_set(win, attrs, pair, NULL);
+		wattr_set(win, attr | colorAttr, 1 + colorPair, NULL);
 		waddnstr(win, str, cc);
-
 		if (!str[cc]) break;
-		switch (str[cc]) {
-			break; case 0x02: attrs ^= A_BOLD;
-			break; case 0x03: // TODO
-			break; case 0x1D: attrs ^= A_ITALIC;
-			break; case 0x1F: attrs ^= A_UNDERLINE;
+
+		str = &str[cc];
+		switch (*str++) {
+			break; case 0x02: attr ^= A_BOLD;
+			break; case 0x1D: attr ^= A_ITALIC;
+			break; case 0x1F: attr ^= A_UNDERLINE;
+			break; case 0x03: {
+				short fg = 0;
+				short bg = 0;
+
+				size_t fgLen = strspn(str, "0123456789");
+				if (!fgLen) {
+					colorPair = -1;
+					colorAttr = A_NORMAL;
+					break;
+				}
+
+				if (fgLen > 2) fgLen = 2;
+				for (size_t i = 0; i < fgLen; ++i) {
+					fg *= 10;
+					fg += str[i] - '0';
+				}
+				str = &str[fgLen];
+
+				size_t bgLen = (str[0] == ',') ? strspn(&str[1], "0123456789") : 0;
+				if (bgLen > 2) bgLen = 2;
+				for (size_t i = 0; i < bgLen; ++i) {
+					bg *= 10;
+					bg += str[1 + i] - '0';
+				}
+				if (bgLen) str = &str[1 + bgLen];
+
+				if (colorPair == -1) colorPair = 0;
+				colorPair = (colorPair & 070) | MIRC_COLORS[fg].color;
+				colorAttr = MIRC_COLORS[fg].attr;
+				if (bgLen) {
+					colorPair = (colorPair & 007) | (MIRC_COLORS[bg].color << 3);
+				}
+			}
 		}
-		str = &str[cc + 1];
 	}
 }
 
