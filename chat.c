@@ -365,9 +365,10 @@ static void handlePrivmsg(char *prefix, char *params) {
 static void handleNotice(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
-	shift(&params);
-	char *message = shift(&params);
-	uiFmt("-\3%d%s\3- %s", color(user), nick, message);
+	char *chan = shift(&params);
+	char *mesg = shift(&params);
+	if (strcmp(client.chan, chan)) return;
+	uiFmt("-\3%d%s\3- %s", color(user), nick, mesg);
 }
 
 static const struct {
