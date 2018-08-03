@@ -49,6 +49,7 @@ static void curse(void) {
 	}
 }
 
+static const int TOPIC_COLS = 512;
 static const int CHAT_LINES = 100;
 static struct {
 	WINDOW *topic;
@@ -57,8 +58,8 @@ static struct {
 } ui;
 
 static void uiInit(void) {
-	ui.topic = newwin(2, COLS, 0, 0);
-	mvwhline(ui.topic, 1, 0, ACS_HLINE, COLS);
+	ui.topic = newpad(2, TOPIC_COLS);
+	mvwhline(ui.topic, 1, 0, ACS_HLINE, TOPIC_COLS);
 
 	ui.chat = newpad(CHAT_LINES, COLS);
 	wsetscrreg(ui.chat, 0, CHAT_LINES - 1);
@@ -73,7 +74,7 @@ static void uiInit(void) {
 }
 
 static void uiDraw(void) {
-	wnoutrefresh(ui.topic);
+	pnoutrefresh(ui.topic, 0, 0, 0, 0, 1, COLS - 1);
 	pnoutrefresh(
 		ui.chat,
 		CHAT_LINES - (LINES - 4), 0,
