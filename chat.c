@@ -271,6 +271,17 @@ static void handleQuit(char *prefix, char *params) {
 		color(user), nick, quot, mesg, quot
 	);
 }
+static void handleKick(char *prefix, char *params) {
+	char *nick = prift(&prefix);
+	char *user = prift(&prefix);
+	char *chan = shift(&params);
+	char *kick = shift(&params);
+	char *mesg = shift(&params);
+	uiFmt(
+		"\3%d%s\3 kicked \3%d%s\3 out of \3%d%s\3, \"%s\"",
+		color(user), nick, color(kick), kick, color(chan), chan, mesg
+	);
+}
 
 static void handle332(char *prefix, char *params) {
 	(void)prefix;
@@ -329,6 +340,16 @@ static void handle315(char *prefix, char *params) {
 	);
 }
 
+static void handleNick(char *prefix, char *params) {
+	char *prev = prift(&prefix);
+	char *user = prift(&prefix);
+	char *next = shift(&params);
+	uiFmt(
+		"\3%d%s\3 is now known as \3%d%s\3",
+		color(user), prev, color(user), next
+	);
+}
+
 static void handlePrivmsg(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
@@ -359,6 +380,8 @@ static const struct {
 	{ "352", handle352 },
 	{ "366", handle366 },
 	{ "JOIN", handleJoin },
+	{ "KICK", handleKick },
+	{ "NICK", handleNick },
 	{ "NOTICE", handleNotice },
 	{ "PART", handlePart },
 	{ "PING", handlePing },
