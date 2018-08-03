@@ -75,15 +75,35 @@ static void uiDraw(void) {
 	doupdate();
 }
 
+static void uiAdd(WINDOW *win, const char *str) {
+	attr_t attrs = A_NORMAL;
+	short pair = 0;
+	for (;;) {
+		size_t cc = strcspn(str, "\x02\x03\x1D\x1F");
+		wattr_set(win, attrs, pair, NULL);
+		waddnstr(win, str, cc);
+
+		if (!str[cc]) break;
+		switch (str[cc]) {
+			break; case 0x02: attrs ^= A_BOLD;
+			break; case 0x03: // TODO
+			break; case 0x1D: attrs ^= A_ITALIC;
+			break; case 0x1F: attrs ^= A_UNDERLINE;
+		}
+		str = &str[cc + 1];
+	}
+}
+
 static void uiTopic(const char *topic) {
 	wmove(ui.topic, 0, 0);
 	wclrtoeol(ui.topic);
-	waddnstr(ui.topic, topic, COLS);
+	uiAdd(ui.topic, topic);
 }
 static void uiChat(const char *line) {
 	waddch(ui.chat, '\n');
-	waddstr(ui.chat, line);
+	uiAdd(ui.chat, line);
 }
+
 static void uiFmt(const char *format, ...) {
 	char *buf;
 	va_list ap;
