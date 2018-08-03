@@ -126,6 +126,9 @@ static void clientFmt(const char *format, ...) {
 
 typedef void (*Handler)(char *prefix, char *params);
 
+static char *prift(char **prefix) {
+	return strsep(prefix, "!@");
+}
 static char *shift(char **params) {
 	char *rest = *params;
 	if (!rest) errx(EX_PROTOCOL, "expected param");
@@ -147,20 +150,20 @@ static void handlePing(char *prefix, char *params) {
 }
 
 static void handleJoin(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
+	char *nick = prift(&prefix);
 	char *chan = shift(&params);
 	uiFmt("--> %s arrived in %s", nick, chan);
 }
 static void handlePart(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
+	char *nick = prift(&prefix);
 	char *chan = shift(&params);
-	char *reason = shift(&params);
-	uiFmt("<-- %s left %s, \"%s\"", nick, chan, reason);
+	char *mesg = shift(&params);
+	uiFmt("<-- %s left %s, \"%s\"", nick, chan, mesg);
 }
 static void handleQuit(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
-	char *reason = shift(&params);
-	uiFmt("<-- %s left, \"%s\"", nick, reason);
+	char *nick = prift(&prefix);
+	char *mesg = shift(&params);
+	uiFmt("<-- %s left, \"%s\"", nick, mesg);
 }
 
 static void handle332(char *prefix, char *params) {
@@ -168,15 +171,15 @@ static void handle332(char *prefix, char *params) {
 	shift(&params);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
-	uiTopic(topic);
 	uiFmt("--- The sign in %s reads, \"%s\"", chan, topic);
+	uiTopic(topic);
 }
 static void handleTopic(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
+	char *nick = prift(&prefix);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
-	uiTopic(topic);
 	uiFmt("--- %s placed a new sign in %s, \"%s\"", nick, chan, topic);
+	uiTopic(topic);
 }
 
 static void handle353(char *prefix, char *params) {
@@ -190,13 +193,13 @@ static void handle353(char *prefix, char *params) {
 }
 
 static void handlePrivmsg(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
+	char *nick = prift(&prefix);
 	shift(&params);
 	char *message = shift(&params);
 	uiFmt("<%s> %s", nick, message);
 }
 static void handleNotice(char *prefix, char *params) {
-	char *nick = strsep(&prefix, "!");
+	char *nick = prift(&prefix);
 	shift(&params);
 	char *message = shift(&params);
 	uiFmt("-%s- %s", nick, message);
