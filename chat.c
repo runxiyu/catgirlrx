@@ -16,6 +16,7 @@
 
 #include <curses.h>
 #include <err.h>
+#include <errno.h>
 #include <locale.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -518,10 +519,13 @@ int main(int argc, char *argv[]) {
 		{ .fd = STDIN_FILENO, .events = POLLIN },
 		{ .fd = client.sock,  .events = POLLIN },
 	};
-	while (0 < poll(fds, 2, -1)) {
+	for (;;) {
+		int nfds = poll(fds, 2, -1);
+		if (nfds < 0 && errno == EINTR) continue;
+		if (nfds < 0) err(EX_IOERR, "poll");
+
 		if (fds[0].revents) uiRead();
 		if (fds[1].revents) clientRead();
 		uiDraw();
 	}
-	err(EX_IOERR, "poll");
 }
