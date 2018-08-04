@@ -167,7 +167,6 @@ static void uiChat(const char *line) {
 	waddch(ui.chat, '\n');
 	uiAdd(ui.chat, line);
 }
-
 static void uiFmt(const char *format, ...) {
 	char *buf;
 	va_list ap;
@@ -194,6 +193,7 @@ static struct {
 	struct tls *tls;
 	bool verbose;
 	char *nick;
+	char *user;
 	char *chan;
 } client;
 
@@ -247,6 +247,10 @@ static void handleJoin(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
 	char *chan = shift(&params);
+	if (!strcmp(nick, client.nick) && strcmp(user, client.user)) {
+		free(client.user);
+		client.user = strdup(user);
+	}
 	uiFmt(
 		"\3%d%s\3 arrived in \3%d%s\3",
 		color(user), nick, color(chan), chan
@@ -500,8 +504,9 @@ int main(int argc, char *argv[]) {
 		getnstr(buf, sizeof(buf) - 1);
 		client.nick = strdup(buf);
 	}
-	erase();
+	client.user = strdup(client.nick);
 
+	erase();
 	uiInit();
 	uiChat("Traveling...");
 	uiDraw();
@@ -538,7 +543,7 @@ int main(int argc, char *argv[]) {
 
 	if (webPass) webirc(webPass);
 	clientFmt("NICK %s\r\n", client.nick);
-	clientFmt("USER %s x x :%s\r\n", client.nick, client.nick);
+	clientFmt("USER %s 0 * :%s\r\n", client.user, client.nick);
 
 	struct pollfd fds[2] = {
 		{ .fd = STDIN_FILENO, .events = POLLIN },
