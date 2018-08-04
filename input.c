@@ -44,7 +44,7 @@ static void privmsg(bool action, const wchar_t *mesg) {
 		(action ? "\1ACTION " : ""), mesg, (action ? "\1" : "")
 	);
 	if (!line) err(EX_OSERR, "asprintf");
-	clientFmt("%s\r\n", &line[send]);
+	ircFmt("%s\r\n", &line[send]);
 	handle(line);
 	free(line);
 }
@@ -58,7 +58,7 @@ static void inputMe(wchar_t *params) {
 static void inputNick(wchar_t *params) {
 	wchar_t *nick = wcssep(&params, L" ");
 	if (nick) {
-		clientFmt("NICK %ls\r\n", nick);
+		ircFmt("NICK %ls\r\n", nick);
 	} else {
 		uiChat("/nick requires a name");
 	}
@@ -66,14 +66,14 @@ static void inputNick(wchar_t *params) {
 
 static void inputWho(wchar_t *params) {
 	(void)params;
-	clientFmt("WHO %s\r\n", chat.chan);
+	ircFmt("WHO %s\r\n", chat.chan);
 }
 
 static void inputQuit(wchar_t *params) {
 	if (params) {
-		clientFmt("QUIT :%ls\r\n", params);
+		ircFmt("QUIT :%ls\r\n", params);
 	} else {
-		clientFmt("QUIT :Goodbye\r\n");
+		ircFmt("QUIT :Goodbye\r\n");
 	}
 }
 

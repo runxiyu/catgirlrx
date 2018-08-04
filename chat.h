@@ -28,12 +28,12 @@ struct {
 	char *chan;
 } chat;
 
-int clientConnect(const char *host, const char *port, const char *webPass);
-void clientRead(void);
-void clientWrite(const char *ptr, size_t len);
+int ircConnect(const char *host, const char *port, const char *webPass);
+void ircRead(void);
+void ircWrite(const char *ptr, size_t len);
 
 __attribute__((format(printf, 1, 2)))
-void clientFmt(const char *format, ...);
+void ircFmt(const char *format, ...);
 
 void uiInit(void);
 void uiHide(void);

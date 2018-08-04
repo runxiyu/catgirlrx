@@ -50,7 +50,7 @@ static char *shift(char **params) {
 
 static void handlePing(char *prefix, char *params) {
 	(void)prefix;
-	clientFmt("PONG %s\r\n", params);
+	ircFmt("PONG %s\r\n", params);
 }
 
 static void handle432(char *prefix, char *params) {
@@ -70,7 +70,7 @@ static void handle001(char *prefix, char *params) {
 		free(chat.nick);
 		chat.nick = strdup(nick);
 	}
-	clientFmt("JOIN %s\r\n", chat.chan);
+	ircFmt("JOIN %s\r\n", chat.chan);
 }
 
 static void handleJoin(char *prefix, char *params) {
@@ -149,7 +149,7 @@ static void handle366(char *prefix, char *params) {
 	(void)prefix;
 	shift(&params);
 	char *chan = shift(&params);
-	clientFmt("WHO %s\r\n", chan);
+	ircFmt("WHO %s\r\n", chan);
 }
 
 static char whoBuf[4096];

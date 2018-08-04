@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 	uiChat("Traveling...");
 	uiDraw();
 
-	int sock = clientConnect(host, port, webPass);
+	int sock = ircConnect(host, port, webPass);
 	free(host);
 
 	struct pollfd fds[2] = {
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (fds[0].revents) uiRead();
-		if (fds[1].revents) clientRead();
+		if (fds[1].revents) ircRead();
 		uiDraw();
 	}
 }

@@ -36,13 +36,13 @@ static void webirc(const char *pass) {
 	int len = strlen(ssh);
 	const char *sp = strchr(ssh, ' ');
 	if (sp) len = sp - ssh;
-	clientFmt(
+	ircFmt(
 		"WEBIRC %s %s %.*s %.*s\r\n",
 		pass, chat.user, len, ssh, len, ssh
 	);
 }
 
-int clientConnect(const char *host, const char *port, const char *webPass) {
+int ircConnect(const char *host, const char *port, const char *webPass) {
 	int error;
 
 	struct tls_config *config = tls_config_new();
@@ -76,13 +76,13 @@ int clientConnect(const char *host, const char *port, const char *webPass) {
 	if (error) err(EX_PROTOCOL, "tls_connect");
 
 	if (webPass) webirc(webPass);
-	clientFmt("NICK %s\r\n", chat.nick);
-	clientFmt("USER %s 0 * :%s\r\n", chat.user, chat.nick);
+	ircFmt("NICK %s\r\n", chat.nick);
+	ircFmt("USER %s 0 * :%s\r\n", chat.user, chat.nick);
 
 	return sock;
 }
 
-void clientWrite(const char *ptr, size_t len) {
+void ircWrite(const char *ptr, size_t len) {
 	while (len) {
 		ssize_t ret = tls_write(client, ptr, len);
 		if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT) continue;
@@ -92,7 +92,7 @@ void clientWrite(const char *ptr, size_t len) {
 	}
 }
 
-void clientFmt(const char *format, ...) {
+void ircFmt(const char *format, ...) {
 	char *buf;
 	va_list ap;
 	va_start(ap, format);
@@ -100,14 +100,14 @@ void clientFmt(const char *format, ...) {
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
 	if (chat.verbose) uiFmt("<<< %.*s", len - 2, buf);
-	clientWrite(buf, len);
+	ircWrite(buf, len);
 	free(buf);
 }
 
-void clientRead(void) {
-	static char buf[4096];
-	static size_t len;
+static char buf[4096];
+static size_t len;
 
+void ircRead(void) {
 	ssize_t read = tls_read(client, &buf[len], sizeof(buf) - len);
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
 	if (!read) {
