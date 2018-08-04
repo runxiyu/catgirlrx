@@ -91,11 +91,17 @@ void uiDraw(void) {
 	int lastCol = COLS - 1;
 	int lastLine = LINES - 1;
 
-	pnoutrefresh(ui.topic, 0, 0, 0, 0, 1, lastCol);
+	pnoutrefresh(
+		ui.topic,
+		0, 0,
+		0, 0,
+		1, lastCol
+	);
 	pnoutrefresh(
 		ui.chat,
-		CHAT_LINES - (lastLine - 4), 0,
-		2, 0, lastLine, lastCol
+		CHAT_LINES - (LINES - 4), 0,
+		2, 0,
+		lastLine - 2, lastCol
 	);
 	pnoutrefresh(
 		ui.input,
