@@ -69,6 +69,14 @@ static void inputWho(wchar_t *params) {
 	ircFmt("WHO %s\r\n", chat.chan);
 }
 
+static void inputTopic(wchar_t *params) {
+	if (params) {
+		ircFmt("TOPIC %s :%ls\r\n", chat.chan, params);
+	} else {
+		ircFmt("TOPIC %s\r\n", chat.chan);
+	}
+}
+
 static void inputQuit(wchar_t *params) {
 	if (params) {
 		ircFmt("QUIT :%ls\r\n", params);
@@ -85,6 +93,7 @@ static const struct {
 	{ L"names", inputWho },
 	{ L"nick", inputNick },
 	{ L"quit", inputQuit },
+	{ L"topic", inputTopic },
 	{ L"who", inputWho },
 };
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
