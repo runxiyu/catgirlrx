@@ -1,3 +1,4 @@
+*.o
 chat
 chroot.tar
 root

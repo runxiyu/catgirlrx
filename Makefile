@@ -3,11 +3,17 @@ CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 LDLIBS = -lcursesw -ltls
+OBJS = chat.o client.o handle.o input.o ui.o
 
 all: tags chat
 
-tags: *.c
-	ctags -w *.c
+chat: $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
+
+$(OBJS): chat.h
+
+tags: *.h *.c
+	ctags -w *.h *.c
 
 chroot.tar: chat
 	mkdir -p root
@@ -41,4 +47,4 @@ chroot.tar: chat
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
 
 clean:
-	rm -f tags chat chroot.tar
+	rm -f tags chat $(OBJS) chroot.tar
