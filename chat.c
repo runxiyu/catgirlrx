@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _XOPEN_SOURCE_EXTENDED
+
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
@@ -30,9 +32,22 @@
 #include <sysexits.h>
 #include <tls.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
 
 #define err(...) do { endwin(); err(__VA_ARGS__); } while (0)
 #define errx(...) do { endwin(); errx(__VA_ARGS__); } while (0)
+
+static wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim) {
+	wchar_t *orig = *stringp;
+	size_t i = wcscspn(orig, delim);
+	*stringp = NULL;
+	if (orig[i]) {
+		orig[i] = '\0';
+		*stringp = &orig[i + 1];
+	}
+	return orig;
+}
 
 static void curse(void) {
 	setlocale(LC_CTYPE, "");
@@ -51,6 +66,7 @@ static void curse(void) {
 
 static const int TOPIC_COLS = 512;
 static const int CHAT_LINES = 100;
+static const int INPUT_COLS = 512;
 static struct {
 	WINDOW *topic;
 	WINDOW *chat;
@@ -66,8 +82,8 @@ static void uiInit(void) {
 	scrollok(ui.chat, true);
 	wmove(ui.chat, CHAT_LINES - (LINES - 4) - 1, 0);
 
-	ui.input = newwin(2, COLS, LINES - 2, 0);
-	mvwhline(ui.input, 0, 0, ACS_HLINE, COLS);
+	ui.input = newpad(2, INPUT_COLS);
+	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
 	wmove(ui.input, 1, 0);
 	cbreak();
 	noecho();
@@ -80,7 +96,12 @@ static void uiDraw(void) {
 		CHAT_LINES - (LINES - 4), 0,
 		2, 0, LINES - 1, COLS - 1
 	);
-	wnoutrefresh(ui.input);
+	pnoutrefresh(
+		ui.input,
+		0, 0,
+		LINES - 2, 0,
+		LINES - 1, COLS - 1
+	);
 	doupdate();
 }
 
@@ -431,27 +452,57 @@ static void clientRead(void) {
 	memmove(buf, line, fill);
 }
 
-static void uiRead(void) {
-	static char buf[256];
-	static size_t fill;
+static void privmsg(bool action, const wchar_t *mesg) {
+	char *line;
+	int send;
+	asprintf(
+		&line, ":%s!%s %nPRIVMSG %s :%s%ls%s",
+		client.nick, client.user, &send, client.chan,
+		(action ? "\1ACTION " : ""), mesg, (action ? "\1" : "")
+	);
+	if (!line) err(EX_OSERR, "asprintf");
+	clientFmt("%s\r\n", &line[send]);
+	handle(line);
+	free(line);
+}
 
-	// TODO:
-	int ch = wgetch(ui.input);
-	if (ch == '\n') {
-		buf[fill] = '\0';
-		char *params;
-		asprintf(&params, "%s :%s", client.chan, buf);
-		if (!params) err(EX_OSERR, "asprintf");
-		clientFmt("PRIVMSG %s\r\n", params);
-		handlePrivmsg(client.nick, params); // FIXME: username
-		free(params);
-		fill = 0;
-		wmove(ui.input, 1, 0);
-		wclrtoeol(ui.input);
-	} else {
-		buf[fill++] = ch;
-		waddch(ui.input, ch);
+static void input(wchar_t *input) {
+	if (input[0] != '/') {
+		privmsg(false, input);
+		return;
 	}
+	input++;
+	wchar_t *cmd = wcssep(&input, L" ");
+	if (!wcscmp(cmd, L"me")) {
+		privmsg(true, input ? input : L"");
+	} else {
+		uiFmt("/%ls isn't a recognized command", cmd);
+	}
+}
+
+static void uiRead(void) {
+	static wchar_t buf[512];
+	static size_t len;
+
+	wint_t ch;
+	wget_wch(ui.input, &ch);
+	switch (ch) {
+		break; case '\b': case '\177': {
+			if (len) len--;
+		}
+		break; case '\n': {
+			if (!len) break;
+			buf[len] = '\0';
+			input(buf);
+			len = 0;
+		}
+		break; default: {
+			if (iswprint(ch)) buf[len++] = ch;
+		}
+	}
+	wmove(ui.input, 1, 0);
+	waddnwstr(ui.input, buf, len);
+	wclrtoeol(ui.input);
 }
 
 static void webirc(const char *pass) {
