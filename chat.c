@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 	chat.user = strdup(chat.nick);
 
 	uiInit();
-	uiChat("Traveling...");
+	uiLog("Traveling...");
 	uiDraw();
 
 	int sock = ircConnect(host, port, webPass);

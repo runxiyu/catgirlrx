@@ -37,12 +37,12 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const int TOPIC_COLS = 512;
-static const int CHAT_LINES = 100;
 static const int INPUT_COLS = 512;
+static const int LOG_LINES = 100;
 
 static struct {
 	WINDOW *topic;
-	WINDOW *chat;
+	WINDOW *log;
 	WINDOW *input;
 	size_t cursor;
 } ui;
@@ -67,10 +67,10 @@ void uiInit(void) {
 	ui.topic = newpad(2, TOPIC_COLS);
 	mvwhline(ui.topic, 1, 0, ACS_HLINE, TOPIC_COLS);
 
-	ui.chat = newpad(CHAT_LINES, COLS);
-	wsetscrreg(ui.chat, 0, CHAT_LINES - 1);
-	scrollok(ui.chat, true);
-	wmove(ui.chat, CHAT_LINES - (LINES - 4) - 1, 0);
+	ui.log = newpad(LOG_LINES, COLS);
+	wsetscrreg(ui.log, 0, LOG_LINES - 1);
+	scrollok(ui.log, true);
+	wmove(ui.log, LOG_LINES - (LINES - 4) - 1, 0);
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
@@ -79,8 +79,8 @@ void uiInit(void) {
 }
 
 static void uiResize(void) {
-	wresize(ui.chat, CHAT_LINES, COLS);
-	wmove(ui.chat, CHAT_LINES - 1, COLS - 1);
+	wresize(ui.log, LOG_LINES, COLS);
+	wmove(ui.log, LOG_LINES - 1, COLS - 1);
 }
 
 void uiHide(void) {
@@ -98,8 +98,8 @@ void uiDraw(void) {
 		1, lastCol
 	);
 	pnoutrefresh(
-		ui.chat,
-		CHAT_LINES - (LINES - 4), 0,
+		ui.log,
+		LOG_LINES - (LINES - 4), 0,
 		2, 0,
 		lastLine - 2, lastCol
 	);
@@ -194,9 +194,9 @@ void uiTopic(const char *topic) {
 	uiAdd(ui.topic, topic);
 }
 
-void uiChat(const char *line) {
-	waddch(ui.chat, '\n');
-	uiAdd(ui.chat, line);
+void uiLog(const char *line) {
+	waddch(ui.log, '\n');
+	uiAdd(ui.log, line);
 }
 
 void uiFmt(const char *format, ...) {
@@ -206,7 +206,7 @@ void uiFmt(const char *format, ...) {
 	vasprintf(&buf, format, ap);
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
-	uiChat(buf);
+	uiLog(buf);
 	free(buf);
 }
 

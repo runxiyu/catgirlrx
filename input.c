@@ -60,7 +60,7 @@ static void inputNick(wchar_t *params) {
 	if (nick) {
 		ircFmt("NICK %ls\r\n", nick);
 	} else {
-		uiChat("/nick requires a name");
+		uiLog("/nick requires a name");
 	}
 }
 

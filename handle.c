@@ -58,9 +58,9 @@ static void handle432(char *prefix, char *params) {
 	shift(&params);
 	shift(&params);
 	char *mesg = shift(&params);
-	uiChat("You can't use that name here");
+	uiLog("You can't use that name here");
 	uiFmt("Sheriff says, \"%s\"", mesg);
-	uiChat("Type /nick <name> to choose a new one");
+	uiLog("Type /nick <name> to choose a new one");
 }
 
 static void handle001(char *prefix, char *params) {

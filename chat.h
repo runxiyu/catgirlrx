@@ -40,7 +40,7 @@ void uiHide(void);
 void uiDraw(void);
 void uiRead(void);
 void uiTopic(const char *topic);
-void uiChat(const char *line);
+void uiLog(const char *line);
 
 __attribute__((format(printf, 1, 2)))
 void uiFmt(const char *format, ...);
