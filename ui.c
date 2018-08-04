@@ -34,6 +34,7 @@
 #endif
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const int TOPIC_COLS = 512;
 static const int CHAT_LINES = 100;
@@ -105,9 +106,9 @@ void uiDraw(void) {
 	doupdate();
 }
 
-static const struct {
+static const struct AttrColor {
 	attr_t attr;
-	short color;
+	short pair;
 } MIRC_COLORS[16] = {
 	{ A_BOLD,   COLOR_WHITE },   // white
 	{ A_NORMAL, COLOR_BLACK },   // black
@@ -127,54 +128,56 @@ static const struct {
 	{ A_NORMAL, COLOR_WHITE },   // light grey
 };
 
+static const char *parseColor(struct AttrColor *color, const char *str) {
+	short fg = 0;
+	size_t fgLen = MIN(strspn(str, "0123456789"), 2);
+	if (!fgLen) {
+		color->attr = A_NORMAL;
+		color->pair = -1;
+		return str;
+	}
+	for (size_t i = 0; i < fgLen; ++i) {
+		fg *= 10;
+		fg += str[i] - '0';
+	}
+	str = &str[fgLen];
+
+	short bg = 0;
+	size_t bgLen = 0;
+	if (str[0] == ',') {
+		bgLen = MIN(strspn(&str[1], "0123456789"), 2);
+	}
+	for (size_t i = 0; i < bgLen; ++i) {
+		bg *= 10;
+		bg += str[1 + i] - '0';
+	}
+	if (bgLen) str = &str[1 + bgLen];
+
+	if (color->pair == -1) color->pair = 0;
+	color->attr = MIRC_COLORS[fg].attr;
+	color->pair = (color->pair & 070) | MIRC_COLORS[fg].pair;
+	if (bgLen) {
+		color->pair = (color->pair & 007) | (MIRC_COLORS[bg].pair << 3);
+	}
+
+	return str;
+}
+
 static void uiAdd(WINDOW *win, const char *str) {
 	attr_t attr = A_NORMAL;
-	short colorPair = -1;
-	attr_t colorAttr = A_NORMAL;
+	struct AttrColor color = { A_NORMAL, -1 };
 	for (;;) {
 		size_t cc = strcspn(str, "\2\3\35\37");
-		wattr_set(win, attr | colorAttr, 1 + colorPair, NULL);
+		wattr_set(win, attr | color.attr, 1 + color.pair, NULL);
 		waddnstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
-			break; case '\2':  attr ^= A_BOLD;
+			break; case '\2': attr ^= A_BOLD;
+			break; case '\3': str = parseColor(&color, str);
 			break; case '\35': attr ^= A_ITALIC;
 			break; case '\37': attr ^= A_UNDERLINE;
-			break; case '\3': {
-				short fg = 0;
-				short bg = 0;
-
-				size_t fgLen = strspn(str, "0123456789");
-				if (!fgLen) {
-					colorPair = -1;
-					colorAttr = A_NORMAL;
-					break;
-				}
-
-				if (fgLen > 2) fgLen = 2;
-				for (size_t i = 0; i < fgLen; ++i) {
-					fg *= 10;
-					fg += str[i] - '0';
-				}
-				str = &str[fgLen];
-
-				size_t bgLen = (str[0] == ',') ? strspn(&str[1], "0123456789") : 0;
-				if (bgLen > 2) bgLen = 2;
-				for (size_t i = 0; i < bgLen; ++i) {
-					bg *= 10;
-					bg += str[1 + i] - '0';
-				}
-				if (bgLen) str = &str[1 + bgLen];
-
-				if (colorPair == -1) colorPair = 0;
-				colorPair = (colorPair & 070) | MIRC_COLORS[fg].color;
-				colorAttr = MIRC_COLORS[fg].attr;
-				if (bgLen) {
-					colorPair = (colorPair & 007) | (MIRC_COLORS[bg].color << 3);
-				}
-			}
 		}
 	}
 }
