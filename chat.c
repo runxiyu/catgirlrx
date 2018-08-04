@@ -46,7 +46,7 @@ char *prompt(const char *prompt) {
 
 int main(int argc, char *argv[]) {
 	char *host = NULL;
-	char *port = "6697";
+	const char *port = "6697";
 	const char *webPass = NULL;
 
 	int opt;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 			break; case 'h': host = strdup(optarg);
 			break; case 'j': chat.chan = strdup(optarg);
 			break; case 'n': chat.nick = strdup(optarg);
-			break; case 'p': port = strdup(optarg);
+			break; case 'p': port = optarg;
 			break; case 'v': chat.verbose = true;
 			break; case 'w': webPass = optarg;
 			break; default:  return EX_USAGE;
@@ -73,7 +73,6 @@ int main(int argc, char *argv[]) {
 
 	int sock = clientConnect(host, port, webPass);
 	free(host);
-	free(port);
 
 	struct pollfd fds[2] = {
 		{ .fd = STDIN_FILENO, .events = POLLIN },
