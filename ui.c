@@ -33,6 +33,8 @@
 #define A_ITALIC A_NORMAL
 #endif
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 static const int TOPIC_COLS = 512;
 static const int CHAT_LINES = 100;
 static const int INPUT_COLS = 512;
@@ -41,6 +43,7 @@ static struct {
 	WINDOW *topic;
 	WINDOW *chat;
 	WINDOW *input;
+	size_t cursor;
 } ui;
 
 void uiInit(void) {
@@ -70,7 +73,7 @@ void uiInit(void) {
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
-	wmove(ui.input, 1, 0);
+	wmove(ui.input, 1, ui.cursor);
 	nodelay(ui.input, true);
 }
 
@@ -84,17 +87,20 @@ void uiHide(void) {
 }
 
 void uiDraw(void) {
-	pnoutrefresh(ui.topic, 0, 0, 0, 0, 1, COLS - 1);
+	int lastCol = COLS - 1;
+	int lastLine = LINES - 1;
+
+	pnoutrefresh(ui.topic, 0, 0, 0, 0, 1, lastCol);
 	pnoutrefresh(
 		ui.chat,
-		CHAT_LINES - (LINES - 4), 0,
-		2, 0, LINES - 1, COLS - 1
+		CHAT_LINES - (lastLine - 4), 0,
+		2, 0, lastLine, lastCol
 	);
 	pnoutrefresh(
 		ui.input,
-		0, 0,
-		LINES - 2, 0,
-		LINES - 1, COLS - 1
+		0, MAX(0, ui.cursor - lastCol),
+		lastLine - 1, 0,
+		lastLine, lastCol
 	);
 	doupdate();
 }
@@ -213,6 +219,7 @@ void uiRead(void) {
 				len = 0;
 			}
 			break; default: {
+				// TODO: Check overflow
 				if (iswprint(ch)) buf[len++] = ch;
 			}
 		}
@@ -220,4 +227,5 @@ void uiRead(void) {
 	wmove(ui.input, 1, 0);
 	waddnwstr(ui.input, buf, len);
 	wclrtoeol(ui.input);
+	ui.cursor = len;
 }
