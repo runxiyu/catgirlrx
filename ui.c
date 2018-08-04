@@ -29,6 +29,10 @@
 
 #include "chat.h"
 
+#ifndef A_ITALIC
+#define A_ITALIC A_NORMAL
+#endif
+
 static const int TOPIC_COLS = 512;
 static const int CHAT_LINES = 100;
 static const int INPUT_COLS = 512;
