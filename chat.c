@@ -40,6 +40,7 @@
 
 static wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim) {
 	wchar_t *orig = *stringp;
+	if (!orig) return NULL;
 	size_t i = wcscspn(orig, delim);
 	*stringp = NULL;
 	if (orig[i]) {
@@ -475,18 +476,52 @@ static void privmsg(bool action, const wchar_t *mesg) {
 	free(line);
 }
 
+typedef void (*Command)(wchar_t *params);
+
+static void inputMe(wchar_t *params) {
+	privmsg(true, params ? params : L"");
+}
+
+static void inputNick(wchar_t *params) {
+	wchar_t *nick = wcssep(&params, L" ");
+	if (nick) {
+		clientFmt("NICK %ls\r\n", nick);
+	} else {
+		uiFmt("/nick requires a name");
+	}
+}
+
+static void inputQuit(wchar_t *params) {
+	if (params) {
+		clientFmt("QUIT :%ls\r\n", params);
+	} else {
+		clientFmt("QUIT :Goodbye\r\n");
+	}
+}
+
+static const struct {
+	const wchar_t *command;
+	Command handler;
+} COMMANDS[] = {
+	{ L"me", inputMe },
+	{ L"nick", inputNick },
+	{ L"quit", inputQuit },
+};
+static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
+
 static void input(wchar_t *input) {
 	if (input[0] != '/') {
 		privmsg(false, input);
 		return;
 	}
 	input++;
-	wchar_t *cmd = wcssep(&input, L" ");
-	if (!wcscmp(cmd, L"me")) {
-		privmsg(true, input ? input : L"");
-	} else {
-		uiFmt("/%ls isn't a recognized command", cmd);
+	wchar_t *command = wcssep(&input, L" ");
+	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
+		if (wcscmp(command, COMMANDS[i].command)) continue;
+		COMMANDS[i].handler(input);
+		return;
 	}
+	uiFmt("/%ls isn't a recognized command", command);
 }
 
 static void uiRead(void) {
