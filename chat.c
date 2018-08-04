@@ -460,6 +460,11 @@ static void clientRead(void) {
 
 	ssize_t size = tls_read(client.tls, buf + fill, sizeof(buf) - fill);
 	if (size < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client.tls));
+	if (!size) {
+		// FIXME: Always endwin
+		endwin();
+		exit(EX_OK);
+	}
 	fill += size;
 
 	char *end, *line = buf;
