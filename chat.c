@@ -254,14 +254,19 @@ static char *shift(char **params) {
 	return strsep(params, " ");
 }
 
-static void handle001(char *prefix, char *params) {
-	(void)prefix; (void)params;
-	clientFmt("JOIN %s\r\n", client.chan);
-}
-
 static void handlePing(char *prefix, char *params) {
 	(void)prefix;
 	clientFmt("PONG %s\r\n", params);
+}
+
+static void handle001(char *prefix, char *params) {
+	(void)prefix;
+	char *nick = shift(&params);
+	if (strcmp(nick, client.nick)) {
+		free(client.nick);
+		client.nick = strdup(nick);
+	}
+	clientFmt("JOIN %s\r\n", client.chan);
 }
 
 static void handleJoin(char *prefix, char *params) {
@@ -370,6 +375,10 @@ static void handleNick(char *prefix, char *params) {
 	char *prev = prift(&prefix);
 	char *user = prift(&prefix);
 	char *next = shift(&params);
+	if (!strcmp(user, client.user)) {
+		free(client.nick);
+		client.nick = strdup(next);
+	}
 	uiFmt(
 		"\3%d%s\3 is now known as \3%d%s\3",
 		color(user), prev, color(user), next
