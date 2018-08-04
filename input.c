@@ -64,6 +64,11 @@ static void inputNick(wchar_t *params) {
 	}
 }
 
+static void inputWho(wchar_t *params) {
+	(void)params;
+	clientFmt("WHO %s\r\n", chat.chan);
+}
+
 static void inputQuit(wchar_t *params) {
 	if (params) {
 		clientFmt("QUIT :%ls\r\n", params);
@@ -77,8 +82,10 @@ static const struct {
 	Handler handler;
 } COMMANDS[] = {
 	{ L"me", inputMe },
+	{ L"names", inputWho },
 	{ L"nick", inputNick },
 	{ L"quit", inputQuit },
+	{ L"who", inputWho },
 };
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
