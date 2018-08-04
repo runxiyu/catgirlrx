@@ -80,8 +80,11 @@ int main(int argc, char *argv[]) {
 	};
 	for (;;) {
 		int nfds = poll(fds, 2, -1);
-		if (nfds < 0 && errno == EINTR) continue;
-		if (nfds < 0) err(EX_IOERR, "poll");
+		if (nfds < 0) {
+			if (errno != EINTR) err(EX_IOERR, "poll");
+			fds[0].revents = POLLIN;
+			fds[1].revents = 0;
+		}
 
 		if (fds[0].revents) uiRead();
 		if (fds[1].revents) clientRead();

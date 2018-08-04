@@ -71,6 +71,12 @@ void uiInit(void) {
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
 	wmove(ui.input, 1, 0);
+	nodelay(ui.input, true);
+}
+
+static void uiResize(void) {
+	wresize(ui.chat, CHAT_LINES, COLS);
+	wmove(ui.chat, CHAT_LINES - 1, COLS - 1);
 }
 
 void uiHide(void) {
@@ -194,19 +200,21 @@ void uiRead(void) {
 	static size_t len;
 
 	wint_t ch;
-	wget_wch(ui.input, &ch);
-	switch (ch) {
-		break; case '\b': case '\177': {
-			if (len) len--;
-		}
-		break; case '\n': {
-			if (!len) break;
-			buf[len] = '\0';
-			input(buf);
-			len = 0;
-		}
-		break; default: {
-			if (iswprint(ch)) buf[len++] = ch;
+	while (wget_wch(ui.input, &ch) != ERR) {
+		switch (ch) {
+			break; case KEY_RESIZE: uiResize();
+			break; case '\b': case '\177': {
+				if (len) len--;
+			}
+			break; case '\n': {
+				if (!len) break;
+				buf[len] = '\0';
+				input(buf);
+				len = 0;
+			}
+			break; default: {
+				if (iswprint(ch)) buf[len++] = ch;
+			}
 		}
 	}
 	wmove(ui.input, 1, 0);
