@@ -260,6 +260,16 @@ static void handlePing(char *prefix, char *params) {
 	clientFmt("PONG %s\r\n", params);
 }
 
+static void handle432(char *prefix, char *params) {
+	(void)prefix;
+	shift(&params);
+	shift(&params);
+	char *mesg = shift(&params);
+	uiFmt("You can't use that name here");
+	uiFmt("Sheriff says, \"%s\"", mesg);
+	uiFmt("Type /nick <name> to choose a new one");
+}
+
 static void handle001(char *prefix, char *params) {
 	(void)prefix;
 	char *nick = shift(&params);
@@ -416,6 +426,8 @@ static const struct {
 	{ "332", handle332 },
 	{ "352", handle352 },
 	{ "366", handle366 },
+	{ "432", handle432 },
+	{ "433", handle432 },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "NICK", handleNick },
