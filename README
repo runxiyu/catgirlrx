@@ -1,0 +1,10 @@
+Simple IRC client for use over anonymous SSH.
+
+This software targets FreeBSD and requires LibreSSL.
+
+	chat.h      Shared state and function prototypes
+	chat.c      Command line parsing and poll loop
+	ui.c        Curses UI, mIRC formatting, line editing
+	irc.c       TLS client connection
+	input.c     Input command handling
+	handle.c    Incoming command handling
