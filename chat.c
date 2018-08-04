@@ -273,7 +273,7 @@ static void handleJoin(char *prefix, char *params) {
 		client.user = strdup(user);
 	}
 	uiFmt(
-		"\3%d%s\3 arrived in \3%d%s\3",
+		"\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
 	);
 }
@@ -283,7 +283,7 @@ static void handlePart(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *mesg = shift(&params);
 	uiFmt(
-		"\3%d%s\3 left \3%d%s\3, \"%s\"",
+		"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
 		color(user), nick, color(chan), chan, mesg
 	);
 }
@@ -293,7 +293,7 @@ static void handleQuit(char *prefix, char *params) {
 	char *mesg = shift(&params);
 	char *quot = (mesg[0] == '"') ? "" : "\"";
 	uiFmt(
-		"\3%d%s\3 left, %s%s%s",
+		"\3%d%s\3 leaves, %s%s%s",
 		color(user), nick, quot, mesg, quot
 	);
 }
@@ -304,7 +304,7 @@ static void handleKick(char *prefix, char *params) {
 	char *kick = shift(&params);
 	char *mesg = shift(&params);
 	uiFmt(
-		"\3%d%s\3 kicked \3%d%s\3 out of \3%d%s\3, \"%s\"",
+		"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
 		color(user), nick, color(kick), kick, color(chan), chan, mesg
 	);
 }
@@ -326,7 +326,7 @@ static void handleTopic(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *topic = shift(&params);
 	uiFmt(
-		"\3%d%s\3 placed a new sign in \3%d%s\3, \"%s\"",
+		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
 		color(user), nick, color(chan), chan, topic
 	);
 	uiTopic(topic);
