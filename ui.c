@@ -29,46 +29,18 @@
 
 #include "chat.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#define CTRL(c) ((c) & 037)
+
 #ifndef A_ITALIC
 #define A_ITALIC A_NORMAL
 #endif
 
-#define CTRL(c) ((c) & 037)
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
-static const int TOPIC_COLS = 512;
-static const int INPUT_COLS = 512;
-static const int LOG_LINES = 100;
-
-static struct {
-	WINDOW *topic;
-	WINDOW *log;
-	WINDOW *input;
-	int scroll;
-	size_t cursor;
-} ui;
-
-static int lastLine(void) {
-	return LINES - 1;
-}
-static int lastCol(void) {
-	return COLS - 1;
-}
-static int logHeight(void) {
-	return LINES - 4;
-}
-
-void uiInit(void) {
-	setlocale(LC_CTYPE, "");
-	initscr();
-	cbreak();
-	noecho();
-
+static void colorInit(void) {
 	start_color();
 	use_default_colors();
-
 	if (COLORS >= 16) {
 		for (short pair = 0; pair < 0xFF; ++pair) {
 			if (pair < 0x10) {
@@ -86,6 +58,46 @@ void uiInit(void) {
 			}
 		}
 	}
+}
+
+static attr_t attr8(short pair) {
+	if (COLORS >= 16 || pair < 0) return A_NORMAL;
+	return (pair & 0x08) ? A_BOLD : A_NORMAL;
+}
+static short pair8(short pair) {
+	if (COLORS >= 16 || pair < 0) return pair;
+	return (pair & 0x70) >> 1 | (pair & 0x07);
+}
+
+static const int TOPIC_COLS = 512;
+static const int INPUT_COLS = 512;
+static const int LOG_LINES = 100;
+
+static int lastLine(void) {
+	return LINES - 1;
+}
+static int lastCol(void) {
+	return COLS - 1;
+}
+static int logHeight(void) {
+	return LINES - 4;
+}
+
+static struct {
+	WINDOW *topic;
+	WINDOW *log;
+	WINDOW *input;
+	int scroll;
+	size_t cursor;
+} ui;
+
+void uiInit(void) {
+	setlocale(LC_CTYPE, "");
+	initscr();
+	cbreak();
+	noecho();
+
+	colorInit();
 
 	ui.topic = newpad(2, TOPIC_COLS);
 	mvwhline(ui.topic, 1, 0, ACS_HLINE, TOPIC_COLS);
@@ -139,7 +151,11 @@ void uiDraw(void) {
 	doupdate();
 }
 
-static const short MIRC_COLORS[16] = {
+static void uiRedraw(void) {
+	clearok(curscr, true);
+}
+
+static const short IRC_COLORS[16] = {
 	8 + COLOR_WHITE,   // white
 	0 + COLOR_BLACK,   // black
 	0 + COLOR_BLUE,    // blue
@@ -175,22 +191,13 @@ static const char *parseColor(short *pair, const char *str) {
 	if (bgLen) str = &str[1 + bgLen];
 
 	if (*pair == -1) *pair = 0;
-	*pair = (*pair & 0xF0) | MIRC_COLORS[fg & 0x0F];
-	if (bgLen) *pair = (*pair & 0x0F) | (MIRC_COLORS[bg & 0x0F] << 4);
+	*pair = (*pair & 0xF0) | IRC_COLORS[fg & 0x0F];
+	if (bgLen) *pair = (*pair & 0x0F) | (IRC_COLORS[bg & 0x0F] << 4);
 
 	return str;
 }
 
-static attr_t attr8(short pair) {
-	if (COLORS >= 16 || pair < 0) return A_NORMAL;
-	return (pair & 0x08) ? A_BOLD : A_NORMAL;
-}
-static short pair8(short pair) {
-	if (COLORS >= 16 || pair < 0) return pair;
-	return (pair & 0x70) >> 1 | (pair & 0x07);
-}
-
-static void uiAdd(WINDOW *win, const char *str) {
+static void addIRC(WINDOW *win, const char *str) {
 	attr_t attr = A_NORMAL;
 	short pair = -1;
 	for (;;) {
@@ -211,13 +218,13 @@ static void uiAdd(WINDOW *win, const char *str) {
 
 void uiTopic(const char *topic) {
 	wmove(ui.topic, 0, 0);
+	addIRC(ui.topic, topic);
 	wclrtoeol(ui.topic);
-	uiAdd(ui.topic, topic);
 }
 
 void uiLog(const char *line) {
 	waddch(ui.log, '\n');
-	uiAdd(ui.log, line);
+	addIRC(ui.log, line);
 }
 
 void uiFmt(const char *format, ...) {
@@ -309,7 +316,7 @@ static void enter(void) {
 
 static void keyChar(wint_t ch) {
 	switch (ch) {
-		break; case CTRL('L'): clearok(curscr, true);
+		break; case CTRL('L'): uiRedraw();
 		break; case CTRL('B'): moveLeft();
 		break; case CTRL('F'): moveRight();
 		break; case CTRL('A'): moveHome();
