@@ -42,7 +42,7 @@ static void colorInit(void) {
 	start_color();
 	use_default_colors();
 	if (COLORS >= 16) {
-		for (short pair = 0; pair < 0xFF; ++pair) {
+		for (short pair = 0; pair < 0x100; ++pair) {
 			if (pair < 0x10) {
 				init_pair(1 + pair, pair, -1);
 			} else {
@@ -50,7 +50,7 @@ static void colorInit(void) {
 			}
 		}
 	} else {
-		for (short pair = 0; pair < 077; ++pair) {
+		for (short pair = 0; pair < 0100; ++pair) {
 			if (pair < 010) {
 				init_pair(1 + pair, pair, -1);
 			} else {
