@@ -102,7 +102,7 @@ void uiHide(void) {
 	endwin();
 	printf(
 		"This program is AGPLv3 free software!\n"
-		"The source is available at <" SOURCE_URL ">\n"
+		"The source is available at <" SOURCE_URL ">.\n"
 	);
 }
 
@@ -174,6 +174,9 @@ static const char *parseColor(struct AttrColor *color, const char *str) {
 		bg += str[1 + i] - '0';
 	}
 	if (bgLen) str = &str[1 + bgLen];
+
+	fg &= 15;
+	bg &= 15;
 
 	if (color->pair == -1) color->pair = 0;
 	color->attr = MIRC_COLORS[fg].attr;
