@@ -309,6 +309,7 @@ static void enter(void) {
 
 static void keyChar(wint_t ch) {
 	switch (ch) {
+		break; case CTRL('L'): clearok(curscr, true);
 		break; case CTRL('B'): moveLeft();
 		break; case CTRL('F'): moveRight();
 		break; case CTRL('A'): moveHome();
