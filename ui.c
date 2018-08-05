@@ -68,11 +68,22 @@ void uiInit(void) {
 
 	start_color();
 	use_default_colors();
-	for (short pair = 0; pair < 077; ++pair) {
-		if (pair < 010) {
-			init_pair(1 + pair, pair, -1);
-		} else {
-			init_pair(1 + pair, pair & 007, (pair & 070) >> 3);
+
+	if (COLORS >= 16) {
+		for (short pair = 0; pair < 0xFF; ++pair) {
+			if (pair < 0x10) {
+				init_pair(1 + pair, pair, -1);
+			} else {
+				init_pair(1 + pair, pair & 0x0F, (pair & 0xF0) >> 4);
+			}
+		}
+	} else {
+		for (short pair = 0; pair < 077; ++pair) {
+			if (pair < 010) {
+				init_pair(1 + pair, pair, -1);
+			} else {
+				init_pair(1 + pair, pair & 007, (pair & 070) >> 3);
+			}
 		}
 	}
 
@@ -128,79 +139,70 @@ void uiDraw(void) {
 	doupdate();
 }
 
-static const struct AttrColor {
-	attr_t attr;
-	short pair;
-} MIRC_COLORS[16] = {
-	{ A_BOLD,   COLOR_WHITE },   // white
-	{ A_NORMAL, COLOR_BLACK },   // black
-	{ A_NORMAL, COLOR_BLUE },    // blue
-	{ A_NORMAL, COLOR_GREEN },   // green
-	{ A_BOLD,   COLOR_RED },     // red
-	{ A_NORMAL, COLOR_RED },     // "brown"
-	{ A_NORMAL, COLOR_MAGENTA }, // magenta
-	{ A_NORMAL, COLOR_YELLOW },  // "orange"
-	{ A_BOLD,   COLOR_YELLOW },  // yellow
-	{ A_BOLD,   COLOR_GREEN },   // light green
-	{ A_NORMAL, COLOR_CYAN },    // cyan
-	{ A_BOLD,   COLOR_CYAN },    // light cyan
-	{ A_BOLD,   COLOR_BLUE },    // light blue
-	{ A_BOLD,   COLOR_MAGENTA }, // "pink"
-	{ A_BOLD,   COLOR_BLACK },   // grey
-	{ A_NORMAL, COLOR_WHITE },   // light grey
+static const short MIRC_COLORS[16] = {
+	8 + COLOR_WHITE,   // white
+	0 + COLOR_BLACK,   // black
+	0 + COLOR_BLUE,    // blue
+	0 + COLOR_GREEN,   // green
+	8 + COLOR_RED,     // red
+	0 + COLOR_RED,     // brown
+	0 + COLOR_MAGENTA, // magenta
+	0 + COLOR_YELLOW,  // orange
+	8 + COLOR_YELLOW,  // yellow
+	8 + COLOR_GREEN,   // light green
+	0 + COLOR_CYAN,    // cyan
+	8 + COLOR_CYAN,    // light cyan
+	8 + COLOR_BLUE,    // light blue
+	8 + COLOR_MAGENTA, // pink
+	8 + COLOR_BLACK,   // gray
+	0 + COLOR_WHITE,   // light gray
 };
 
-static const char *parseColor(struct AttrColor *color, const char *str) {
+static const char *parseColor(short *pair, const char *str) {
 	short fg = 0;
 	size_t fgLen = MIN(strspn(str, "0123456789"), 2);
-	if (!fgLen) {
-		color->attr = A_NORMAL;
-		color->pair = -1;
-		return str;
-	}
+	if (!fgLen) { *pair = -1; return str; }
 	for (size_t i = 0; i < fgLen; ++i) {
-		fg *= 10;
-		fg += str[i] - '0';
+		fg = fg * 10 + (str[i] - '0');
 	}
 	str = &str[fgLen];
 
 	short bg = 0;
-	size_t bgLen = 0;
-	if (str[0] == ',') {
-		bgLen = MIN(strspn(&str[1], "0123456789"), 2);
-	}
+	size_t bgLen = (str[0] == ',') ? MIN(strspn(&str[1], "0123456789"), 2) : 0;
 	for (size_t i = 0; i < bgLen; ++i) {
-		bg *= 10;
-		bg += str[1 + i] - '0';
+		bg = bg * 10 + (str[1 + i] - '0');
 	}
 	if (bgLen) str = &str[1 + bgLen];
 
-	fg &= 15;
-	bg &= 15;
-
-	if (color->pair == -1) color->pair = 0;
-	color->attr = MIRC_COLORS[fg].attr;
-	color->pair = (color->pair & 070) | MIRC_COLORS[fg].pair;
-	if (bgLen) {
-		color->pair = (color->pair & 007) | (MIRC_COLORS[bg].pair << 3);
-	}
+	if (*pair == -1) *pair = 0;
+	*pair = (*pair & 0xF0) | MIRC_COLORS[fg & 0x0F];
+	if (bgLen) *pair = (*pair & 0x0F) | (MIRC_COLORS[bg & 0x0F] << 4);
 
 	return str;
 }
 
+static attr_t attr8(short pair) {
+	if (COLORS >= 16 || pair < 0) return A_NORMAL;
+	return (pair & 0x08) ? A_BOLD : A_NORMAL;
+}
+static short pair8(short pair) {
+	if (COLORS >= 16 || pair < 0) return pair;
+	return (pair & 0x70) >> 1 | (pair & 0x07);
+}
+
 static void uiAdd(WINDOW *win, const char *str) {
 	attr_t attr = A_NORMAL;
-	struct AttrColor color = { A_NORMAL, -1 };
+	short pair = -1;
 	for (;;) {
 		size_t cc = strcspn(str, "\2\3\35\37");
-		wattr_set(win, attr | color.attr, 1 + color.pair, NULL);
+		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
 		waddnstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
 			break; case '\2': attr ^= A_BOLD;
-			break; case '\3': str = parseColor(&color, str);
+			break; case '\3': str = parseColor(&pair, str);
 			break; case '\35': attr ^= A_ITALIC;
 			break; case '\37': attr ^= A_UNDERLINE;
 		}
