@@ -33,8 +33,10 @@
 #define A_ITALIC A_NORMAL
 #endif
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CTRL(c) ((c) & 037)
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 static const int TOPIC_COLS = 512;
 static const int INPUT_COLS = 512;
@@ -44,15 +46,25 @@ static struct {
 	WINDOW *topic;
 	WINDOW *log;
 	WINDOW *input;
+	int scroll;
 	size_t cursor;
 } ui;
+
+static int lastLine(void) {
+	return LINES - 1;
+}
+static int lastCol(void) {
+	return COLS - 1;
+}
+static int logHeight(void) {
+	return LINES - 4;
+}
 
 void uiInit(void) {
 	setlocale(LC_CTYPE, "");
 	initscr();
 	cbreak();
 	noecho();
-	keypad(stdscr, true);
 
 	start_color();
 	use_default_colors();
@@ -70,11 +82,14 @@ void uiInit(void) {
 	ui.log = newpad(LOG_LINES, COLS);
 	wsetscrreg(ui.log, 0, LOG_LINES - 1);
 	scrollok(ui.log, true);
-	wmove(ui.log, LOG_LINES - (LINES - 4) - 1, 0);
+	wmove(ui.log, LOG_LINES - logHeight() - 1, 0);
+	ui.scroll = LOG_LINES;
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
 	wmove(ui.input, 1, ui.cursor);
+
+	keypad(ui.input, true);
 	nodelay(ui.input, true);
 }
 
@@ -88,26 +103,23 @@ void uiHide(void) {
 }
 
 void uiDraw(void) {
-	int lastCol = COLS - 1;
-	int lastLine = LINES - 1;
-
 	pnoutrefresh(
 		ui.topic,
 		0, 0,
 		0, 0,
-		1, lastCol
+		1, lastCol()
 	);
 	pnoutrefresh(
 		ui.log,
-		LOG_LINES - (LINES - 4), 0,
+		ui.scroll - logHeight(), 0,
 		2, 0,
-		lastLine - 2, lastCol
+		lastLine() - 2, lastCol()
 	);
 	pnoutrefresh(
 		ui.input,
-		0, MAX(0, ui.cursor - lastCol),
-		lastLine - 1, 0,
-		lastLine, lastCol
+		0, MAX(0, ui.cursor - lastCol() + 1),
+		lastLine() - 1, 0,
+		lastLine(), lastCol()
 	);
 	doupdate();
 }
@@ -210,31 +222,124 @@ void uiFmt(const char *format, ...) {
 	free(buf);
 }
 
-void uiRead(void) {
-	static wchar_t buf[512];
-	static size_t len;
+static void scrollUp(void) {
+	if (ui.scroll == logHeight()) return;
+	ui.scroll = MAX(ui.scroll - logHeight() / 2, logHeight());
+}
+static void scrollDown(void) {
+	if (ui.scroll == LOG_LINES) return;
+	ui.scroll = MIN(ui.scroll + logHeight() / 2, LOG_LINES);
+}
 
+static struct {
+	wchar_t buf[512];
+	size_t len;
+} line;
+static const size_t BUF_LEN = sizeof(line.buf) / sizeof(line.buf[0]);
+
+static void moveLeft(void) {
+	if (ui.cursor) ui.cursor--;
+}
+static void moveRight(void) {
+	if (ui.cursor < line.len) ui.cursor++;
+}
+static void moveHome(void) {
+	ui.cursor = 0;
+}
+static void moveEnd(void) {
+	ui.cursor = line.len;
+}
+
+static void insert(wchar_t ch) {
+	if (!iswprint(ch)) return;
+	if (line.len == BUF_LEN - 1) return;
+	if (ui.cursor == line.len) {
+		line.buf[line.len] = ch;
+	} else {
+		wmemmove(
+			&line.buf[ui.cursor + 1],
+			&line.buf[ui.cursor],
+			line.len - ui.cursor
+		);
+		line.buf[ui.cursor] = ch;
+	}
+	line.len++;
+	ui.cursor++;
+}
+
+static void backspace(void) {
+	if (!ui.cursor) return;
+	if (ui.cursor != line.len) {
+		wmemmove(
+			&line.buf[ui.cursor - 1],
+			&line.buf[ui.cursor],
+			line.len - ui.cursor
+		);
+	}
+	line.len--;
+	ui.cursor--;
+}
+
+static void delete(void) {
+	if (ui.cursor == line.len) return;
+	moveRight();
+	backspace();
+}
+
+static void kill(void) {
+	line.len = ui.cursor;
+}
+
+static void enter(void) {
+	if (!line.len) return;
+	line.buf[line.len] = '\0';
+	input(line.buf);
+	line.len = 0;
+	ui.cursor = 0;
+}
+
+static void keyChar(wint_t ch) {
+	switch (ch) {
+		break; case CTRL('B'): moveLeft();
+		break; case CTRL('F'): moveRight();
+		break; case CTRL('A'): moveHome();
+		break; case CTRL('E'): moveEnd();
+		break; case CTRL('D'): delete();
+		break; case CTRL('K'): kill();
+		break; case '\b':      backspace();
+		break; case '\177':    backspace();
+		break; case '\n':      enter();
+		break; default:        insert(ch);
+	}
+}
+
+static void keyCode(wint_t ch) {
+	switch (ch) {
+		break; case KEY_RESIZE:    uiResize();
+		break; case KEY_PPAGE:     scrollUp();
+		break; case KEY_NPAGE:     scrollDown();
+		break; case KEY_LEFT:      moveLeft();
+		break; case KEY_RIGHT:     moveRight();
+		break; case KEY_HOME:      moveHome();
+		break; case KEY_END:       moveEnd();
+		break; case KEY_BACKSPACE: backspace();
+		break; case KEY_DC:        delete();
+		break; case KEY_ENTER:     enter();
+	}
+}
+
+void uiRead(void) {
+	int ret;
 	wint_t ch;
-	while (wget_wch(ui.input, &ch) != ERR) {
-		switch (ch) {
-			break; case KEY_RESIZE: uiResize();
-			break; case '\b': case '\177': {
-				if (len) len--;
-			}
-			break; case '\n': {
-				if (!len) break;
-				buf[len] = '\0';
-				input(buf);
-				len = 0;
-			}
-			break; default: {
-				// TODO: Check overflow
-				if (iswprint(ch)) buf[len++] = ch;
-			}
+	while (ERR != (ret = wget_wch(ui.input, &ch))) {
+		if (ret == KEY_CODE_YES) {
+			keyCode(ch);
+		} else {
+			keyChar(ch);
 		}
 	}
 	wmove(ui.input, 1, 0);
-	waddnwstr(ui.input, buf, len);
+	waddnwstr(ui.input, line.buf, line.len);
 	wclrtoeol(ui.input);
-	ui.cursor = len;
+	wmove(ui.input, 1, ui.cursor);
 }
