@@ -19,6 +19,7 @@
 #include <err.h>
 #include <errno.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +28,14 @@
 
 #include "chat.h"
 
-char *prompt(const char *prompt) {
+static void sigint(int sig) {
+	(void)sig;
+	input(L"/quit");
+	uiHide();
+	exit(EX_OK);
+}
+
+static char *prompt(const char *prompt) {
 	char *line = NULL;
 	size_t cap;
 	for (;;) {
@@ -66,6 +74,8 @@ int main(int argc, char *argv[]) {
 	if (!chat.chan) chat.chan = prompt("Join: ");
 	if (!chat.nick) chat.nick = prompt("Name: ");
 	chat.user = strdup(chat.nick);
+
+	signal(SIGINT, sigint);
 
 	uiInit();
 	uiLog("Traveling...");

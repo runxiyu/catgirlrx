@@ -100,6 +100,10 @@ static void uiResize(void) {
 
 void uiHide(void) {
 	endwin();
+	printf(
+		"This program is AGPLv3 free software!\n"
+		"The source is available at <" SOURCE_URL ">\n"
+	);
 }
 
 void uiDraw(void) {
