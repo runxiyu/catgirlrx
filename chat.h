@@ -16,6 +16,7 @@
 
 #define SOURCE_URL "https://code.causal.agency/june/chat"
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -41,11 +42,15 @@ void uiInit(void);
 void uiHide(void);
 void uiDraw(void);
 void uiRead(void);
-void uiTopic(const char *topic);
-void uiLog(const char *line);
+void uiTopic(const wchar_t *topic);
+void uiTopicStr(const char *topic);
+void uiLog(const wchar_t *line);
 
-__attribute__((format(printf, 1, 2)))
-void uiFmt(const char *format, ...);
+//__attribute__((format(printf, 1, 2)))
+void uiFmt(const wchar_t *format, ...);
 
 void handle(char *line);
 void input(wchar_t *line);
+
+wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim);
+int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);

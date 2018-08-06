@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGINT, sigint);
 
 	uiInit();
-	uiLog("Traveling...");
+	uiLog(L"Traveling...");
 	uiDraw();
 
 	int sock = ircConnect(host, port, webPass);

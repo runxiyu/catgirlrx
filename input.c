@@ -23,18 +23,6 @@
 
 #include "chat.h"
 
-static wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim) {
-	wchar_t *orig = *stringp;
-	if (!orig) return NULL;
-	size_t i = wcscspn(orig, delim);
-	*stringp = NULL;
-	if (orig[i]) {
-		orig[i] = '\0';
-		*stringp = &orig[i + 1];
-	}
-	return orig;
-}
-
 static void privmsg(bool action, const wchar_t *mesg) {
 	char *line;
 	int send;
@@ -60,7 +48,7 @@ static void inputNick(wchar_t *params) {
 	if (nick) {
 		ircFmt("NICK %ls\r\n", nick);
 	} else {
-		uiLog("/nick requires a name");
+		uiLog(L"/nick requires a name");
 	}
 }
 
@@ -110,5 +98,5 @@ void input(wchar_t *input) {
 		COMMANDS[i].handler(input);
 		return;
 	}
-	uiFmt("/%ls isn't a recognized command", command);
+	uiFmt(L"/%ls isn't a recognized command", command);
 }

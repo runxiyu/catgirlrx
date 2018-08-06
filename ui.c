@@ -174,19 +174,20 @@ static const short IRC_COLORS[16] = {
 	0 + COLOR_WHITE,   // light gray
 };
 
-static const char *parseColor(short *pair, const char *str) {
+static const wchar_t *parseColor(short *pair, const wchar_t *str) {
 	short fg = 0;
-	size_t fgLen = MIN(strspn(str, "0123456789"), 2);
+	size_t fgLen = MIN(wcsspn(str, L"0123456789"), 2);
 	if (!fgLen) { *pair = -1; return str; }
 	for (size_t i = 0; i < fgLen; ++i) {
-		fg = fg * 10 + (str[i] - '0');
+		fg = fg * 10 + (str[i] - L'0');
 	}
 	str = &str[fgLen];
 
 	short bg = 0;
-	size_t bgLen = (str[0] == ',') ? MIN(strspn(&str[1], "0123456789"), 2) : 0;
+	size_t bgLen = 0;
+	if (str[0] == L',') bgLen = MIN(wcsspn(&str[1], L"0123456789"), 2);
 	for (size_t i = 0; i < bgLen; ++i) {
-		bg = bg * 10 + (str[1 + i] - '0');
+		bg = bg * 10 + (str[1 + i] - L'0');
 	}
 	if (bgLen) str = &str[1 + bgLen];
 
@@ -197,43 +198,51 @@ static const char *parseColor(short *pair, const char *str) {
 	return str;
 }
 
-static void addIRC(WINDOW *win, const char *str) {
+static void addIRC(WINDOW *win, const wchar_t *str) {
 	attr_t attr = A_NORMAL;
 	short pair = -1;
 	for (;;) {
-		size_t cc = strcspn(str, "\2\3\35\37");
+		size_t cc = wcscspn(str, L"\2\3\35\37");
 		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
-		waddnstr(win, str, cc);
+		waddnwstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
-			break; case '\2': attr ^= A_BOLD;
-			break; case '\3': str = parseColor(&pair, str);
-			break; case '\35': attr ^= A_ITALIC;
-			break; case '\37': attr ^= A_UNDERLINE;
+			break; case L'\2': attr ^= A_BOLD;
+			break; case L'\3': str = parseColor(&pair, str);
+			break; case L'\35': attr ^= A_ITALIC;
+			break; case L'\37': attr ^= A_UNDERLINE;
 		}
 	}
 }
 
-void uiTopic(const char *topic) {
+void uiTopic(const wchar_t *topic) {
 	wmove(ui.topic, 0, 0);
 	addIRC(ui.topic, topic);
 	wclrtoeol(ui.topic);
 }
 
-void uiLog(const char *line) {
+void uiTopicStr(const char *topic) {
+	size_t len = strlen(topic);
+	wchar_t wcs[1 + len];
+	len = mbstowcs(wcs, topic, 1 + len);
+	if (len == (size_t)-1) err(EX_DATAERR, "mbstowcs");
+	uiTopic(wcs);
+}
+
+void uiLog(const wchar_t *line) {
 	waddch(ui.log, '\n');
 	addIRC(ui.log, line);
 }
 
-void uiFmt(const char *format, ...) {
-	char *buf;
+void uiFmt(const wchar_t *format, ...) {
+	wchar_t *buf;
 	va_list ap;
 	va_start(ap, format);
-	vasprintf(&buf, format, ap);
+	vaswprintf(&buf, format, ap);
 	va_end(ap);
-	if (!buf) err(EX_OSERR, "vasprintf");
+	if (!buf) err(EX_OSERR, "vaswprintf");
 	uiLog(buf);
 	free(buf);
 }

@@ -99,7 +99,7 @@ void ircFmt(const char *format, ...) {
 	int len = vasprintf(&buf, format, ap);
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
-	if (chat.verbose) uiFmt("<<< %.*s", len - 2, buf);
+	if (chat.verbose) uiFmt(L"<<< %.*s", len - 2, buf);
 	ircWrite(buf, len);
 	free(buf);
 }
@@ -119,7 +119,7 @@ void ircRead(void) {
 	char *crlf, *line = buf;
 	while ((crlf = strnstr(line, "\r\n", &buf[len] - line))) {
 		crlf[0] = '\0';
-		if (chat.verbose) uiFmt(">>> %s", line);
+		if (chat.verbose) uiFmt(L">>> %s", line);
 		handle(line);
 		line = &crlf[2];
 	}
