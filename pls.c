@@ -26,7 +26,7 @@ wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim) {
 	size_t i = wcscspn(orig, delim);
 	*stringp = NULL;
 	if (orig[i]) {
-		orig[i] = '\0';
+		orig[i] = L'\0';
 		*stringp = &orig[i + 1];
 	}
 	return orig;

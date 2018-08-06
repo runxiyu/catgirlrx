@@ -198,17 +198,36 @@ static const wchar_t *parseColor(short *pair, const wchar_t *str) {
 	return str;
 }
 
+static void wordWrap(WINDOW *win, const wchar_t *str) {
+	size_t len = wcscspn(str, L" ");
+	size_t width = 1;
+	for (size_t i = 0; i < len; ++i) {
+		if (iswprint(str[i])) width += wcwidth(str[i]);
+	}
+
+	int _, x, xMax;
+	getyx(win, _, x);
+	getmaxyx(win, _, xMax);
+
+	if (width >= (size_t)(xMax - x)) {
+		waddch(win, '\n');
+	} else {
+		waddch(win, ' ');
+	}
+}
+
 static void addIRC(WINDOW *win, const wchar_t *str) {
 	attr_t attr = A_NORMAL;
 	short pair = -1;
 	for (;;) {
-		size_t cc = wcscspn(str, L"\2\3\35\37");
+		size_t cc = wcscspn(str, L" \2\3\35\37");
 		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
 		waddnwstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
+			break; case L' ': wordWrap(win, str);
 			break; case L'\2': attr ^= A_BOLD;
 			break; case L'\3': str = parseColor(&pair, str);
 			break; case L'\35': attr ^= A_ITALIC;
