@@ -238,11 +238,11 @@ void uiFmt(const char *format, ...) {
 	free(buf);
 }
 
-static void scrollUp(void) {
+static void logUp(void) {
 	if (ui.scroll == logHeight()) return;
 	ui.scroll = MAX(ui.scroll - logHeight() / 2, logHeight());
 }
-static void scrollDown(void) {
+static void logDown(void) {
 	if (ui.scroll == LOG_LINES) return;
 	ui.scroll = MIN(ui.scroll + logHeight() / 2, LOG_LINES);
 }
@@ -253,17 +253,21 @@ static struct {
 } line;
 static const size_t BUF_LEN = sizeof(line.buf) / sizeof(line.buf[0]);
 
-static void moveLeft(void) {
+static void left(void) {
 	if (ui.cursor) ui.cursor--;
 }
-static void moveRight(void) {
+static void right(void) {
 	if (ui.cursor < line.len) ui.cursor++;
 }
-static void moveHome(void) {
+static void home(void) {
 	ui.cursor = 0;
 }
-static void moveEnd(void) {
+static void end(void) {
 	ui.cursor = line.len;
+}
+
+static void kill(void) {
+	line.len = ui.cursor;
 }
 
 static void insert(wchar_t ch) {
@@ -298,12 +302,8 @@ static void backspace(void) {
 
 static void delete(void) {
 	if (ui.cursor == line.len) return;
-	moveRight();
+	right();
 	backspace();
-}
-
-static void kill(void) {
-	line.len = ui.cursor;
 }
 
 static void enter(void) {
@@ -317,10 +317,10 @@ static void enter(void) {
 static void keyChar(wint_t ch) {
 	switch (ch) {
 		break; case CTRL('L'): uiRedraw();
-		break; case CTRL('B'): moveLeft();
-		break; case CTRL('F'): moveRight();
-		break; case CTRL('A'): moveHome();
-		break; case CTRL('E'): moveEnd();
+		break; case CTRL('B'): left();
+		break; case CTRL('F'): right();
+		break; case CTRL('A'): home();
+		break; case CTRL('E'): end();
 		break; case CTRL('D'): delete();
 		break; case CTRL('K'): kill();
 		break; case '\b':      backspace();
@@ -333,12 +333,12 @@ static void keyChar(wint_t ch) {
 static void keyCode(wint_t ch) {
 	switch (ch) {
 		break; case KEY_RESIZE:    uiResize();
-		break; case KEY_PPAGE:     scrollUp();
-		break; case KEY_NPAGE:     scrollDown();
-		break; case KEY_LEFT:      moveLeft();
-		break; case KEY_RIGHT:     moveRight();
-		break; case KEY_HOME:      moveHome();
-		break; case KEY_END:       moveEnd();
+		break; case KEY_PPAGE:     logUp();
+		break; case KEY_NPAGE:     logDown();
+		break; case KEY_LEFT:      left();
+		break; case KEY_RIGHT:     right();
+		break; case KEY_HOME:      home();
+		break; case KEY_END:       end();
 		break; case KEY_BACKSPACE: backspace();
 		break; case KEY_DC:        delete();
 		break; case KEY_ENTER:     enter();
