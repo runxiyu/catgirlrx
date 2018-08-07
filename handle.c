@@ -152,8 +152,10 @@ static void handle366(char *prefix, char *params) {
 	ircFmt("WHO %s\r\n", chan);
 }
 
-static char whoBuf[4096];
-static size_t whoLen;
+static struct {
+	char buf[4096];
+	size_t len;
+} who;
 
 static void handle352(char *prefix, char *params) {
 	(void)prefix;
@@ -163,21 +165,23 @@ static void handle352(char *prefix, char *params) {
 	shift(&params);
 	shift(&params);
 	char *nick = shift(&params);
-	whoLen += snprintf(
-		&whoBuf[whoLen], sizeof(whoBuf) - whoLen,
+	size_t cap = sizeof(who.buf) - who.len;
+	int len = snprintf(
+		&who.buf[who.len], cap,
 		"%s\3%d%s\3",
-		(whoLen ? ", " : ""), color(user), nick
+		(who.len ? ", " : ""), color(user), nick
 	);
+	if ((size_t)len < cap) who.len += len;
 }
 
 static void handle315(char *prefix, char *params) {
 	(void)prefix;
 	shift(&params);
 	char *chan = shift(&params);
-	whoLen = 0;
+	who.len = 0;
 	uiFmt(
 		L"In \3%d%s\3 are %s",
-		color(chan), chan, whoBuf
+		color(chan), chan, who.buf
 	);
 }
 
