@@ -18,16 +18,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sysexits.h>
-#include <wchar.h>
 
 #include "chat.h"
 
-static void privmsg(bool action, const wchar_t *mesg) {
+static void privmsg(bool action, const char *mesg) {
 	char *line;
 	int send;
 	asprintf(
-		&line, ":%s!%s %nPRIVMSG %s :%s%ls%s",
+		&line, ":%s!%s %nPRIVMSG %s :%s%s%s",
 		chat.nick, chat.user, &send, chat.chan,
 		(action ? "\1ACTION " : ""), mesg, (action ? "\1" : "")
 	);
@@ -37,66 +37,66 @@ static void privmsg(bool action, const wchar_t *mesg) {
 	free(line);
 }
 
-typedef void (*Handler)(wchar_t *params);
+typedef void (*Handler)(char *params);
 
-static void inputMe(wchar_t *params) {
-	privmsg(true, params ? params : L"");
+static void inputMe(char *params) {
+	privmsg(true, params ? params : "");
 }
 
-static void inputNick(wchar_t *params) {
-	wchar_t *nick = wcssep(&params, L" ");
+static void inputNick(char *params) {
+	char *nick = strsep(&params, " ");
 	if (nick) {
-		ircFmt("NICK %ls\r\n", nick);
+		ircFmt("NICK %s\r\n", nick);
 	} else {
 		uiLog(L"/nick requires a name");
 	}
 }
 
-static void inputWho(wchar_t *params) {
+static void inputWho(char *params) {
 	(void)params;
 	ircFmt("WHO %s\r\n", chat.chan);
 }
 
-static void inputTopic(wchar_t *params) {
+static void inputTopic(char *params) {
 	if (params) {
-		ircFmt("TOPIC %s :%ls\r\n", chat.chan, params);
+		ircFmt("TOPIC %s :%s\r\n", chat.chan, params);
 	} else {
 		ircFmt("TOPIC %s\r\n", chat.chan);
 	}
 }
 
-static void inputQuit(wchar_t *params) {
+static void inputQuit(char *params) {
 	if (params) {
-		ircFmt("QUIT :%ls\r\n", params);
+		ircFmt("QUIT :%s\r\n", params);
 	} else {
 		ircFmt("QUIT :Goodbye\r\n");
 	}
 }
 
 static const struct {
-	const wchar_t *command;
+	const char *command;
 	Handler handler;
 } COMMANDS[] = {
-	{ L"me", inputMe },
-	{ L"names", inputWho },
-	{ L"nick", inputNick },
-	{ L"quit", inputQuit },
-	{ L"topic", inputTopic },
-	{ L"who", inputWho },
+	{ "me", inputMe },
+	{ "names", inputWho },
+	{ "nick", inputNick },
+	{ "quit", inputQuit },
+	{ "topic", inputTopic },
+	{ "who", inputWho },
 };
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
-void input(wchar_t *input) {
+void input(char *input) {
 	if (input[0] != '/') {
 		privmsg(false, input);
 		return;
 	}
 	input++;
-	wchar_t *command = wcssep(&input, L" ");
+	char *command = strsep(&input, " ");
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
-		if (wcscmp(command, COMMANDS[i].command)) continue;
+		if (strcmp(command, COMMANDS[i].command)) continue;
 		COMMANDS[i].handler(input);
 		return;
 	}
-	uiFmt("/%ls isn't a recognized command", command);
+	uiFmt("/%s isn't a recognized command", command);
 }

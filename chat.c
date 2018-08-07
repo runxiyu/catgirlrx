@@ -30,7 +30,7 @@
 
 static void sigint(int sig) {
 	(void)sig;
-	input(L"/quit");
+	input("/quit");
 	uiHide();
 	exit(EX_OK);
 }

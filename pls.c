@@ -20,18 +20,6 @@
 #include <stdlib.h>
 #include <wchar.h>
 
-wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim) {
-	wchar_t *orig = *stringp;
-	if (!orig) return NULL;
-	size_t i = wcscspn(orig, delim);
-	*stringp = NULL;
-	if (orig[i]) {
-		orig[i] = L'\0';
-		*stringp = &orig[i + 1];
-	}
-	return orig;
-}
-
 // From <https://en.cppreference.com/w/c/io/fwprintf#Notes>:
 //
 // While narrow strings provide snprintf, which makes it possible to determine
