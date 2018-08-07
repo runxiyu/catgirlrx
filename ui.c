@@ -158,6 +158,10 @@ static void uiRedraw(void) {
 	clearok(curscr, true);
 }
 
+void uiBeep(void) {
+	beep(); // always be beeping
+}
+
 static const short IRC_COLORS[16] = {
 	8 + COLOR_WHITE,   // white
 	0 + COLOR_BLACK,   // black

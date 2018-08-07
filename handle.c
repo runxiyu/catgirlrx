@@ -227,7 +227,12 @@ static void handlePrivmsg(char *prefix, char *params) {
 		char *action = strsep(&mesg, "\1");
 		uiFmt("* \3%d%s\3 %s", color(user), nick, action);
 	} else {
-		uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
+		bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
+		if (ping) uiBeep();
+		uiFmt(
+			"<%s\3%d%s\17> %s",
+			(ping ? "\26" : ""), color(user), nick, mesg
+		);
 	}
 }
 

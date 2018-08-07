@@ -41,6 +41,7 @@ void ircFmt(const char *format, ...);
 void uiInit(void);
 void uiHide(void);
 void uiDraw(void);
+void uiBeep(void);
 void uiRead(void);
 void uiTopic(const wchar_t *topic);
 void uiTopicStr(const char *topic);
