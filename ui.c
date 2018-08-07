@@ -110,7 +110,7 @@ void uiInit(void) {
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
-	wmove(ui.input, 1, ui.cursor);
+	wmove(ui.input, 1, 0);
 
 	keypad(ui.input, true);
 	nodelay(ui.input, true);
@@ -142,9 +142,11 @@ void uiDraw(void) {
 		2, 0,
 		lastLine() - 2, lastCol()
 	);
+	int _, x;
+	getyx(ui.input, _, x);
 	pnoutrefresh(
 		ui.input,
-		0, MAX(0, ui.cursor - lastCol() + 1),
+		0, MAX(0, x - lastCol() + 5),
 		lastLine() - 1, 0,
 		lastLine(), lastCol()
 	);
@@ -277,69 +279,58 @@ static void logDown(void) {
 
 static struct {
 	wchar_t buf[512];
-	size_t len;
-} line;
+	wchar_t *ptr;
+	wchar_t *end;
+} line = { .ptr = line.buf, .end = line.buf };
 static const size_t BUF_LEN = sizeof(line.buf) / sizeof(line.buf[0]);
 
 static void left(void) {
-	if (ui.cursor) ui.cursor--;
+	if (line.ptr > line.buf) line.ptr--;
 }
 static void right(void) {
-	if (ui.cursor < line.len) ui.cursor++;
+	if (line.ptr < line.end) line.ptr++;
 }
 static void home(void) {
-	ui.cursor = 0;
+	line.ptr = line.buf;
 }
 static void end(void) {
-	ui.cursor = line.len;
+	line.ptr = line.end;
 }
 
 static void kill(void) {
-	line.len = ui.cursor;
+	line.end = line.ptr;
 }
 
 static void insert(wchar_t ch) {
-	if (!iswprint(ch)) return;
-	if (line.len == BUF_LEN - 1) return;
-	if (ui.cursor == line.len) {
-		line.buf[line.len] = ch;
-	} else {
-		wmemmove(
-			&line.buf[ui.cursor + 1],
-			&line.buf[ui.cursor],
-			line.len - ui.cursor
-		);
-		line.buf[ui.cursor] = ch;
+	if (line.end == &line.buf[BUF_LEN - 1]) return;
+	if (line.ptr != line.end) {
+		wmemmove(line.ptr + 1, line.ptr, line.end - line.ptr);
 	}
-	line.len++;
-	ui.cursor++;
+	*line.ptr++ = ch;
+	line.end++;
 }
 
 static void backspace(void) {
-	if (!ui.cursor) return;
-	if (ui.cursor != line.len) {
-		wmemmove(
-			&line.buf[ui.cursor - 1],
-			&line.buf[ui.cursor],
-			line.len - ui.cursor
-		);
+	if (line.ptr == line.buf) return;
+	if (line.ptr != line.end) {
+		wmemmove(line.ptr - 1, line.ptr, line.end - line.ptr);
 	}
-	line.len--;
-	ui.cursor--;
+	line.ptr--;
+	line.end--;
 }
 
 static void delete(void) {
-	if (ui.cursor == line.len) return;
+	if (line.ptr == line.end) return;
 	right();
 	backspace();
 }
 
 static void enter(void) {
-	if (!line.len) return;
-	line.buf[line.len] = '\0';
+	if (line.end == line.buf) return;
+	*line.end = L'\0';
 	input(line.buf);
-	line.len = 0;
-	ui.cursor = 0;
+	line.ptr = line.buf;
+	line.end = line.buf;
 }
 
 static void keyChar(wint_t ch) {
@@ -354,7 +345,12 @@ static void keyChar(wint_t ch) {
 		break; case '\b':      backspace();
 		break; case '\177':    backspace();
 		break; case '\n':      enter();
-		break; default:        insert(ch);
+		break; case CTRL('O'): insert(L'\2');
+		break; case CTRL('C'): insert(L'\3');
+		break; case CTRL('R'): insert(L'\3');
+		break; case CTRL('I'): insert(L'\35');
+		break; case CTRL('U'): insert(L'\37');
+		break; default: if (iswprint(ch)) insert(ch);
 	}
 }
 
@@ -383,8 +379,20 @@ void uiRead(void) {
 			keyChar(ch);
 		}
 	}
+
 	wmove(ui.input, 1, 0);
-	waddnwstr(ui.input, line.buf, line.len);
+
+	ch = *line.ptr;
+	*line.ptr = L'\0';
+	addIRC(ui.input, line.buf);
+	*line.ptr = ch;
+
+	int _, x;
+	getyx(ui.input, _, x);
+
+	*line.end = L'\0';
+	addIRC(ui.input, line.ptr);
+
 	wclrtoeol(ui.input);
-	wmove(ui.input, 1, ui.cursor);
+	wmove(ui.input, 1, x);
 }
