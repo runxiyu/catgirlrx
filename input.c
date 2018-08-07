@@ -77,12 +77,12 @@ static const struct {
 	const char *command;
 	Handler handler;
 } COMMANDS[] = {
-	{ "me", inputMe },
-	{ "names", inputWho },
-	{ "nick", inputNick },
-	{ "quit", inputQuit },
-	{ "topic", inputTopic },
-	{ "who", inputWho },
+	{ "/me", inputMe },
+	{ "/names", inputWho },
+	{ "/nick", inputNick },
+	{ "/quit", inputQuit },
+	{ "/topic", inputTopic },
+	{ "/who", inputWho },
 };
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
@@ -91,10 +91,9 @@ void input(char *input) {
 		privmsg(false, input);
 		return;
 	}
-	input++;
 	char *command = strsep(&input, " ");
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
-		if (strcmp(command, COMMANDS[i].command)) continue;
+		if (strcasecmp(command, COMMANDS[i].command)) continue;
 		COMMANDS[i].handler(input);
 		return;
 	}
