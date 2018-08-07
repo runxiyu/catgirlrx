@@ -45,9 +45,17 @@ void uiRead(void);
 void uiTopic(const wchar_t *topic);
 void uiTopicStr(const char *topic);
 void uiLog(const wchar_t *line);
-
-//__attribute__((format(printf, 1, 2)))
 void uiFmt(const wchar_t *format, ...);
+
+// HACK: clang won't check wchar_t *format strings.
+#ifdef NDEBUG
+#define uiFmt(format, ...) uiFmt(L##format, __VA_ARGS__)
+#else
+#define uiFmt(format, ...) do { \
+	snprintf(NULL, 0, format, __VA_ARGS__); \
+	uiFmt(L##format, __VA_ARGS__); \
+} while(0)
+#endif
 
 void handle(char *line);
 void input(wchar_t *line);

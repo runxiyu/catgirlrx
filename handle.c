@@ -59,7 +59,7 @@ static void handle432(char *prefix, char *params) {
 	shift(&params);
 	char *mesg = shift(&params);
 	uiLog(L"You can't use that name here");
-	uiFmt(L"Sheriff says, \"%s\"", mesg);
+	uiFmt("Sheriff says, \"%s\"", mesg);
 	uiLog(L"Type /nick <name> to choose a new one");
 }
 
@@ -82,7 +82,7 @@ static void handleJoin(char *prefix, char *params) {
 		chat.user = strdup(user);
 	}
 	uiFmt(
-		L"\3%d%s\3 arrives in \3%d%s\3",
+		"\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
 	);
 }
@@ -94,12 +94,12 @@ static void handlePart(char *prefix, char *params) {
 	if (params) {
 		char *mesg = shift(&params);
 		uiFmt(
-			L"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
+			"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
 			color(user), nick, color(chan), chan, mesg
 		);
 	} else {
 		uiFmt(
-			L"\3%d%s\3 leaves \3%d%s\3",
+			"\3%d%s\3 leaves \3%d%s\3",
 			color(user), nick, color(chan), chan
 		);
 	}
@@ -112,11 +112,11 @@ static void handleQuit(char *prefix, char *params) {
 		char *mesg = shift(&params);
 		char *quot = (mesg[0] == '"') ? "" : "\"";
 		uiFmt(
-			L"\3%d%s\3 leaves, %s%s%s",
+			"\3%d%s\3 leaves, %s%s%s",
 			color(user), nick, quot, mesg, quot
 		);
 	} else {
-		uiFmt(L"\3%d%s\3 leaves", color(user), nick);
+		uiFmt("\3%d%s\3 leaves", color(user), nick);
 	}
 }
 
@@ -127,7 +127,7 @@ static void handleKick(char *prefix, char *params) {
 	char *kick = shift(&params);
 	char *mesg = shift(&params);
 	uiFmt(
-		L"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
+		"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
 		color(user), nick, color(kick), kick, color(chan), chan, mesg
 	);
 }
@@ -138,7 +138,7 @@ static void handle332(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *topic = shift(&params);
 	uiFmt(
-		L"The sign in \3%d%s\3 reads, \"%s\"",
+		"The sign in \3%d%s\3 reads, \"%s\"",
 		color(chan), chan, topic
 	);
 	uiTopicStr(topic);
@@ -150,7 +150,7 @@ static void handleTopic(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *topic = shift(&params);
 	uiFmt(
-		L"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
+		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
 		color(user), nick, color(chan), chan, topic
 	);
 	uiTopicStr(topic);
@@ -191,7 +191,7 @@ static void handle315(char *prefix, char *params) {
 	char *chan = shift(&params);
 	who.len = 0;
 	uiFmt(
-		L"In \3%d%s\3 are %s",
+		"In \3%d%s\3 are %s",
 		color(chan), chan, who.buf
 	);
 }
@@ -205,7 +205,7 @@ static void handleNick(char *prefix, char *params) {
 		chat.nick = strdup(next);
 	}
 	uiFmt(
-		L"\3%d%s\3 is now known as \3%d%s\3",
+		"\3%d%s\3 is now known as \3%d%s\3",
 		color(user), prev, color(user), next
 	);
 }
@@ -217,9 +217,9 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *mesg = shift(&params);
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
-		uiFmt(L"* \3%d%s\3 %s", color(user), nick, strsep(&mesg, "\1"));
+		uiFmt("* \3%d%s\3 %s", color(user), nick, strsep(&mesg, "\1"));
 	} else {
-		uiFmt(L"<\3%d%s\3> %s", color(user), nick, mesg);
+		uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
 	}
 }
 
@@ -229,7 +229,7 @@ static void handleNotice(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *mesg = shift(&params);
 	if (strcmp(chat.chan, chan)) return;
-	uiFmt(L"-\3%d%s\3- %s", color(user), nick, mesg);
+	uiFmt("-\3%d%s\3- %s", color(user), nick, mesg);
 }
 
 static const struct {

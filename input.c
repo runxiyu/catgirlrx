@@ -98,5 +98,5 @@ void input(wchar_t *input) {
 		COMMANDS[i].handler(input);
 		return;
 	}
-	uiFmt(L"/%ls isn't a recognized command", command);
+	uiFmt("/%ls isn't a recognized command", command);
 }
