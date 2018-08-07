@@ -299,12 +299,12 @@ static void logDown(void) {
 	ui.scroll = MIN(ui.scroll + logHeight() / 2, LOG_LINES);
 }
 
+enum { BUF_LEN = 512 };
 static struct {
-	wchar_t buf[512];
+	wchar_t buf[BUF_LEN];
 	wchar_t *ptr;
 	wchar_t *end;
 } line = { .ptr = line.buf, .end = line.buf };
-static const size_t BUF_LEN = sizeof(line.buf) / sizeof(line.buf[0]);
 
 static void left(void) {
 	if (line.ptr > line.buf) line.ptr--;
