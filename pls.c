@@ -47,7 +47,7 @@ int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap) {
 	*ret = NULL;
 
 	for (size_t cap = 2 * wcslen(format);; cap *= 2) {
-		wchar_t *buf = realloc(*ret, 1 + cap);
+		wchar_t *buf = realloc(*ret, sizeof(*buf) * (1 + cap));
 		if (!buf) goto fail;
 		*ret = buf;
 
