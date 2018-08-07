@@ -217,7 +217,8 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *mesg = shift(&params);
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
-		uiFmt("* \3%d%s\3 %s", color(user), nick, strsep(&mesg, "\1"));
+		char *action = strsep(&mesg, "\1");
+		uiFmt("* \3%d%s\3 %s", color(user), nick, action);
 	} else {
 		uiFmt("<\3%d%s\3> %s", color(user), nick, mesg);
 	}
