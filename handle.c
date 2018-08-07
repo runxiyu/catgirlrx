@@ -91,22 +91,33 @@ static void handlePart(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
 	char *chan = shift(&params);
-	char *mesg = shift(&params);
-	uiFmt(
-		L"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
-		color(user), nick, color(chan), chan, mesg
-	);
+	if (params) {
+		char *mesg = shift(&params);
+		uiFmt(
+			L"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
+			color(user), nick, color(chan), chan, mesg
+		);
+	} else {
+		uiFmt(
+			L"\3%d%s\3 leaves \3%d%s\3",
+			color(user), nick, color(chan), chan
+		);
+	}
 }
 
 static void handleQuit(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
-	char *mesg = shift(&params);
-	char *quot = (mesg[0] == '"') ? "" : "\"";
-	uiFmt(
-		L"\3%d%s\3 leaves, %s%s%s",
-		color(user), nick, quot, mesg, quot
-	);
+	if (params) {
+		char *mesg = shift(&params);
+		char *quot = (mesg[0] == '"') ? "" : "\"";
+		uiFmt(
+			L"\3%d%s\3 leaves, %s%s%s",
+			color(user), nick, quot, mesg, quot
+		);
+	} else {
+		uiFmt(L"\3%d%s\3 leaves", color(user), nick);
+	}
 }
 
 static void handleKick(char *prefix, char *params) {
