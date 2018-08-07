@@ -146,7 +146,7 @@ void uiDraw(void) {
 	getyx(ui.input, _, x);
 	pnoutrefresh(
 		ui.input,
-		0, MAX(0, x - lastCol() + 5),
+		0, MAX(0, x - lastCol() + 3),
 		lastLine() - 1, 0,
 		lastLine(), lastCol()
 	);
@@ -218,22 +218,43 @@ static void wordWrap(WINDOW *win, const wchar_t *str) {
 	}
 }
 
+enum {
+	IRC_BOLD      = 0x02,
+	IRC_COLOR     = 0x03,
+	IRC_REVERSE   = 0x16,
+	IRC_RESET     = 0x0F,
+	IRC_ITALIC    = 0x1D,
+	IRC_UNDERLINE = 0x1F,
+};
+static const wchar_t IRC_CODES[] = {
+	L' ',
+	IRC_BOLD,
+	IRC_COLOR,
+	IRC_REVERSE,
+	IRC_RESET,
+	IRC_ITALIC,
+	IRC_UNDERLINE,
+	L'\0',
+};
+
 static void addIRC(WINDOW *win, const wchar_t *str) {
 	attr_t attr = A_NORMAL;
 	short pair = -1;
 	for (;;) {
-		size_t cc = wcscspn(str, L" \2\3\35\37");
+		size_t cc = wcscspn(str, IRC_CODES);
 		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
 		waddnwstr(win, str, cc);
 		if (!str[cc]) break;
 
 		str = &str[cc];
 		switch (*str++) {
-			break; case L' ': wordWrap(win, str);
-			break; case L'\2': attr ^= A_BOLD;
-			break; case L'\3': str = parseColor(&pair, str);
-			break; case L'\35': attr ^= A_ITALIC;
-			break; case L'\37': attr ^= A_UNDERLINE;
+			break; case L' ':          wordWrap(win, str);
+			break; case IRC_BOLD:      attr ^= A_BOLD;
+			break; case IRC_ITALIC:    attr ^= A_ITALIC;
+			break; case IRC_UNDERLINE: attr ^= A_UNDERLINE;
+			break; case IRC_REVERSE:   attr ^= A_REVERSE;
+			break; case IRC_COLOR:     str = parseColor(&pair, str);
+			break; case IRC_RESET:     attr = A_NORMAL; pair = -1;
 		}
 	}
 }
@@ -345,11 +366,13 @@ static void keyChar(wint_t ch) {
 		break; case '\b':      backspace();
 		break; case '\177':    backspace();
 		break; case '\n':      enter();
-		break; case CTRL('O'): insert(L'\2');
-		break; case CTRL('C'): insert(L'\3');
-		break; case CTRL('R'): insert(L'\3');
-		break; case CTRL('I'): insert(L'\35');
-		break; case CTRL('U'): insert(L'\37');
+		break; case CTRL('C'): insert(IRC_COLOR);
+		break; case CTRL('N'): insert(IRC_RESET);
+		break; case CTRL('O'): insert(IRC_BOLD);
+		break; case CTRL('R'): insert(IRC_COLOR);
+		break; case CTRL('T'): insert(IRC_ITALIC);
+		break; case CTRL('U'): insert(IRC_UNDERLINE);
+		break; case CTRL('V'): insert(IRC_REVERSE);
 		break; default: if (iswprint(ch)) insert(ch);
 	}
 }
