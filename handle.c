@@ -81,6 +81,7 @@ static void handleJoin(char *prefix, char *params) {
 		free(chat.user);
 		chat.user = strdup(user);
 	}
+	tabTouch(nick);
 	uiFmt(
 		"\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
@@ -91,6 +92,7 @@ static void handlePart(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
 	char *chan = shift(&params);
+	tabRemove(nick);
 	if (params) {
 		char *mesg = shift(&params);
 		uiFmt(
@@ -108,6 +110,7 @@ static void handlePart(char *prefix, char *params) {
 static void handleQuit(char *prefix, char *params) {
 	char *nick = prift(&prefix);
 	char *user = prift(&prefix);
+	tabRemove(nick);
 	if (params) {
 		char *mesg = shift(&params);
 		char *quot = (mesg[0] == '"') ? "" : "\"";
@@ -126,6 +129,7 @@ static void handleKick(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *kick = shift(&params);
 	char *mesg = shift(&params);
+	tabRemove(nick);
 	uiFmt(
 		"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
 		color(user), nick, color(kick), kick, color(chan), chan, mesg
@@ -176,6 +180,7 @@ static void handle352(char *prefix, char *params) {
 	shift(&params);
 	shift(&params);
 	char *nick = shift(&params);
+	tabTouch(nick);
 	size_t cap = sizeof(who.buf) - who.len;
 	int len = snprintf(
 		&who.buf[who.len], cap,
@@ -204,6 +209,7 @@ static void handleNick(char *prefix, char *params) {
 		free(chat.nick);
 		chat.nick = strdup(next);
 	}
+	tabReplace(prev, next);
 	uiFmt(
 		"\3%d%s\3 is now known as \3%d%s\3",
 		color(user), prev, color(user), next
@@ -215,6 +221,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *user = prift(&prefix);
 	shift(&params);
 	char *mesg = shift(&params);
+	tabTouch(nick);
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
 		char *action = strsep(&mesg, "\1");
@@ -230,6 +237,7 @@ static void handleNotice(char *prefix, char *params) {
 	char *chan = shift(&params);
 	char *mesg = shift(&params);
 	if (strcmp(chat.chan, chan)) return;
+	tabTouch(nick);
 	uiFmt("-\3%d%s\3- %s", color(user), nick, mesg);
 }
 

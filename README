@@ -8,4 +8,5 @@ This software targets FreeBSD and requires LibreSSL.
 	irc.c       TLS client connection
 	input.c     Input command handling
 	handle.c    Incoming command handling
+	tab.c       Tab-complete
 	pls.c       Functions which should not have to be written

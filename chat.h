@@ -60,5 +60,9 @@ void uiFmt(const wchar_t *format, ...);
 void handle(char *line);
 void input(wchar_t *line);
 
+void tabTouch(const char *word);
+void tabRemove(const char *word);
+void tabReplace(const char *prev, const char *next);
+
 wchar_t *wcssep(wchar_t **stringp, const wchar_t *delim);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
