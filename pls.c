@@ -20,6 +20,38 @@
 #include <stdlib.h>
 #include <wchar.h>
 
+wchar_t *ambstowcs(const char *src) {
+	size_t len = mbsrtowcs(NULL, &src, 0, NULL);
+	if (len == (size_t)-1) return NULL;
+
+	wchar_t *dst = malloc(sizeof(*dst) * (1 + len));
+	if (!dst) return NULL;
+
+	len = mbsrtowcs(dst, &src, 1 + len, NULL);
+	if (len == (size_t)-1) {
+		free(dst);
+		return NULL;
+	}
+
+	return dst;
+}
+
+char *awcstombs(const wchar_t *src) {
+	size_t len = wcsrtombs(NULL, &src, 0, NULL);
+	if (len == (size_t)-1) return NULL;
+
+	char *dst = malloc(sizeof(*dst) * (1 + len));
+	if (!dst) return NULL;
+
+	len = wcsrtombs(dst, &src, 1 + len, NULL);
+	if (len == (size_t)-1) {
+		free(dst);
+		return NULL;
+	}
+
+	return dst;
+}
+
 // From <https://en.cppreference.com/w/c/io/fwprintf#Notes>:
 //
 // While narrow strings provide snprintf, which makes it possible to determine

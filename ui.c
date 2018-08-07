@@ -267,11 +267,10 @@ void uiTopic(const wchar_t *topic) {
 }
 
 void uiTopicStr(const char *topic) {
-	size_t len = strlen(topic);
-	wchar_t wcs[1 + len];
-	len = mbstowcs(wcs, topic, 1 + len);
-	if (len == (size_t)-1) err(EX_DATAERR, "mbstowcs");
+	wchar_t *wcs = ambstowcs(topic);
+	if (!wcs) err(EX_DATAERR, "ambstowcs");
 	uiTopic(wcs);
+	free(wcs);
 }
 
 void uiLog(const wchar_t *line) {
@@ -350,16 +349,10 @@ static void delete(void) {
 static void enter(void) {
 	if (line.end == line.buf) return;
 	*line.end = L'\0';
-
-	const wchar_t *src = line.buf;
-	size_t len = wcsrtombs(NULL, &src, 0, NULL);
-	if (len == (size_t)-1) err(EX_DATAERR, "wcsrtombs");
-
-	char buf[1 + len];
-	len = wcsrtombs(buf, &src, sizeof(buf), NULL);
-	if (len == (size_t)-1) err(EX_DATAERR, "wcsrtombs");
-
-	input(buf);
+	char *str = awcstombs(line.buf);
+	if (!str) err(EX_DATAERR, "awcstombs");
+	input(str);
+	free(str);
 	line.ptr = line.buf;
 	line.end = line.buf;
 }

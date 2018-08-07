@@ -64,4 +64,6 @@ void tabTouch(const char *word);
 void tabRemove(const char *word);
 void tabReplace(const char *prev, const char *next);
 
+wchar_t *ambstowcs(const char *src);
+char *awcstombs(const wchar_t *src);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
