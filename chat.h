@@ -64,6 +64,9 @@ void input(char *line);
 void tabTouch(const char *word);
 void tabRemove(const char *word);
 void tabReplace(const char *prev, const char *next);
+const char *tabNext(const char *prefix);
+void tabAccept(void);
+void tabReject(void);
 
 wchar_t *ambstowcs(const char *src);
 char *awcstombs(const wchar_t *src);

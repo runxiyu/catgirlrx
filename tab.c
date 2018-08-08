@@ -40,12 +40,16 @@ static void remove(struct Entry *entry) {
 	if (head == entry) head = entry->next;
 }
 
+static void touch(struct Entry *entry) {
+	if (head == entry) return;
+	remove(entry);
+	prepend(entry);
+}
+
 void tabTouch(const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
 		if (strcmp(entry->word, word)) continue;
-		if (head == entry) return;
-		remove(entry);
-		prepend(entry);
+		touch(entry);
 		return;
 	}
 
@@ -55,18 +59,43 @@ void tabTouch(const char *word) {
 	prepend(entry);
 }
 
+void tabReplace(const char *prev, const char *next) {
+	tabTouch(prev);
+	free(head->word);
+	head->word = strdup(next);
+}
+
+static struct Entry *match;
+
 void tabRemove(const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
 		if (strcmp(entry->word, word)) continue;
 		remove(entry);
+		if (match == entry) match = entry->next;
 		free(entry->word);
 		free(entry);
 		return;
 	}
 }
 
-void tabReplace(const char *prev, const char *next) {
-	tabTouch(prev);
-	free(head->word);
-	head->word = strdup(next);
+const char *tabNext(const char *prefix) {
+	size_t len = strlen(prefix);
+	struct Entry *start = (match ? match->next : head);
+	for (struct Entry *entry = start; entry; entry = entry->next) {
+		if (strncasecmp(entry->word, prefix, len)) continue;
+		match = entry;
+		return entry->word;
+	}
+	if (!match) return NULL;
+	match = NULL;
+	return tabNext(prefix);
+}
+
+void tabAccept(void) {
+	if (match) touch(match);
+	match = NULL;
+}
+
+void tabReject(void) {
+	match = NULL;
 }
