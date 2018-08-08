@@ -97,5 +97,5 @@ void input(char *input) {
 		COMMANDS[i].handler(input);
 		return;
 	}
-	uiFmt("/%s isn't a recognized command", command);
+	uiFmt("%s isn't a recognized command", command);
 }
