@@ -369,26 +369,87 @@ static void enter(void) {
 	line.end = line.buf;
 }
 
+static struct {
+	wchar_t *word;
+	char *prefix;
+} tab;
+
+static void accept(void) {
+	if (!tab.word) return;
+	tab.word = NULL;
+	free(tab.prefix);
+	tabAccept();
+}
+
+static void reject(void) {
+	if (!tab.word) return;
+	tab.word = NULL;
+	free(tab.prefix);
+	tabReject();
+}
+
+static void complete(void) {
+	if (!tab.word) {
+		wchar_t ch = *line.ptr;
+		*line.ptr = L'\0';
+		tab.word = wcsrchr(line.buf, L' ');
+		tab.word = (tab.word ? &tab.word[1] : line.buf);
+		tab.prefix = awcstombs(tab.word);
+		if (!tab.prefix) err(EX_DATAERR, "awcstombs");
+		*line.ptr = ch;
+	}
+
+	const char *complete = tabNext(tab.prefix);
+	if (!complete) {
+		reject();
+		return;
+	}
+
+	wchar_t *wcs = ambstowcs(complete);
+	if (!wcs) err(EX_DATAERR, "ambstowcs");
+
+	size_t i;
+	for (i = 0; wcs[i] && line.ptr > &tab.word[i]; ++i) {
+		tab.word[i] = wcs[i];
+	}
+	while (line.ptr > &tab.word[i]) {
+		backspace();
+	}
+	for (; wcs[i]; ++i) {
+		insert(wcs[i]);
+	}
+	free(wcs);
+
+	if (tab.word == line.buf) insert(L':');
+	insert(L' ');
+}
+
 static void keyChar(wint_t ch) {
 	switch (ch) {
 		break; case CTRL('L'): uiRedraw();
-		break; case CTRL('B'): left();
-		break; case CTRL('F'): right();
-		break; case CTRL('A'): home();
-		break; case CTRL('E'): end();
-		break; case CTRL('D'): delete();
-		break; case CTRL('K'): kill();
-		break; case '\b':      backspace();
-		break; case '\177':    backspace();
-		break; case '\n':      enter();
-		break; case CTRL('C'): insert(IRC_COLOR);
-		break; case CTRL('N'): insert(IRC_RESET);
-		break; case CTRL('O'): insert(IRC_BOLD);
-		break; case CTRL('R'): insert(IRC_COLOR);
-		break; case CTRL('T'): insert(IRC_ITALIC);
-		break; case CTRL('U'): insert(IRC_UNDERLINE);
-		break; case CTRL('V'): insert(IRC_REVERSE);
-		break; default: if (iswprint(ch)) insert(ch);
+		break; case CTRL('B'): reject(); left();
+		break; case CTRL('F'): reject(); right();
+		break; case CTRL('A'): reject(); home();
+		break; case CTRL('E'): reject(); end();
+		break; case CTRL('D'): reject(); delete();
+		break; case CTRL('K'): reject(); kill();
+		break; case L'\b':     reject(); backspace();
+		break; case L'\177':   reject(); backspace();
+		break; case L'\t':     complete();
+		break; case L'\n':     accept(); enter();
+		break; case CTRL('C'): accept(); insert(IRC_COLOR);
+		break; case CTRL('N'): accept(); insert(IRC_RESET);
+		break; case CTRL('O'): accept(); insert(IRC_BOLD);
+		break; case CTRL('R'): accept(); insert(IRC_COLOR);
+		break; case CTRL('T'): accept(); insert(IRC_ITALIC);
+		break; case CTRL('U'): accept(); insert(IRC_UNDERLINE);
+		break; case CTRL('V'): accept(); insert(IRC_REVERSE);
+		break; default: {
+			if (iswprint(ch)) {
+				accept();
+				insert(ch);
+			}
+		}
 	}
 }
 
