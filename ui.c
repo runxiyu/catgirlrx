@@ -298,7 +298,8 @@ static void logMark(void) {
 	int y, _;
 	getyx(ui.log, y, _);
 	mvwvline(ui.log, 0, lastCol(), ' ', LOG_LINES);
-	mvwaddch(ui.log, y, lastCol(), COLOR_PAIR(1 + COLOR_RED) | '_');
+	wattr_set(ui.log, A_NORMAL, 1 + COLOR_RED, NULL);
+	mvwaddwstr(ui.log, y, lastCol(), L"◄");
 }
 
 static void logUp(void) {
