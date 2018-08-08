@@ -100,7 +100,7 @@ static struct {
 	WINDOW *log;
 	WINDOW *input;
 	int scroll;
-	size_t cursor;
+	bool mark;
 } ui;
 
 void uiInit(void) {
@@ -267,7 +267,6 @@ static void addIRC(WINDOW *win, const wchar_t *str) {
 			break; case IRC_RESET:     attr = A_NORMAL; pair = -1;
 		}
 	}
-	wattr_set(win, A_NORMAL, 0, NULL);
 }
 
 void uiTopic(const wchar_t *topic) {
@@ -285,6 +284,17 @@ void uiTopicStr(const char *topic) {
 
 void uiLog(const wchar_t *line) {
 	waddch(ui.log, '\n');
+
+	if (ui.mark) {
+		ui.mark = false;
+		wattr_set(ui.log, attr8(IRC_COLORS[14]), 1 + pair8(IRC_COLORS[14]), NULL);
+		whline(ui.log, ACS_HLINE, COLS);
+		int y, _;
+		getyx(ui.log, y, _);
+		wmove(ui.log, y, COLS);
+		waddch(ui.log, '\n');
+	}
+
 	addIRC(ui.log, line);
 }
 
@@ -299,22 +309,15 @@ void uiFmt(const wchar_t *format, ...) {
 	free(buf);
 }
 
-static void logMark(void) {
-	int y, _;
-	getyx(ui.log, y, _);
-	mvwvline(ui.log, 0, lastCol(), ' ', LOG_LINES);
-	wattr_set(ui.log, A_NORMAL, 1 + COLOR_RED, NULL);
-	mvwaddwstr(ui.log, y, lastCol(), L"◄");
-}
-
 static void logUp(void) {
 	if (ui.scroll == logHeight()) return;
-	if (ui.scroll == LOG_LINES) logMark();
+	if (ui.scroll == LOG_LINES) ui.mark = true;
 	ui.scroll = MAX(ui.scroll - logHeight() / 2, logHeight());
 }
 static void logDown(void) {
 	if (ui.scroll == LOG_LINES) return;
 	ui.scroll = MIN(ui.scroll + logHeight() / 2, LOG_LINES);
+	if (ui.scroll == LOG_LINES) ui.mark = false;
 }
 
 static bool keyChar(wint_t ch) {
@@ -332,7 +335,8 @@ static bool keyChar(wint_t ch) {
 				csi = true;
 				return false;
 			} else if (csi) {
-				if (ch == L'O') logMark();
+				if (ch == L'O') ui.mark = true;
+				if (ch == L'I') ui.mark = false;
 			} else if (iswcntrl(ch)) {
 				update = edit(esc, true, UNCTRL(ch));
 			} else {
