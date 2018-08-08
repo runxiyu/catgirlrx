@@ -4,7 +4,8 @@ This software targets FreeBSD and requires LibreSSL.
 
 	chat.h      Shared state and function prototypes
 	chat.c      Command line parsing and poll loop
-	ui.c        Curses UI, mIRC formatting, line editing
+	ui.c        Curses UI and mIRC formatting
+	edit.c      Line editing
 	irc.c       TLS client connection
 	input.c     Input command handling
 	handle.c    Incoming command handling

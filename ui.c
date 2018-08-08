@@ -34,7 +34,8 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-#define CTRL(c) ((c) & 037)
+#define CTRL(c)   ((c) & 037)
+#define UNCTRL(c) ((c) + '@')
 
 #ifndef A_ITALIC
 #define A_ITALIC A_NORMAL
@@ -235,14 +236,6 @@ static void wordWrap(WINDOW *win, const wchar_t *str) {
 	}
 }
 
-enum {
-	IRC_BOLD      = 0x02,
-	IRC_COLOR     = 0x03,
-	IRC_REVERSE   = 0x16,
-	IRC_RESET     = 0x0F,
-	IRC_ITALIC    = 0x1D,
-	IRC_UNDERLINE = 0x1F,
-};
 static const wchar_t IRC_CODES[] = {
 	L' ',
 	IRC_BOLD,
@@ -324,199 +317,71 @@ static void logDown(void) {
 	ui.scroll = MIN(ui.scroll + logHeight() / 2, LOG_LINES);
 }
 
-enum { BUF_LEN = 512 };
-static struct {
-	wchar_t buf[BUF_LEN];
-	wchar_t *ptr;
-	wchar_t *end;
-} line = { .ptr = line.buf, .end = line.buf };
-
-static void left(void) {
-	if (line.ptr > line.buf) line.ptr--;
-}
-static void right(void) {
-	if (line.ptr < line.end) line.ptr++;
-}
-static void home(void) {
-	line.ptr = line.buf;
-}
-static void end(void) {
-	line.ptr = line.end;
-}
-
-static void kill(void) {
-	line.end = line.ptr;
-}
-
-static void insert(wchar_t ch) {
-	if (line.end == &line.buf[BUF_LEN - 1]) return;
-	if (line.ptr != line.end) {
-		wmemmove(line.ptr + 1, line.ptr, line.end - line.ptr);
-	}
-	*line.ptr++ = ch;
-	line.end++;
-}
-
-static void backspace(void) {
-	if (line.ptr == line.buf) return;
-	if (line.ptr != line.end) {
-		wmemmove(line.ptr - 1, line.ptr, line.end - line.ptr);
-	}
-	line.ptr--;
-	line.end--;
-}
-
-static void delete(void) {
-	if (line.ptr == line.end) return;
-	right();
-	backspace();
-}
-
-static void enter(void) {
-	if (line.end == line.buf) return;
-	*line.end = L'\0';
-	char *str = awcstombs(line.buf);
-	if (!str) err(EX_DATAERR, "awcstombs");
-	input(str);
-	free(str);
-	line.ptr = line.buf;
-	line.end = line.buf;
-}
-
-static struct {
-	wchar_t *word;
-	char *prefix;
-} tab;
-
-static void accept(void) {
-	if (!tab.word) return;
-	tab.word = NULL;
-	free(tab.prefix);
-	tabAccept();
-}
-
-static void reject(void) {
-	if (!tab.word) return;
-	tab.word = NULL;
-	free(tab.prefix);
-	tabReject();
-}
-
-static void complete(void) {
-	if (!tab.word) {
-		wchar_t ch = *line.ptr;
-		*line.ptr = L'\0';
-		tab.word = wcsrchr(line.buf, L' ');
-		tab.word = (tab.word ? &tab.word[1] : line.buf);
-		tab.prefix = awcstombs(tab.word);
-		if (!tab.prefix) err(EX_DATAERR, "awcstombs");
-		*line.ptr = ch;
-	}
-
-	const char *complete = tabNext(tab.prefix);
-	if (!complete) {
-		reject();
-		return;
-	}
-
-	wchar_t *wcs = ambstowcs(complete);
-	if (!wcs) err(EX_DATAERR, "ambstowcs");
-
-	size_t i;
-	for (i = 0; wcs[i] && line.ptr > &tab.word[i]; ++i) {
-		tab.word[i] = wcs[i];
-	}
-	while (line.ptr > &tab.word[i]) {
-		backspace();
-	}
-	for (; wcs[i]; ++i) {
-		insert(wcs[i]);
-	}
-	free(wcs);
-
-	if (tab.word == line.buf) insert(L':');
-	insert(L' ');
-}
-
-static void keyChar(wint_t ch) {
+static bool keyChar(wint_t ch) {
 	static bool esc, csi;
-
-	if (csi) {
-		csi = false;
-		if (ch == L'O') logMark();
-		return;
-	}
-	csi = (esc && ch == L'[');
-	esc = (ch == L'\33');
-	if (csi) return;
-
+	bool update = false;
 	switch (ch) {
 		break; case CTRL('L'): uiRedraw();
-		break; case CTRL('B'): reject(); left();
-		break; case CTRL('F'): reject(); right();
-		break; case CTRL('A'): reject(); home();
-		break; case CTRL('E'): reject(); end();
-		break; case CTRL('D'): reject(); delete();
-		break; case CTRL('K'): reject(); kill();
-		break; case L'\b':     reject(); backspace();
-		break; case L'\177':   reject(); backspace();
-		break; case L'\t':     complete();
-		break; case L'\n':     accept(); enter();
-		break; case CTRL('C'): accept(); insert(IRC_COLOR);
-		break; case CTRL('N'): accept(); insert(IRC_RESET);
-		break; case CTRL('O'): accept(); insert(IRC_BOLD);
-		break; case CTRL('R'): accept(); insert(IRC_COLOR);
-		break; case CTRL('T'): accept(); insert(IRC_ITALIC);
-		break; case CTRL('U'): accept(); insert(IRC_UNDERLINE);
-		break; case CTRL('V'): accept(); insert(IRC_REVERSE);
+		break; case CTRL('['): esc = true; return false;
+		break; case L'\b':     update = edit(esc, false, L'\b');
+		break; case L'\177':   update = edit(esc, false, L'\b');
+		break; case L'\t':     update = edit(esc, false, L'\t');
+		break; case L'\n':     update = edit(esc, false, L'\n');
 		break; default: {
-			if (iswprint(ch)) {
-				accept();
-				insert(ch);
+			if (esc && ch == L'[') {
+				csi = true;
+				return false;
+			} else if (csi) {
+				if (ch == L'O') logMark();
+			} else if (iswcntrl(ch)) {
+				update = edit(esc, true, UNCTRL(ch));
+			} else {
+				update = edit(esc, false, ch);
 			}
 		}
 	}
+	esc = false;
+	csi = false;
+	return update;
 }
 
-static void keyCode(wint_t ch) {
+static bool keyCode(wint_t ch) {
 	switch (ch) {
 		break; case KEY_RESIZE:    uiResize();
 		break; case KEY_PPAGE:     logUp();
 		break; case KEY_NPAGE:     logDown();
-		break; case KEY_LEFT:      left();
-		break; case KEY_RIGHT:     right();
-		break; case KEY_HOME:      home();
-		break; case KEY_END:       end();
-		break; case KEY_BACKSPACE: backspace();
-		break; case KEY_DC:        delete();
-		break; case KEY_ENTER:     enter();
+		break; case KEY_LEFT:      return edit(false, true, 'B');
+		break; case KEY_RIGHT:     return edit(false, true, 'F');
+		break; case KEY_HOME:      return edit(false, true, 'A');
+		break; case KEY_END:       return edit(false, true, 'E');
+		break; case KEY_DC:        return edit(false, true, 'D');
+		break; case KEY_BACKSPACE: return edit(false, false, '\b');
+		break; case KEY_ENTER:     return edit(false, false, '\n');
 	}
+	return false;
 }
 
 void uiRead(void) {
+	bool update = false;
 	int ret;
 	wint_t ch;
 	while (ERR != (ret = wget_wch(ui.input, &ch))) {
 		if (ret == KEY_CODE_YES) {
-			keyCode(ch);
+			update |= keyCode(ch);
 		} else {
-			keyChar(ch);
+			update |= keyChar(ch);
 		}
 	}
+	if (!update) return;
 
 	wmove(ui.input, 1, 0);
+	addIRC(ui.input, editHead());
 
-	ch = *line.ptr;
-	*line.ptr = L'\0';
-	addIRC(ui.input, line.buf);
-	*line.ptr = ch;
+	int y, x;
+	getyx(ui.input, y, x);
 
-	int _, x;
-	getyx(ui.input, _, x);
-
-	*line.end = L'\0';
-	addIRC(ui.input, line.ptr);
+	addIRC(ui.input, editTail());
 
 	wclrtoeol(ui.input);
-	wmove(ui.input, 1, x);
+	wmove(ui.input, y, x);
 }

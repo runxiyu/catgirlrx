@@ -34,7 +34,7 @@ static void prepend(struct Entry *entry) {
 	head = entry;
 }
 
-static void remove(struct Entry *entry) {
+static void unlink(struct Entry *entry) {
 	if (entry->prev) entry->prev->next = entry->next;
 	if (entry->next) entry->next->prev = entry->prev;
 	if (head == entry) head = entry->next;
@@ -42,7 +42,7 @@ static void remove(struct Entry *entry) {
 
 static void touch(struct Entry *entry) {
 	if (head == entry) return;
-	remove(entry);
+	unlink(entry);
 	prepend(entry);
 }
 
@@ -70,7 +70,7 @@ static struct Entry *match;
 void tabRemove(const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
 		if (strcmp(entry->word, word)) continue;
-		remove(entry);
+		unlink(entry);
 		if (match == entry) match = entry->next;
 		free(entry->word);
 		free(entry);

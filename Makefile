@@ -3,7 +3,7 @@ CFLAGS += -Wall -Wextra -Wpedantic
 CFLAGS += -I/usr/local/include
 LDFLAGS += -L/usr/local/lib
 LDLIBS = -lcursesw -ltls
-OBJS = chat.o handle.o input.o irc.o pls.o tab.o ui.o
+OBJS = chat.o edit.o handle.o input.o irc.o pls.o tab.o ui.o
 
 all: tags chat
 

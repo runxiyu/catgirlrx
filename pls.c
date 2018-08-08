@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <wchar.h>
 
+#include "chat.h"
+
 wchar_t *ambstowcs(const char *src) {
 	size_t len = mbsrtowcs(NULL, &src, 0, NULL);
 	if (len == (size_t)-1) return NULL;

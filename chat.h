@@ -18,6 +18,7 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
 
@@ -30,6 +31,15 @@ struct {
 	char *user;
 	char *chan;
 } chat;
+
+enum {
+	IRC_BOLD      = 002,
+	IRC_COLOR     = 003,
+	IRC_REVERSE   = 026,
+	IRC_RESET     = 017,
+	IRC_ITALIC    = 035,
+	IRC_UNDERLINE = 037,
+};
 
 int ircConnect(const char *host, const char *port, const char *webPass);
 void ircRead(void);
@@ -57,6 +67,10 @@ void uiFmt(const wchar_t *format, ...);
 	uiFmt(L##format, __VA_ARGS__); \
 } while(0)
 #endif
+
+const wchar_t *editHead(void);
+const wchar_t *editTail(void);
+bool edit(bool meta, bool ctrl, wchar_t ch);
 
 void handle(char *line);
 void input(char *line);
