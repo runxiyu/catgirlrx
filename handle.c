@@ -228,14 +228,11 @@ static void handlePrivmsg(char *prefix, char *params) {
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
 		char *action = strsep(&mesg, "\1");
-		uiFmt(
-			"* \3%d%s\3%s %s",
-			color(user), nick, (self ? "15" : ""), action
-		);
+		uiFmt("* \3%d%s\3 %s", color(user), nick, action);
 	} else {
 		uiFmt(
-			"<%s\3%d%s\17>\3%s %s",
-			(ping ? "\26" : ""), color(user), nick, (self ? "15" : ""), mesg
+			"%c%c\3%d%s\17%c %s",
+			self["<["], ping["\17\26"], color(user), nick, self[">]"], mesg
 		);
 	}
 }
