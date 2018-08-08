@@ -222,16 +222,20 @@ static void handlePrivmsg(char *prefix, char *params) {
 	shift(&params);
 	char *mesg = shift(&params);
 	tabTouch(nick);
+	bool self = !strcmp(user, chat.user);
+	bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
+	if (ping) uiBeep();
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
 		char *action = strsep(&mesg, "\1");
-		uiFmt("* \3%d%s\3 %s", color(user), nick, action);
-	} else {
-		bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
-		if (ping) uiBeep();
 		uiFmt(
-			"<%s\3%d%s\17> %s",
-			(ping ? "\26" : ""), color(user), nick, mesg
+			"* \3%d%s\3%s %s",
+			color(user), nick, (self ? "15" : ""), action
+		);
+	} else {
+		uiFmt(
+			"<%s\3%d%s\17>\3%s %s",
+			(ping ? "\26" : ""), color(user), nick, (self ? "15" : ""), mesg
 		);
 	}
 }
