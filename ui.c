@@ -103,7 +103,7 @@ void uiInit(void) {
 	ui.topic = newpad(2, TOPIC_COLS);
 	mvwhline(ui.topic, 1, 0, ACS_HLINE, TOPIC_COLS);
 
-	ui.log = newpad(LOG_LINES, COLS);
+	ui.log = newpad(LOG_LINES, COLS + 1);
 	wsetscrreg(ui.log, 0, LOG_LINES - 1);
 	scrollok(ui.log, true);
 	wmove(ui.log, LOG_LINES - logHeight() - 1, 0);
@@ -293,8 +293,16 @@ void uiFmt(const wchar_t *format, ...) {
 	free(buf);
 }
 
+static void logMark(void) {
+	int y, _;
+	getyx(ui.log, y, _);
+	mvwvline(ui.log, 0, lastCol(), ' ', LOG_LINES);
+	mvwaddch(ui.log, y, lastCol(), COLOR_PAIR(1 + COLOR_RED) | '_');
+}
+
 static void logUp(void) {
 	if (ui.scroll == logHeight()) return;
+	if (ui.scroll == LOG_LINES) logMark();
 	ui.scroll = MAX(ui.scroll - logHeight() / 2, logHeight());
 }
 static void logDown(void) {
