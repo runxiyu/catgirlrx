@@ -20,6 +20,7 @@
 #include <err.h>
 #include <locale.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,15 @@
 #ifndef A_ITALIC
 #define A_ITALIC A_NORMAL
 #endif
+
+static void focusEnable(void) {
+	printf("\33[?1004h");
+	fflush(stdout);
+}
+static void focusDisable(void) {
+	printf("\33[?1004l");
+	fflush(stdout);
+}
 
 static void colorInit(void) {
 	start_color();
@@ -98,6 +108,7 @@ void uiInit(void) {
 	cbreak();
 	noecho();
 
+	focusEnable();
 	colorInit();
 
 	ui.topic = newpad(2, TOPIC_COLS);
@@ -123,6 +134,7 @@ static void uiResize(void) {
 }
 
 void uiHide(void) {
+	focusDisable();
 	endwin();
 	printf(
 		"This program is AGPLv3 free software!\n"
@@ -427,6 +439,17 @@ static void complete(void) {
 }
 
 static void keyChar(wint_t ch) {
+	static bool esc, csi;
+
+	if (csi) {
+		csi = false;
+		if (ch == L'O') logMark();
+		return;
+	}
+	csi = (esc && ch == L'[');
+	esc = (ch == L'\33');
+	if (csi) return;
+
 	switch (ch) {
 		break; case CTRL('L'): uiRedraw();
 		break; case CTRL('B'): reject(); left();
