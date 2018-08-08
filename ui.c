@@ -262,6 +262,7 @@ static void addIRC(WINDOW *win, const wchar_t *str) {
 			break; case IRC_RESET:     attr = A_NORMAL; pair = -1;
 		}
 	}
+	wattr_set(win, A_NORMAL, 0, NULL);
 }
 
 void uiTopic(const wchar_t *topic) {
