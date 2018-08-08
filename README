@@ -1,6 +1,6 @@
 Simple IRC client for use over anonymous SSH.
 
-This software targets FreeBSD and requires LibreSSL.
+This software requires LibreSSL and targets FreeBSD and Darwin.
 
 	chat.h      Shared state and function prototypes
 	chat.c      Command line parsing and poll loop

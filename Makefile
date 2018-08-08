@@ -1,7 +1,7 @@
 USER = chat
 CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += -I/usr/local/include
-LDFLAGS += -L/usr/local/lib
+CFLAGS += -I/usr/local/include -I/usr/local/opt/libressl/include
+LDFLAGS += -L/usr/local/lib -L/usr/local/opt/libressl/lib
 LDLIBS = -lcursesw -ltls
 OBJS = chat.o edit.o handle.o input.o irc.o pls.o tab.o ui.o
 
