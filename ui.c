@@ -99,8 +99,9 @@ static struct {
 	WINDOW *topic;
 	WINDOW *log;
 	WINDOW *input;
-	int scroll;
+	bool hide;
 	bool mark;
+	int scroll;
 } ui;
 
 void uiInit(void) {
@@ -135,8 +136,13 @@ static void uiResize(void) {
 }
 
 void uiHide(void) {
-	focusDisable();
+	ui.hide = true;
 	endwin();
+}
+
+void uiExit(void) {
+	uiHide();
+	focusDisable();
 	printf(
 		"This program is AGPLv3 free software!\n"
 		"The source is available at <" SOURCE_URL ">.\n"
@@ -144,6 +150,7 @@ void uiHide(void) {
 }
 
 void uiDraw(void) {
+	if (ui.hide) return;
 	pnoutrefresh(
 		ui.topic,
 		0, 0,
@@ -359,6 +366,8 @@ static bool keyCode(wint_t ch) {
 }
 
 void uiRead(void) {
+	ui.hide = false;
+
 	bool update = false;
 	int ret;
 	wint_t ch;

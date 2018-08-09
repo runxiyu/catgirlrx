@@ -73,6 +73,21 @@ static void inputQuit(char *params) {
 	}
 }
 
+static void inputUrl(char *params) {
+	(void)params;
+	urlList();
+}
+static void inputOpen(char *params) {
+	if (!params) { urlOpen(1); return; }
+	size_t from = strtoul(strsep(&params, "-,"), NULL, 0);
+	if (!params) { urlOpen(from); return; }
+	size_t to = strtoul(strsep(&params, "-,"), NULL, 0);
+	if (to < from) to = from;
+	for (size_t i = from; i <= to; ++i) {
+		urlOpen(i);
+	}
+}
+
 static const struct {
 	const char *command;
 	Handler handler;
@@ -80,8 +95,10 @@ static const struct {
 	{ "/me", inputMe },
 	{ "/names", inputWho },
 	{ "/nick", inputNick },
+	{ "/open", inputOpen },
 	{ "/quit", inputQuit },
 	{ "/topic", inputTopic },
+	{ "/url", inputUrl },
 	{ "/who", inputWho },
 };
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);

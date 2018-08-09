@@ -15,16 +15,17 @@
  */
 
 #include <err.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sysexits.h>
 #include <tls.h>
 #include <unistd.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 
 #include "chat.h"
 
@@ -67,6 +68,9 @@ int ircConnect(const char *host, const char *port, const char *webPass) {
 
 	int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if (sock < 0) err(EX_OSERR, "socket");
+
+	error = fcntl(sock, F_SETFD, FD_CLOEXEC);
+	if (error) err(EX_IOERR, "fcntl");
 
 	error = connect(sock, ai->ai_addr, ai->ai_addrlen);
 	if (error) err(EX_UNAVAILABLE, "connect");
@@ -111,7 +115,7 @@ void ircRead(void) {
 	ssize_t read = tls_read(client, &buf[len], sizeof(buf) - len);
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
 	if (!read) {
-		uiHide();
+		uiExit();
 		exit(EX_OK);
 	}
 	len += read;

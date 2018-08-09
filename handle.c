@@ -141,11 +141,12 @@ static void handle332(char *prefix, char *params) {
 	shift(&params);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
+	urlScan(topic);
+	uiTopicStr(topic);
 	uiFmt(
 		"The sign in \3%d%s\3 reads, \"%s\"",
 		color(chan), chan, topic
 	);
-	uiTopicStr(topic);
 }
 
 static void handleTopic(char *prefix, char *params) {
@@ -153,11 +154,12 @@ static void handleTopic(char *prefix, char *params) {
 	char *user = prift(&prefix);
 	char *chan = shift(&params);
 	char *topic = shift(&params);
+	urlScan(topic);
+	uiTopicStr(topic);
 	uiFmt(
 		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
 		color(user), nick, color(chan), chan, topic
 	);
-	uiTopicStr(topic);
 }
 
 static void handle366(char *prefix, char *params) {
@@ -222,6 +224,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	shift(&params);
 	char *mesg = shift(&params);
 	tabTouch(nick);
+	urlScan(mesg);
 	bool self = !strcmp(user, chat.user);
 	bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
 	if (ping) uiBeep();
@@ -244,6 +247,7 @@ static void handleNotice(char *prefix, char *params) {
 	char *mesg = shift(&params);
 	if (strcmp(chat.chan, chan)) return;
 	tabTouch(nick);
+	urlScan(mesg);
 	uiFmt("-\3%d%s\3- %s", color(user), nick, mesg);
 }
 

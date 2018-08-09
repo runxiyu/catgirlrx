@@ -50,6 +50,7 @@ void ircFmt(const char *format, ...);
 
 void uiInit(void);
 void uiHide(void);
+void uiExit(void);
 void uiDraw(void);
 void uiBeep(void);
 void uiRead(void);
@@ -76,6 +77,10 @@ void handle(char *line);
 
 void inputTab(void);
 void input(char *line);
+
+void urlScan(const char *str);
+void urlList(void);
+void urlOpen(size_t i);
 
 void tabTouch(const char *word);
 void tabRemove(const char *word);

@@ -10,4 +10,5 @@ This software requires LibreSSL and targets FreeBSD and Darwin.
 	input.c     Input command handling
 	handle.c    Incoming command handling
 	tab.c       Tab-complete
+	url.c       URL detection
 	pls.c       Functions which should not have to be written
