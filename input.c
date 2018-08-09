@@ -99,3 +99,9 @@ void input(char *input) {
 	}
 	uiFmt("%s isn't a recognized command", command);
 }
+
+void inputTab(void) {
+	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
+		tabTouch(COMMANDS[i].command);
+	}
+}

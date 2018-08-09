@@ -126,7 +126,7 @@ static void complete(void) {
 	free(wcs);
 
 	size_t pos = line.tab - line.buf;
-	if (!pos) {
+	if (!pos && line.tab[0] != L'/') {
 		insert(L':');
 	} else if (pos >= 2) {
 		if (line.buf[pos - 2] == L':' || line.buf[pos - 2] == L',') {

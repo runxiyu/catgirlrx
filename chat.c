@@ -75,8 +75,9 @@ int main(int argc, char *argv[]) {
 	if (!chat.nick) chat.nick = prompt("Name: ");
 	chat.user = strdup(chat.nick);
 
-	signal(SIGINT, sigint);
+	inputTab();
 
+	signal(SIGINT, sigint);
 	uiInit();
 	uiLog(L"Traveling...");
 	uiDraw();

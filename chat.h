@@ -73,6 +73,8 @@ const wchar_t *editTail(void);
 bool edit(bool meta, bool ctrl, wchar_t ch);
 
 void handle(char *line);
+
+void inputTab(void);
 void input(char *line);
 
 void tabTouch(const char *word);
