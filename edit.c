@@ -58,9 +58,6 @@ static void home(void) {
 static void end(void) {
 	line.ptr = line.end;
 }
-static void kill(void) {
-	line.end = line.ptr;
-}
 
 static void backspace(void) {
 	if (line.ptr == line.buf) return;
@@ -94,6 +91,38 @@ static void enter(void) {
 	free(str);
 	line.ptr = line.buf;
 	line.end = line.buf;
+}
+
+static void backWord(void) {
+	left();
+	editHead();
+	wchar_t *word = wcsrchr(line.buf, ' ');
+	editTail();
+	line.ptr = (word ? &word[1] : line.buf);
+}
+static void foreWord(void) {
+	right();
+	editHead();
+	editTail();
+	wchar_t *word = wcschr(line.ptr, ' ');
+	line.ptr = (word ? word : line.end);
+}
+
+static void killBackWord(void) {
+	wchar_t *from = line.ptr;
+	backWord();
+	wmemmove(line.ptr, from, line.end - from);
+	line.end -= from - line.ptr;
+}
+static void killForeWord(void) {
+	wchar_t *from = line.ptr;
+	foreWord();
+	wmemmove(from, line.ptr, line.end - line.ptr);
+	line.end -= line.ptr - from;
+	line.ptr = from;
+}
+static void killLine(void) {
+	line.end = line.ptr;
 }
 
 static char *prefix;
@@ -151,8 +180,15 @@ static void reject(void) {
 }
 
 static bool editMeta(wchar_t ch) {
-	(void)ch;
-	return false;
+	switch (ch) {
+		break; case L'b':  reject(); backWord();
+		break; case L'f':  reject(); foreWord();
+		break; case L'\b': reject(); killBackWord();
+		break; case L'd':  reject(); killForeWord();
+
+		break; default: return false;
+	}
+	return true;
 }
 
 static bool editCtrl(wchar_t ch) {
@@ -162,7 +198,8 @@ static bool editCtrl(wchar_t ch) {
 		break; case L'A': reject(); home();
 		break; case L'E': reject(); end();
 		break; case L'D': reject(); delete();
-		break; case L'K': reject(); kill();
+		break; case L'W': reject(); killBackWord();
+		break; case L'K': reject(); killLine();
 
 		break; case L'C': accept(); insert(IRC_COLOR);
 		break; case L'N': accept(); insert(IRC_RESET);
