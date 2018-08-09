@@ -223,10 +223,10 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *user = prift(&prefix);
 	shift(&params);
 	char *mesg = shift(&params);
-	tabTouch(nick);
-	urlScan(mesg);
 	bool self = !strcmp(user, chat.user);
 	bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
+	if (!self) tabTouch(nick);
+	urlScan(mesg);
 	if (ping) uiBeep();
 	if (mesg[0] == '\1') {
 		strsep(&mesg, " ");
