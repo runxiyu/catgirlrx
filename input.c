@@ -109,6 +109,7 @@ void input(char *input) {
 		return;
 	}
 	char *command = strsep(&input, " ");
+	if (input && !input[0]) input = NULL;
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
 		if (strcasecmp(command, COMMANDS[i].command)) continue;
 		COMMANDS[i].handler(input);
