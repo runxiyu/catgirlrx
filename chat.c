@@ -55,17 +55,19 @@ static char *prompt(const char *prompt) {
 int main(int argc, char *argv[]) {
 	char *host = NULL;
 	const char *port = "6697";
-	const char *webPass = NULL;
+	const char *pass = NULL;
+	const char *webirc = NULL;
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "h:j:n:p:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "W:h:j:n:p:vw:"))) {
 		switch (opt) {
+			break; case 'W': webirc = optarg;
 			break; case 'h': host = strdup(optarg);
 			break; case 'j': chat.chan = strdup(optarg);
 			break; case 'n': chat.nick = strdup(optarg);
 			break; case 'p': port = optarg;
 			break; case 'v': chat.verbose = true;
-			break; case 'w': webPass = optarg;
+			break; case 'w': pass = optarg;
 			break; default:  return EX_USAGE;
 		}
 	}
@@ -82,7 +84,7 @@ int main(int argc, char *argv[]) {
 	uiLog(L"Traveling...");
 	uiDraw();
 
-	int sock = ircConnect(host, port, webPass);
+	int sock = ircConnect(host, port, pass, webirc);
 	free(host);
 
 	struct pollfd fds[2] = {

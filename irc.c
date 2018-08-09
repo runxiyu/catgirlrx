@@ -43,7 +43,9 @@ static void webirc(const char *pass) {
 	);
 }
 
-int ircConnect(const char *host, const char *port, const char *webPass) {
+int ircConnect(
+	const char *host, const char *port, const char *pass, const char *webPass
+) {
 	int error;
 
 	struct tls_config *config = tls_config_new();
@@ -80,8 +82,12 @@ int ircConnect(const char *host, const char *port, const char *webPass) {
 	if (error) err(EX_PROTOCOL, "tls_connect");
 
 	if (webPass) webirc(webPass);
-	ircFmt("NICK %s\r\n", chat.nick);
-	ircFmt("USER %s 0 * :%s\r\n", chat.user, chat.nick);
+	if (pass) ircFmt("PASS :%s\r\n", pass);
+	ircFmt(
+		"NICK %s\r\n"
+		"USER %s 0 * :%s\r\n",
+		chat.nick, chat.user, chat.nick
+	);
 
 	return sock;
 }

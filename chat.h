@@ -41,7 +41,9 @@ enum {
 	IRC_UNDERLINE = 037,
 };
 
-int ircConnect(const char *host, const char *port, const char *webPass);
+int ircConnect(
+	const char *host, const char *port, const char *pass, const char *webPass
+);
 void ircRead(void);
 void ircWrite(const char *ptr, size_t len);
 
