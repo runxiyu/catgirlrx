@@ -59,13 +59,14 @@ int main(int argc, char *argv[]) {
 	const char *webirc = NULL;
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "W:h:j:n:p:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "W:h:j:n:p:u:vw:"))) {
 		switch (opt) {
 			break; case 'W': webirc = optarg;
 			break; case 'h': host = strdup(optarg);
 			break; case 'j': chat.chan = strdup(optarg);
 			break; case 'n': chat.nick = strdup(optarg);
 			break; case 'p': port = optarg;
+			break; case 'u': chat.user = strdup(optarg);
 			break; case 'v': chat.verbose = true;
 			break; case 'w': pass = optarg;
 			break; default:  return EX_USAGE;
@@ -75,7 +76,7 @@ int main(int argc, char *argv[]) {
 	if (!host) host = prompt("Host: ");
 	if (!chat.chan) chat.chan = prompt("Join: ");
 	if (!chat.nick) chat.nick = prompt("Name: ");
-	chat.user = strdup(chat.nick);
+	if (!chat.user) chat.user = strdup(chat.nick);
 
 	inputTab();
 
