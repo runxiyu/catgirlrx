@@ -58,10 +58,7 @@ static void shift(
 	va_list ap;
 	va_start(ap, opt);
 	for (size_t i = 0; i < req; ++i) {
-		if (!params) {
-			va_end(ap);
-			errx(EX_PROTOCOL, "%zu params required, found %zu", req, i);
-		}
+		if (!params) errx(EX_PROTOCOL, "%zu params required, found %zu", req, i);
 		field = paramField(&params);
 		char **param = va_arg(ap, char **);
 		if (param) *param = field;
