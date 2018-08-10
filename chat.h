@@ -32,6 +32,8 @@ struct {
 	char *join;
 } chat;
 
+void spawn(char *const argv[]);
+
 int ircConnect(
 	const char *host, const char *port, const char *pass, const char *webPass
 );

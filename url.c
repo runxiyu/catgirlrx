@@ -64,32 +64,6 @@ void urlList(void) {
 void urlOpen(size_t i) {
 	char *url = ring[(last - i) & (RING_LEN - 1)];
 	if (!url) return;
-
-	int fd[2];
-	int error = pipe(fd);
-	if (error) err(EX_OSERR, "pipe");
-
-	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
-
-	if (!pid) {
-		close(STDIN_FILENO);
-		dup2(fd[1], STDOUT_FILENO);
-		dup2(fd[1], STDERR_FILENO);
-		execlp("open", "open", url, NULL);
-		perror("open");
-		exit(EX_CONFIG);
-	}
-	close(fd[1]);
-
-	// FIXME: This should technically go on the main event loop.
-	char buf[256];
-	ssize_t len = read(fd[0], buf, sizeof(buf) - 1);
-	if (len < 0) err(EX_IOERR, "read");
-	if (len) {
-		buf[len] = '\0';
-		len = strcspn(buf, "\n");
-		uiFmt("%.*s", (int)len, buf);
-	}
-	close(fd[0]);
+	char *argv[] = { "open", url, NULL };
+	spawn(argv);
 }

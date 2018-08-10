@@ -25,8 +25,94 @@
 #include <string.h>
 #include <sysexits.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "chat.h"
+
+static union {
+	struct {
+		struct pollfd ui;
+		struct pollfd irc;
+		struct pollfd pipe;
+	};
+	struct pollfd fds[3];
+} fds = {
+	.ui   = { .events = POLLIN, .fd = STDIN_FILENO },
+	.irc  = { .events = POLLIN },
+	.pipe = { .events = 0 },
+};
+
+void spawn(char *const argv[]) {
+	if (fds.pipe.events) {
+		uiLog(L"spawn: existing pipe");
+		return;
+	}
+
+	int rw[2];
+	int error = pipe(rw);
+	if (error) err(EX_OSERR, "pipe");
+
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (!pid) {
+		close(rw[0]);
+		close(STDIN_FILENO);
+		dup2(rw[1], STDOUT_FILENO);
+		dup2(rw[1], STDERR_FILENO);
+		close(rw[1]);
+		execvp(argv[0], argv);
+		perror(argv[0]);
+		exit(EX_CONFIG);
+	}
+
+	close(rw[1]);
+	fds.pipe.fd = rw[0];
+	fds.pipe.events = POLLIN;
+}
+
+static void pipeRead(void) {
+	char buf[256];
+	ssize_t len = read(fds.pipe.fd, buf, sizeof(buf) - 1);
+	if (len < 0) err(EX_IOERR, "read");
+	if (len) {
+		buf[len] = '\0';
+		len = strcspn(buf, "\n");
+		uiFmt("%.*s", (int)len, buf);
+	} else {
+		close(fds.pipe.fd);
+		fds.pipe.events = 0;
+		fds.pipe.revents = 0;
+	}
+}
+
+static void eventLoop(void) {
+	for (;;) {
+		uiDraw();
+
+		int n = poll(fds.fds, (fds.pipe.events ? 3 : 2), -1);
+		if (n < 0) {
+			if (errno != EINTR) err(EX_IOERR, "poll");
+			uiRead();
+			continue;
+		}
+
+		if (fds.ui.revents) uiRead();
+		if (fds.irc.revents) ircRead();
+		if (fds.pipe.revents) pipeRead();
+	}
+}
+
+static void sigchld(int sig) {
+	(void)sig;
+	int status;
+	pid_t pid = wait(&status);
+	if (pid < 0) err(EX_OSERR, "wait");
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		uiFmt("spawn: exit %d", WEXITSTATUS(status));
+	} else if (WIFSIGNALED(status)) {
+		uiFmt("spawn: signal %d", WTERMSIG(status));
+	}
+}
 
 static void sigint(int sig) {
 	(void)sig;
@@ -80,28 +166,14 @@ int main(int argc, char *argv[]) {
 
 	inputTab();
 
-	signal(SIGINT, sigint);
 	uiInit();
 	uiLog(L"Traveling...");
 	uiDraw();
 
-	int sock = ircConnect(host, port, pass, webirc);
+	fds.irc.fd = ircConnect(host, port, pass, webirc);
 	free(host);
 
-	struct pollfd fds[2] = {
-		{ .fd = STDIN_FILENO, .events = POLLIN },
-		{ .fd = sock, .events = POLLIN },
-	};
-	for (;;) {
-		int nfds = poll(fds, 2, -1);
-		if (nfds < 0) {
-			if (errno != EINTR) err(EX_IOERR, "poll");
-			fds[0].revents = POLLIN;
-			fds[1].revents = 0;
-		}
-
-		if (fds[0].revents) uiRead();
-		if (fds[1].revents) ircRead();
-		uiDraw();
-	}
+	signal(SIGINT, sigint);
+	signal(SIGCHLD, sigchld);
+	eventLoop();
 }
