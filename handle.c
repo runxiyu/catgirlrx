@@ -244,7 +244,7 @@ static void handleCTCP(char *nick, char *user, char *mesg) {
 	char *params = strsep(&mesg, "\1");
 	if (strcmp(ctcp, "ACTION")) return;
 	uiFmt(
-		"* \3%d%s\3 %s",
+		"\3%d* %s\3 %s",
 		color(user), nick, params
 	);
 	if (strcmp(user, chat.user)) tabTouch(nick);
@@ -261,8 +261,8 @@ static void handlePrivmsg(char *prefix, char *params) {
 	bool self = !strcmp(user, chat.user);
 	bool ping = !strncasecmp(mesg, chat.nick, strlen(chat.nick));
 	uiFmt(
-		"%c%c\3%d%s\17%c %s",
-		self["<["], ping["\17\26"], color(user), nick, self[">]"], mesg
+		"%c\3%d%c%s%c\17 %s",
+		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
 	);
 	if (!self) tabTouch(nick);
 	if (ping) uiBeep();
@@ -274,7 +274,7 @@ static void handleNotice(char *prefix, char *params) {
 	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	if (strcmp(chan, chat.chan)) return;
 	uiFmt(
-		"-\3%d%s\3- %s",
+		"\3%d-%s-\3 %s",
 		color(user), nick, mesg
 	);
 	tabTouch(nick);
