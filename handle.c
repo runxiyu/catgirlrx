@@ -86,7 +86,7 @@ static void handlePing(char *prefix, char *params) {
 
 static void handle432(char *prefix, char *params) {
 	char *mesg;
-	shift(prefix, NULL, NULL, NULL, params, 1, 0, &mesg);
+	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
 	uiLog(L"You can't use that name here");
 	uiFmt("Sheriff says, \"%s\"", mesg);
 	uiLog(L"Type /nick <name> to choose a new one");
