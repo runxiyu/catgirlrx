@@ -28,7 +28,7 @@ static void privmsg(bool action, const char *mesg) {
 	int send;
 	asprintf(
 		&line, ":%s!%s %nPRIVMSG %s :%s%s%s",
-		chat.nick, chat.user, &send, chat.chan,
+		chat.nick, chat.user, &send, chat.join,
 		(action ? "\1ACTION " : ""), mesg, (action ? "\1" : "")
 	);
 	if (!line) err(EX_OSERR, "asprintf");
@@ -54,14 +54,14 @@ static void inputNick(char *params) {
 
 static void inputWho(char *params) {
 	(void)params;
-	ircFmt("WHO %s\r\n", chat.chan);
+	ircFmt("WHO %s\r\n", chat.join);
 }
 
 static void inputTopic(char *params) {
 	if (params) {
-		ircFmt("TOPIC %s :%s\r\n", chat.chan, params);
+		ircFmt("TOPIC %s :%s\r\n", chat.join, params);
 	} else {
-		ircFmt("TOPIC %s\r\n", chat.chan);
+		ircFmt("TOPIC %s\r\n", chat.join);
 	}
 }
 

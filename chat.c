@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 		switch (opt) {
 			break; case 'W': webirc = optarg;
 			break; case 'h': host = strdup(optarg);
-			break; case 'j': chat.chan = strdup(optarg);
+			break; case 'j': chat.join = strdup(optarg);
 			break; case 'n': chat.nick = strdup(optarg);
 			break; case 'p': port = optarg;
 			break; case 'u': chat.user = strdup(optarg);
@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (!host) host = prompt("Host: ");
-	if (!chat.chan) chat.chan = prompt("Join: ");
+	if (!chat.join) chat.join = prompt("Join: ");
 	if (!chat.nick) chat.nick = prompt("Name: ");
 	if (!chat.user) chat.user = strdup(chat.nick);
 

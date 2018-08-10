@@ -99,7 +99,7 @@ static void handle001(char *prefix, char *params) {
 		free(chat.nick);
 		chat.nick = strdup(nick);
 	}
-	ircFmt("JOIN %s\r\n", chat.chan);
+	ircFmt("JOIN %s\r\n", chat.join);
 }
 
 static void handleJoin(char *prefix, char *params) {
@@ -272,7 +272,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 static void handleNotice(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
-	if (strcmp(chan, chat.chan)) return;
+	if (strcmp(chan, chat.join)) return;
 	uiFmt(
 		"\3%d-%s-\3 %s",
 		color(user), nick, mesg

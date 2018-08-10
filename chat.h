@@ -29,17 +29,8 @@ struct {
 	bool verbose;
 	char *nick;
 	char *user;
-	char *chan;
+	char *join;
 } chat;
-
-enum {
-	IRC_BOLD      = 002,
-	IRC_COLOR     = 003,
-	IRC_REVERSE   = 026,
-	IRC_RESET     = 017,
-	IRC_ITALIC    = 035,
-	IRC_UNDERLINE = 037,
-};
 
 int ircConnect(
 	const char *host, const char *port, const char *pass, const char *webPass
@@ -49,6 +40,15 @@ void ircWrite(const char *ptr, size_t len);
 
 __attribute__((format(printf, 1, 2)))
 void ircFmt(const char *format, ...);
+
+enum {
+	IRC_BOLD      = 002,
+	IRC_COLOR     = 003,
+	IRC_REVERSE   = 026,
+	IRC_RESET     = 017,
+	IRC_ITALIC    = 035,
+	IRC_UNDERLINE = 037,
+};
 
 void uiInit(void);
 void uiHide(void);
