@@ -81,7 +81,7 @@ void tabRemove(struct Tag tag, const char *word) {
 		if (tag.id != TAG_ALL.id && entry->tag != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
 		unlink(entry);
-		if (match == entry) match = entry->next;
+		if (match == entry) match = entry->prev;
 		free(entry->word);
 		free(entry);
 		return;
@@ -92,7 +92,7 @@ void tabClear(struct Tag tag) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
 		if (entry->tag != tag.id) continue;
 		unlink(entry);
-		if (match == entry) match = entry->next;
+		if (match == entry) match = entry->prev;
 		free(entry->word);
 		free(entry);
 	}
