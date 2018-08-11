@@ -79,6 +79,20 @@ void uiTopic(struct Tag tag, const char *topic);
 void uiLog(struct Tag tag, const wchar_t *line);
 void uiFmt(struct Tag tag, const wchar_t *format, ...);
 
+enum TermMode {
+	TERM_FOCUS,
+	TERM_PASTE,
+};
+enum TermEvent {
+	TERM_NONE,
+	TERM_FOCUS_IN,
+	TERM_FOCUS_OUT,
+	TERM_PASTE_START,
+	TERM_PASTE_END,
+};
+void termMode(enum TermMode mode, bool set);
+enum TermEvent termEvent(char ch);
+
 enum Edit {
 	EDIT_LEFT,
 	EDIT_RIGHT,
