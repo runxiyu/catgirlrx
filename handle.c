@@ -76,7 +76,6 @@ static void shift(
 
 static bool isSelf(const char *nick, const char *user) {
 	if (!user) return false;
-	if (!strcmp(user, self.user)) return true;
 	if (!strcmp(nick, self.nick)) {
 		if (strcmp(user, self.user)) selfUser(user);
 		return true;
