@@ -106,15 +106,15 @@ void ircFmt(const char *format, ...) {
 	int len = vasprintf(&buf, format, ap);
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
-	if (self.verbose) uiFmt(tagFor("(irc)"), "\00314<<<\3 %.*s", len - 2, buf);
+	if (self.verbose) uiFmt(TAG_VERBOSE, "\3%d<<<\3 %.*s", IRC_WHITE, len - 2, buf);
 	ircWrite(buf, len);
 	free(buf);
 }
 
-static char buf[4096];
-static size_t len;
-
 void ircRead(void) {
+	static char buf[4096];
+	static size_t len;
+
 	ssize_t read = tls_read(client, &buf[len], sizeof(buf) - len);
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
 	if (!read) {
@@ -126,7 +126,7 @@ void ircRead(void) {
 	char *crlf, *line = buf;
 	while ((crlf = strnstr(line, "\r\n", &buf[len] - line))) {
 		crlf[0] = '\0';
-		if (self.verbose) uiFmt(tagFor("(irc)"), "\00314>>>\3 %s", line);
+		if (self.verbose) uiFmt(TAG_VERBOSE, "\3%d>>>\3 %s", IRC_GRAY, line);
 		handle(line);
 		line = &crlf[2];
 	}

@@ -24,7 +24,6 @@
 #include "chat.h"
 
 static void privmsg(struct Tag tag, bool action, const char *mesg) {
-	if (tag.id == TAG_DEFAULT.id) return;
 	char *line;
 	int send;
 	asprintf(
@@ -50,7 +49,7 @@ static void inputNick(struct Tag tag, char *params) {
 	if (nick) {
 		ircFmt("NICK %s\r\n", nick);
 	} else {
-		uiLog(TAG_DEFAULT, L"/nick requires a name");
+		uiLog(TAG_STATUS, L"/nick requires a name");
 	}
 }
 
@@ -60,7 +59,7 @@ static void inputJoin(struct Tag tag, char *params) {
 	if (chan) {
 		ircFmt("JOIN %s\r\n", chan);
 	} else {
-		uiLog(TAG_DEFAULT, L"/join requires a channel");
+		uiLog(TAG_STATUS, L"/join requires a channel");
 	}
 }
 
@@ -104,9 +103,12 @@ static void inputOpen(struct Tag tag, char *params) {
 static void inputView(struct Tag tag, char *params) {
 	char *view = strsep(&params, " ");
 	if (!view) return;
-	size_t num = strtoul(view, &view, 0);
-	tag = (view[0] ? tagName(view) : tagNum(num));
-	if (tag.name) uiFocus(tag);
+	int num = strtol(view, &view, 0);
+	if (view[0]) {
+		uiViewTag(tagFor(view));
+	} else {
+		uiViewNum(num);
+	}
 }
 
 static const struct {
@@ -128,7 +130,11 @@ static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
 void input(struct Tag tag, char *input) {
 	if (input[0] != '/') {
-		privmsg(tag, false, input);
+		if (tag.id == TAG_VERBOSE.id) {
+			ircFmt("%s\r\n", input);
+		} else if (tag.id != TAG_STATUS.id) {
+			privmsg(tag, false, input);
+		}
 		return;
 	}
 	char *command = strsep(&input, " ");
@@ -138,11 +144,11 @@ void input(struct Tag tag, char *input) {
 		COMMANDS[i].handler(tag, input);
 		return;
 	}
-	uiFmt(TAG_DEFAULT, "%s isn't a recognized command", command);
+	uiFmt(TAG_STATUS, "%s isn't a recognized command", command);
 }
 
 void inputTab(void) {
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
-		tabTouch(TAG_DEFAULT, COMMANDS[i].command);
+		tabTouch(TAG_NONE, COMMANDS[i].command);
 	}
 }

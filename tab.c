@@ -22,7 +22,7 @@
 #include "chat.h"
 
 static struct Entry {
-	size_t tag;
+	struct Tag tag;
 	char *word;
 	struct Entry *prev;
 	struct Entry *next;
@@ -49,7 +49,7 @@ static void touch(struct Entry *entry) {
 
 void tabTouch(struct Tag tag, const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
-		if (entry->tag != tag.id) continue;
+		if (entry->tag.id != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
 		touch(entry);
 		return;
@@ -58,30 +58,28 @@ void tabTouch(struct Tag tag, const char *word) {
 	struct Entry *entry = malloc(sizeof(*entry));
 	if (!entry) err(EX_OSERR, "malloc");
 
-	entry->tag = tag.id;
+	entry->tag = tag;
 	entry->word = strdup(word);
 	if (!entry->word) err(EX_OSERR, "strdup");
 
 	prepend(entry);
 }
 
-void tabReplace(const char *prev, const char *next) {
-	for (struct Entry *entry = head; entry; entry = entry->next) {
-		if (strcmp(entry->word, prev)) continue;
-		free(entry->word);
-		entry->word = strdup(next);
-		if (!entry->word) err(EX_OSERR, "strdup");
-	}
+void tabReplace(struct Tag tag, const char *prev, const char *next) {
+	tabTouch(tag, prev);
+	free(head->word);
+	head->word = strdup(next);
+	if (!head->word) err(EX_OSERR, "strdup");
 }
 
-static struct Entry *match;
+static struct Entry *iter;
 
 void tabRemove(struct Tag tag, const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
-		if (tag.id != TAG_ALL.id && entry->tag != tag.id) continue;
+		if (entry->tag.id != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
+		if (iter == entry) iter = entry->prev;
 		unlink(entry);
-		if (match == entry) match = entry->prev;
 		free(entry->word);
 		free(entry);
 		return;
@@ -90,33 +88,44 @@ void tabRemove(struct Tag tag, const char *word) {
 
 void tabClear(struct Tag tag) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
-		if (entry->tag != tag.id) continue;
+		if (entry->tag.id != tag.id) continue;
+		if (iter == entry) iter = entry->prev;
 		unlink(entry);
-		if (match == entry) match = entry->prev;
 		free(entry->word);
 		free(entry);
 	}
 }
 
+struct Tag tabTag(const char *word) {
+	struct Entry *start = (iter ? iter->next : head);
+	for (struct Entry *entry = start; entry; entry = entry->next) {
+		if (strcmp(entry->word, word)) continue;
+		iter = entry;
+		return entry->tag;
+	}
+	iter = NULL;
+	return TAG_NONE;
+}
+
 const char *tabNext(struct Tag tag, const char *prefix) {
 	size_t len = strlen(prefix);
-	struct Entry *start = (match ? match->next : head);
+	struct Entry *start = (iter ? iter->next : head);
 	for (struct Entry *entry = start; entry; entry = entry->next) {
-		if (entry->tag != TAG_DEFAULT.id && entry->tag != tag.id) continue;
+		if (entry->tag.id != TAG_NONE.id && entry->tag.id != tag.id) continue;
 		if (strncasecmp(entry->word, prefix, len)) continue;
-		match = entry;
+		iter = entry;
 		return entry->word;
 	}
-	if (!match) return NULL;
-	match = NULL;
+	if (!iter) return NULL;
+	iter = NULL;
 	return tabNext(tag, prefix);
 }
 
 void tabAccept(void) {
-	if (match) touch(match);
-	match = NULL;
+	if (iter) touch(iter);
+	iter = NULL;
 }
 
 void tabReject(void) {
-	match = NULL;
+	iter = NULL;
 }

@@ -23,14 +23,17 @@
 
 #include "chat.h"
 
-static int color(const char *s) {
-	if (!s) return 0;
-	int x = 0;
-	for (; s[0]; ++s) {
-		x ^= s[0];
+// Adapted from <https://github.com/cbreeden/fxhash/blob/master/lib.rs>.
+static int color(const char *str) {
+	if (!str) return IRC_GRAY;
+	uint32_t hash = 0;
+	for (; str[0]; ++str) {
+		hash = (hash << 5) | (hash >> 27);
+		hash ^= str[0];
+		hash *= 0x27220A95;
 	}
-	x &= 15;
-	return (x == 1) ? 0 : x;
+	hash &= IRC_LIGHT_GRAY;
+	return (hash == IRC_BLACK) ? IRC_GRAY : hash;
 }
 
 static char *paramField(char **params) {
@@ -90,44 +93,41 @@ static void handlePing(char *prefix, char *params) {
 	ircFmt("PONG %s\r\n", params);
 }
 
-static void handle432(char *prefix, char *params) {
+static void handleReplyErroneousNickname(char *prefix, char *params) {
 	char *mesg;
 	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
-	uiLog(TAG_DEFAULT, L"You can't use that name here");
-	uiFmt(TAG_DEFAULT, "Sheriff says, \"%s\"", mesg);
-	uiLog(TAG_DEFAULT, L"Type /nick <name> to choose a new one");
+	uiLog(TAG_STATUS, L"You can't use that name here");
+	uiFmt(TAG_STATUS, "Sheriff says, \"%s\"", mesg);
+	uiLog(TAG_STATUS, L"Type /nick <name> to choose a new one");
 }
 
-static void handle001(char *prefix, char *params) {
+static void handleReplyWelcome(char *prefix, char *params) {
 	char *nick;
 	shift(prefix, NULL, NULL, NULL, params, 1, 0, &nick);
 	if (strcmp(nick, self.nick)) selfNick(nick);
-	tabTouch(TAG_DEFAULT, self.nick);
+	tabTouch(TAG_STATUS, self.nick);
 	if (self.join) ircFmt("JOIN %s\r\n", self.join);
-	uiLog(TAG_DEFAULT, L"You have arrived");
+	uiLog(TAG_STATUS, L"You have arrived");
 }
 
-static void handle372(char *prefix, char *params) {
+static void handleReplyMOTD(char *prefix, char *params) {
 	char *mesg;
 	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &mesg);
 	if (mesg[0] == '-' && mesg[1] == ' ') mesg = &mesg[2];
-	uiFmt(TAG_DEFAULT, "%s", mesg);
+	urlScan(TAG_STATUS, mesg);
+	uiFmt(TAG_STATUS, "%s", mesg);
 }
 
 static void handleJoin(char *prefix, char *params) {
 	char *nick, *user, *chan;
 	shift(prefix, &nick, &user, NULL, params, 1, 0, &chan);
 	struct Tag tag = tagFor(chan);
-	if (isSelf(nick, user)) {
-		tabTouch(TAG_DEFAULT, chan);
-		uiFocus(tag);
-	} else {
-		tabTouch(tag, nick);
-	}
+	tabTouch(tag, nick);
 	uiFmt(
 		tag, "\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
 	);
+	if (isSelf(nick, user)) uiViewTag(tag);
 }
 
 static void handlePart(char *prefix, char *params) {
@@ -136,6 +136,7 @@ static void handlePart(char *prefix, char *params) {
 	struct Tag tag = tagFor(chan);
 	(void)(isSelf(nick, user) ? tabClear(tag) : tabRemove(tag, nick));
 	if (mesg) {
+		urlScan(tag, mesg);
 		uiFmt(
 			tag, "\3%d%s\3 leaves \3%d%s\3, \"%s\"",
 			color(user), nick, color(chan), chan, mesg
@@ -154,6 +155,7 @@ static void handleKick(char *prefix, char *params) {
 	struct Tag tag = tagFor(chan);
 	(void)(isSelf(nick, user) ? tabClear(tag) : tabRemove(tag, nick));
 	if (mesg) {
+		urlScan(tag, mesg);
 		uiFmt(
 			tag, "\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
 			color(user), nick, color(kick), kick, color(chan), chan, mesg
@@ -169,20 +171,23 @@ static void handleKick(char *prefix, char *params) {
 static void handleQuit(char *prefix, char *params) {
 	char *nick, *user, *mesg;
 	shift(prefix, &nick, &user, NULL, params, 0, 1, &mesg);
-	// TODO: Send to tags where nick is in tab.
-	tabRemove(TAG_ALL, nick);
-	if (mesg) {
-		char *quot = (mesg[0] == '"') ? "" : "\"";
-		uiFmt(
-			TAG_DEFAULT, "\3%d%s\3 leaves, %s%s%s",
-			color(user), nick, quot, mesg, quot
-		);
-	} else {
-		uiFmt(TAG_DEFAULT, "\3%d%s\3 leaves", color(user), nick);
+	char *quot = (mesg && mesg[0] == '"') ? "" : "\"";
+	struct Tag tag;
+	while (TAG_NONE.id != (tag = tabTag(nick)).id) {
+		tabRemove(tag, nick);
+		if (mesg) {
+			urlScan(tag, mesg);
+			uiFmt(
+				tag, "\3%d%s\3 leaves, %s%s%s",
+				color(user), nick, quot, mesg, quot
+			);
+		} else {
+			uiFmt(tag, "\3%d%s\3 leaves", color(user), nick);
+		}
 	}
 }
 
-static void handle332(char *prefix, char *params) {
+static void handleReplyTopic(char *prefix, char *params) {
 	char *chan, *topic;
 	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &chan, &topic);
 	struct Tag tag = tagFor(chan);
@@ -207,7 +212,7 @@ static void handleTopic(char *prefix, char *params) {
 	);
 }
 
-static void handle366(char *prefix, char *params) {
+static void handleReplyEndOfNames(char *prefix, char *params) {
 	char *chan;
 	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
 	ircFmt("WHO %s\r\n", chan);
@@ -219,14 +224,14 @@ static struct {
 	size_t len;
 } who;
 
-static void handle352(char *prefix, char *params) {
+static void handleReplyWho(char *prefix, char *params) {
 	char *chan, *user, *nick;
 	shift(
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &chan, &user, NULL, NULL, &nick
 	);
 	struct Tag tag = tagFor(chan);
-	if (!isSelf(nick, user)) tabTouch(tag, nick);
+	tabTouch(tag, nick);
 	size_t cap = sizeof(who.buf) - who.len;
 	int len = snprintf(
 		&who.buf[who.len], cap,
@@ -236,7 +241,7 @@ static void handle352(char *prefix, char *params) {
 	if ((size_t)len < cap) who.len += len;
 }
 
-static void handle315(char *prefix, char *params) {
+static void handleReplyEndOfWho(char *prefix, char *params) {
 	char *chan;
 	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
 	struct Tag tag = tagFor(chan);
@@ -251,12 +256,14 @@ static void handleNick(char *prefix, char *params) {
 	char *prev, *user, *next;
 	shift(prefix, &prev, &user, NULL, params, 1, 0, &next);
 	if (isSelf(prev, user)) selfNick(next);
-	// TODO: Send to tags where prev is in tab.
-	tabReplace(prev, next);
-	uiFmt(
-		TAG_DEFAULT, "\3%d%s\3 is now known as \3%d%s\3",
-		color(user), prev, color(user), next
-	);
+	struct Tag tag;
+	while (TAG_NONE.id != (tag = tabTag(prev)).id) {
+		tabReplace(tag, prev, next);
+		uiFmt(
+			tag, "\3%d%s\3 is now known as \3%d%s\3",
+			color(user), prev, color(user), next
+		);
+	}
 }
 
 static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
@@ -288,13 +295,13 @@ static void handlePrivmsg(char *prefix, char *params) {
 		tag, "%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
 	);
-	if (ping) uiBeep();
+	// TODO: always be beeping.
 }
 
 static void handleNotice(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
-	struct Tag tag = TAG_DEFAULT;
+	struct Tag tag = TAG_STATUS;
 	if (user) tag = (strcmp(chan, self.nick) ? tagFor(chan) : tagFor(nick));
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 	urlScan(tag, mesg);
@@ -308,15 +315,15 @@ static const struct {
 	const char *command;
 	Handler handler;
 } HANDLERS[] = {
-	{ "001", handle001 },
-	{ "315", handle315 },
-	{ "332", handle332 },
-	{ "352", handle352 },
-	{ "366", handle366 },
-	{ "372", handle372 },
-	{ "375", handle372 },
-	{ "432", handle432 },
-	{ "433", handle432 },
+	{ "001", handleReplyWelcome },
+	{ "315", handleReplyEndOfWho },
+	{ "332", handleReplyTopic },
+	{ "352", handleReplyWho },
+	{ "366", handleReplyEndOfNames },
+	{ "372", handleReplyMOTD },
+	{ "375", handleReplyMOTD },
+	{ "432", handleReplyErroneousNickname },
+	{ "433", handleReplyErroneousNickname },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "NICK", handleNick },

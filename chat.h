@@ -42,12 +42,29 @@ struct Tag {
 };
 
 enum { TAGS_LEN = 256 };
-const struct Tag TAG_ALL;
-const struct Tag TAG_DEFAULT;
+const struct Tag TAG_NONE;
+const struct Tag TAG_STATUS;
+const struct Tag TAG_VERBOSE;
 struct Tag tagFor(const char *name);
-struct Tag tagName(const char *name);
-struct Tag tagNum(size_t num);
 
+enum {
+	IRC_WHITE,
+	IRC_BLACK,
+	IRC_BLUE,
+	IRC_GREEN,
+	IRC_RED,
+	IRC_BROWN,
+	IRC_MAGENTA,
+	IRC_ORANGE,
+	IRC_YELLOW,
+	IRC_LIGHT_GREEN,
+	IRC_CYAN,
+	IRC_LIGHT_CYAN,
+	IRC_LIGHT_BLUE,
+	IRC_PINK,
+	IRC_GRAY,
+	IRC_LIGHT_GRAY,
+};
 enum {
 	IRC_BOLD      = 002,
 	IRC_COLOR     = 003,
@@ -72,9 +89,9 @@ void uiInit(void);
 void uiHide(void);
 void uiExit(void);
 void uiDraw(void);
-void uiBeep(void);
 void uiRead(void);
-void uiFocus(struct Tag tag);
+void uiViewTag(struct Tag tag);
+void uiViewNum(int num);
 void uiTopic(struct Tag tag, const char *topic);
 void uiLog(struct Tag tag, const wchar_t *line);
 void uiFmt(struct Tag tag, const wchar_t *format, ...);
@@ -115,8 +132,9 @@ const wchar_t *editTail(void);
 
 void tabTouch(struct Tag tag, const char *word);
 void tabRemove(struct Tag tag, const char *word);
+void tabReplace(struct Tag tag, const char *prev, const char *next);
 void tabClear(struct Tag tag);
-void tabReplace(const char *prev, const char *next);
+struct Tag tabTag(const char *word);
 const char *tabNext(struct Tag tag, const char *prefix);
 void tabAccept(void);
 void tabReject(void);

@@ -21,57 +21,30 @@
 
 #include "chat.h"
 
-const struct Tag TAG_ALL = { (size_t)-1, NULL };
-const struct Tag TAG_DEFAULT = { 0, "(status)" };
+const struct Tag TAG_NONE    = { 0, "" };
+const struct Tag TAG_STATUS  = { 1, "(status)" };
+const struct Tag TAG_VERBOSE = { 2, "(irc)" };
 
 static struct {
 	char *name[TAGS_LEN];
 	size_t len;
-	size_t gap;
 } tags = {
-	.name = { "(status)" },
-	.len = 1,
-	.gap = 1,
+	.name = { "", "(status)", "(irc)" },
+	.len = 3,
 };
 
 static struct Tag Tag(size_t id) {
 	return (struct Tag) { id, tags.name[id] };
 }
 
-struct Tag tagName(const char *name) {
+struct Tag tagFor(const char *name) {
 	for (size_t id = 0; id < tags.len; ++id) {
-		if (!tags.name[id] || strcmp(tags.name[id], name)) continue;
+		if (strcmp(tags.name[id], name)) continue;
 		return Tag(id);
 	}
-	return TAG_ALL;
-}
-
-struct Tag tagNum(size_t num) {
-	if (num < tags.gap) return Tag(num);
-	num -= tags.gap;
-	for (size_t id = tags.gap; id < tags.len; ++id) {
-		if (!tags.name[id]) continue;
-		if (!num--) return Tag(id);
-	}
-	return TAG_ALL;
-}
-
-struct Tag tagFor(const char *name) {
-	struct Tag tag = tagName(name);
-	if (tag.name) return tag;
-
-	size_t id = tags.gap;
+	if (tags.len == TAGS_LEN) return TAG_STATUS;
+	size_t id = tags.len++;
 	tags.name[id] = strdup(name);
 	if (!tags.name[id]) err(EX_OSERR, "strdup");
-
-	if (tags.gap == tags.len) {
-		tags.gap++;
-		tags.len++;
-	} else {
-		for (tags.gap++; tags.gap < tags.len; ++tags.gap) {
-			if (!tags.name[tags.gap]) break;
-		}
-	}
-
 	return Tag(id);
 }
