@@ -145,7 +145,7 @@ static char *prompt(const char *prompt) {
 		fflush(stdout);
 
 		ssize_t len = getline(&line, &cap, stdin);
-		//if (ferror(stdin)) err(EX_IOERR, "getline");
+		if (ferror(stdin)) err(EX_IOERR, "getline");
 		if (feof(stdin)) exit(EX_OK);
 		if (len < 2) continue;
 
