@@ -30,40 +30,56 @@ static const char *SCHEMES[] = {
 };
 static const size_t SCHEMES_LEN = sizeof(SCHEMES) / sizeof(SCHEMES[0]);
 
-enum { RING_LEN = 16 };
-static char *ring[RING_LEN];
-static size_t last;
+struct Entry {
+	size_t tag;
+	char *url;
+};
+
+enum { RING_LEN = 32 };
 static_assert(!(RING_LEN & (RING_LEN - 1)), "power of two RING_LEN");
 
-static void push(const char *url, size_t len) {
-	free(ring[last]);
-	ring[last++] = strndup(url, len);
-	last &= RING_LEN - 1;
+static struct {
+	struct Entry buf[RING_LEN];
+	size_t end;
+} ring;
+
+static void push(struct Tag tag, const char *url, size_t len) {
+	free(ring.buf[ring.end].url);
+	ring.buf[ring.end].tag = tag.id;
+	ring.buf[ring.end].url = strndup(url, len);
+	if (!ring.buf[ring.end].url) err(EX_OSERR, "strndup");
+	ring.end = (ring.end + 1) & (RING_LEN - 1);
 }
 
-void urlScan(const char *str) {
+void urlScan(struct Tag tag, const char *str) {
 	while (str[0]) {
 		size_t len = 1;
 		for (size_t i = 0; i < SCHEMES_LEN; ++i) {
 			if (strncmp(str, SCHEMES[i], strlen(SCHEMES[i]))) continue;
 			len = strcspn(str, " >\"");
-			push(str, len);
+			push(tag, str, len);
 		}
 		str = &str[len];
 	}
 }
 
-void urlList(void) {
+void urlList(struct Tag tag) {
 	uiHide();
 	for (size_t i = 0; i < RING_LEN; ++i) {
-		char *url = ring[(i + last) & (RING_LEN - 1)];
-		if (url) printf("%s\n", url);
+		struct Entry entry = ring.buf[(ring.end + i) & (RING_LEN - 1)];
+		if (!entry.url || entry.tag != tag.id) continue;
+		printf("%s\n", entry.url);
 	}
 }
 
-void urlOpen(size_t i) {
-	char *url = ring[(last - i) & (RING_LEN - 1)];
-	if (!url) return;
-	char *argv[] = { "open", url, NULL };
-	spawn(argv);
+void urlOpen(struct Tag tag, size_t fromEnd) {
+	size_t count = 0;
+	for (size_t i = 0; i < RING_LEN; ++i) {
+		struct Entry entry = ring.buf[(ring.end - i) & (RING_LEN - 1)];
+		if (!entry.url || entry.tag != tag.id) continue;
+		if (++count != fromEnd) continue;
+		char *argv[] = { "open", entry.url, NULL };
+		spawn(argv);
+		return;
+	}
 }

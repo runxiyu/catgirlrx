@@ -22,6 +22,7 @@
 #include "chat.h"
 
 static struct Entry {
+	size_t tag;
 	char *word;
 	struct Entry *prev;
 	struct Entry *next;
@@ -46,8 +47,9 @@ static void touch(struct Entry *entry) {
 	prepend(entry);
 }
 
-void tabTouch(const char *word) {
+void tabTouch(struct Tag tag, const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
+		if (entry->tag != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
 		touch(entry);
 		return;
@@ -55,20 +57,28 @@ void tabTouch(const char *word) {
 
 	struct Entry *entry = malloc(sizeof(*entry));
 	if (!entry) err(EX_OSERR, "malloc");
+
+	entry->tag = tag.id;
 	entry->word = strdup(word);
+	if (!entry->word) err(EX_OSERR, "strdup");
+
 	prepend(entry);
 }
 
 void tabReplace(const char *prev, const char *next) {
-	tabTouch(prev);
-	free(head->word);
-	head->word = strdup(next);
+	for (struct Entry *entry = head; entry; entry = entry->next) {
+		if (strcmp(entry->word, prev)) continue;
+		free(entry->word);
+		entry->word = strdup(next);
+		if (!entry->word) err(EX_OSERR, "strdup");
+	}
 }
 
 static struct Entry *match;
 
-void tabRemove(const char *word) {
+void tabRemove(struct Tag tag, const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
+		if (tag.id != TAG_ALL.id && entry->tag != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
 		unlink(entry);
 		if (match == entry) match = entry->next;
@@ -78,17 +88,28 @@ void tabRemove(const char *word) {
 	}
 }
 
-const char *tabNext(const char *prefix) {
+void tabClear(struct Tag tag) {
+	for (struct Entry *entry = head; entry; entry = entry->next) {
+		if (entry->tag != tag.id) continue;
+		unlink(entry);
+		if (match == entry) match = entry->next;
+		free(entry->word);
+		free(entry);
+	}
+}
+
+const char *tabNext(struct Tag tag, const char *prefix) {
 	size_t len = strlen(prefix);
 	struct Entry *start = (match ? match->next : head);
 	for (struct Entry *entry = start; entry; entry = entry->next) {
+		if (entry->tag != TAG_DEFAULT.id && entry->tag != tag.id) continue;
 		if (strncasecmp(entry->word, prefix, len)) continue;
 		match = entry;
 		return entry->word;
 	}
 	if (!match) return NULL;
 	match = NULL;
-	return tabNext(prefix);
+	return tabNext(tag, prefix);
 }
 
 void tabAccept(void) {

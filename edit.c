@@ -34,6 +34,7 @@ static struct {
 	.end = line.buf,
 };
 
+// XXX: editTail must always be called after editHead.
 static wchar_t tail;
 const wchar_t *editHead(void) {
 	tail = *line.ptr;
@@ -41,8 +42,9 @@ const wchar_t *editHead(void) {
 	return line.buf;
 }
 const wchar_t *editTail(void) {
-	*line.ptr = tail;
+	if (tail) *line.ptr = tail;
 	*line.end = L'\0';
+	tail = L'\0';
 	return line.ptr;
 }
 
@@ -52,13 +54,29 @@ static void left(void) {
 static void right(void) {
 	if (line.ptr < line.end) line.ptr++;
 }
-static void home(void) {
-	line.ptr = line.buf;
+
+static void backWord(void) {
+	left();
+	editHead();
+	wchar_t *word = wcsrchr(line.buf, ' ');
+	editTail();
+	line.ptr = (word ? &word[1] : line.buf);
 }
-static void end(void) {
-	line.ptr = line.end;
+static void foreWord(void) {
+	right();
+	editTail();
+	wchar_t *word = wcschr(line.ptr, ' ');
+	line.ptr = (word ? word : line.end);
 }
 
+static void insert(wchar_t ch) {
+	if (line.end == &line.buf[BUF_LEN - 1]) return;
+	if (line.ptr != line.end) {
+		wmemmove(line.ptr + 1, line.ptr, line.end - line.ptr);
+	}
+	*line.ptr++ = ch;
+	line.end++;
+}
 static void backspace(void) {
 	if (line.ptr == line.buf) return;
 	if (line.ptr != line.end) {
@@ -71,41 +89,6 @@ static void delete(void) {
 	if (line.ptr == line.end) return;
 	right();
 	backspace();
-}
-
-static void insert(wchar_t ch) {
-	if (line.end == &line.buf[BUF_LEN - 1]) return;
-	if (line.ptr != line.end) {
-		wmemmove(line.ptr + 1, line.ptr, line.end - line.ptr);
-	}
-	*line.ptr++ = ch;
-	line.end++;
-}
-
-static void enter(void) {
-	if (line.end == line.buf) return;
-	*line.end = L'\0';
-	char *str = awcstombs(line.buf);
-	if (!str) err(EX_DATAERR, "awcstombs");
-	input(str);
-	free(str);
-	line.ptr = line.buf;
-	line.end = line.buf;
-}
-
-static void backWord(void) {
-	left();
-	editHead();
-	wchar_t *word = wcsrchr(line.buf, ' ');
-	editTail();
-	line.ptr = (word ? &word[1] : line.buf);
-}
-static void foreWord(void) {
-	right();
-	editHead();
-	editTail();
-	wchar_t *word = wcschr(line.ptr, ' ');
-	line.ptr = (word ? word : line.end);
 }
 
 static void killBackWord(void) {
@@ -121,12 +104,9 @@ static void killForeWord(void) {
 	line.end -= line.ptr - from;
 	line.ptr = from;
 }
-static void killLine(void) {
-	line.end = line.ptr;
-}
 
 static char *prefix;
-static void complete(void) {
+static void complete(struct Tag tag) {
 	if (!line.tab) {
 		editHead();
 		line.tab = wcsrchr(line.buf, L' ');
@@ -136,7 +116,7 @@ static void complete(void) {
 		editTail();
 	}
 
-	const char *next = tabNext(prefix);
+	const char *next = tabNext(tag, prefix);
 	if (!next) return;
 
 	wchar_t *wcs = ambstowcs(next);
@@ -179,52 +159,37 @@ static void reject(void) {
 	tabReject();
 }
 
-static bool editMeta(wchar_t ch) {
-	switch (ch) {
-		break; case L'b':  reject(); backWord();
-		break; case L'f':  reject(); foreWord();
-		break; case L'\b': reject(); killBackWord();
-		break; case L'd':  reject(); killForeWord();
-
-		break; default: return false;
-	}
-	return true;
+static void enter(struct Tag tag) {
+	if (line.end == line.buf) return;
+	editTail();
+	char *str = awcstombs(line.buf);
+	if (!str) err(EX_DATAERR, "awcstombs");
+	input(tag, str);
+	free(str);
+	line.ptr = line.buf;
+	line.end = line.buf;
 }
 
-static bool editCtrl(wchar_t ch) {
-	switch (ch) {
-		break; case L'B': reject(); left();
-		break; case L'F': reject(); right();
-		break; case L'A': reject(); home();
-		break; case L'E': reject(); end();
-		break; case L'D': reject(); delete();
-		break; case L'W': reject(); killBackWord();
-		break; case L'K': reject(); killLine();
+void edit(struct Tag tag, enum Edit op, wchar_t ch) {
+	switch (op) {
+		break; case EDIT_LEFT:  reject(); left();
+		break; case EDIT_RIGHT: reject(); right();
+		break; case EDIT_HOME:  reject(); line.ptr = line.buf;
+		break; case EDIT_END:   reject(); line.ptr = line.end;
 
-		break; case L'C': accept(); insert(IRC_COLOR);
-		break; case L'N': accept(); insert(IRC_RESET);
-		break; case L'O': accept(); insert(IRC_BOLD);
-		break; case L'R': accept(); insert(IRC_COLOR);
-		break; case L'T': accept(); insert(IRC_ITALIC);
-		break; case L'V': accept(); insert(IRC_REVERSE);
+		break; case EDIT_BACK_WORD: reject(); backWord();
+		break; case EDIT_FORE_WORD: reject(); foreWord();
 
-		break; default: return false;
+		break; case EDIT_INSERT:    accept(); insert(ch);
+		break; case EDIT_BACKSPACE: reject(); backspace();
+		break; case EDIT_DELETE:    reject(); delete();
+
+		break; case EDIT_KILL_BACK_WORD: reject(); killBackWord();
+		break; case EDIT_KILL_FORE_WORD: reject(); killForeWord();
+		break; case EDIT_KILL_LINE:      reject(); line.end = line.ptr;
+
+		break; case EDIT_COMPLETE: complete(tag);
+
+		break; case EDIT_ENTER: accept(); enter(tag);
 	}
-	return true;
-}
-
-bool edit(bool meta, bool ctrl, wchar_t ch) {
-	if (meta) return editMeta(ch);
-	if (ctrl) return editCtrl(ch);
-	switch (ch) {
-		break; case L'\t': complete();
-		break; case L'\b': reject(); backspace();
-		break; case L'\n': accept(); enter();
-		break; default: {
-			if (!iswprint(ch)) return false;
-			accept();
-			insert(ch);
-		}
-	}
-	return true;
 }

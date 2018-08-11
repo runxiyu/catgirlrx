@@ -29,6 +29,22 @@
 
 #include "chat.h"
 
+void selfNick(const char *nick) {
+	free(self.nick);
+	self.nick = strdup(nick);
+	if (!self.nick) err(EX_OSERR, "strdup");
+}
+void selfUser(const char *user) {
+	free(self.user);
+	self.user = strdup(user);
+	if (!self.user) err(EX_OSERR, "strdup");
+}
+void selfJoin(const char *join) {
+	free(self.join);
+	self.join = strdup(join);
+	if (!self.join) err(EX_OSERR, "strdup");
+}
+
 static union {
 	struct {
 		struct pollfd ui;
@@ -44,7 +60,7 @@ static union {
 
 void spawn(char *const argv[]) {
 	if (fds.pipe.events) {
-		uiLog(L"spawn: existing pipe");
+		uiLog(TAG_DEFAULT, L"spawn: existing pipe");
 		return;
 	}
 
@@ -77,7 +93,7 @@ static void pipeRead(void) {
 	if (len) {
 		buf[len] = '\0';
 		len = strcspn(buf, "\n");
-		uiFmt("%.*s", (int)len, buf);
+		uiFmt(TAG_DEFAULT, "%.*s", (int)len, buf);
 	} else {
 		close(fds.pipe.fd);
 		fds.pipe.events = 0;
@@ -108,15 +124,15 @@ static void sigchld(int sig) {
 	pid_t pid = wait(&status);
 	if (pid < 0) err(EX_OSERR, "wait");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		uiFmt("spawn: exit %d", WEXITSTATUS(status));
+		uiFmt(TAG_DEFAULT, "spawn: exit %d", WEXITSTATUS(status));
 	} else if (WIFSIGNALED(status)) {
-		uiFmt("spawn: signal %d", WTERMSIG(status));
+		uiFmt(TAG_DEFAULT, "spawn: signal %d", WTERMSIG(status));
 	}
 }
 
 static void sigint(int sig) {
 	(void)sig;
-	input("/quit");
+	input(TAG_DEFAULT, "/quit");
 	uiExit();
 	exit(EX_OK);
 }
@@ -129,7 +145,7 @@ static char *prompt(const char *prompt) {
 		fflush(stdout);
 
 		ssize_t len = getline(&line, &cap, stdin);
-		if (ferror(stdin)) err(EX_IOERR, "getline");
+		//if (ferror(stdin)) err(EX_IOERR, "getline");
 		if (feof(stdin)) exit(EX_OK);
 		if (len < 2) continue;
 
@@ -149,25 +165,24 @@ int main(int argc, char *argv[]) {
 		switch (opt) {
 			break; case 'W': webirc = optarg;
 			break; case 'h': host = strdup(optarg);
-			break; case 'j': chat.join = strdup(optarg);
-			break; case 'n': chat.nick = strdup(optarg);
+			break; case 'j': selfJoin(optarg);
+			break; case 'n': selfNick(optarg);
 			break; case 'p': port = optarg;
-			break; case 'u': chat.user = strdup(optarg);
-			break; case 'v': chat.verbose = true;
+			break; case 'u': selfUser(optarg);
+			break; case 'v': self.verbose = true;
 			break; case 'w': pass = optarg;
 			break; default:  return EX_USAGE;
 		}
 	}
 
 	if (!host) host = prompt("Host: ");
-	if (!chat.join) chat.join = prompt("Join: ");
-	if (!chat.nick) chat.nick = prompt("Name: ");
-	if (!chat.user) chat.user = strdup(chat.nick);
+	if (!self.nick) self.nick = prompt("Name: ");
+	if (!self.user) selfUser(self.nick);
 
 	inputTab();
 
 	uiInit();
-	uiLog(L"Traveling...");
+	uiLog(TAG_DEFAULT, L"Traveling...");
 	uiDraw();
 
 	fds.irc.fd = ircConnect(host, port, pass, webirc);

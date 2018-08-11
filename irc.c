@@ -39,7 +39,7 @@ static void webirc(const char *pass) {
 	if (sp) len = sp - ssh;
 	ircFmt(
 		"WEBIRC %s %s %.*s %.*s\r\n",
-		pass, chat.user, len, ssh, len, ssh
+		pass, self.user, len, ssh, len, ssh
 	);
 }
 
@@ -83,11 +83,8 @@ int ircConnect(
 
 	if (webPass) webirc(webPass);
 	if (pass) ircFmt("PASS :%s\r\n", pass);
-	ircFmt(
-		"NICK %s\r\n"
-		"USER %s 0 * :%s\r\n",
-		chat.nick, chat.user, chat.nick
-	);
+	ircFmt("NICK %s\r\n", self.nick);
+	ircFmt("USER %s 0 * :%s\r\n", self.user, self.nick);
 
 	return sock;
 }
@@ -109,7 +106,7 @@ void ircFmt(const char *format, ...) {
 	int len = vasprintf(&buf, format, ap);
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
-	if (chat.verbose) uiFmt("<<< %.*s", len - 2, buf);
+	if (self.verbose) uiFmt(tagFor("(irc)"), "\00314<<<\3 %.*s", len - 2, buf);
 	ircWrite(buf, len);
 	free(buf);
 }
@@ -129,7 +126,7 @@ void ircRead(void) {
 	char *crlf, *line = buf;
 	while ((crlf = strnstr(line, "\r\n", &buf[len] - line))) {
 		crlf[0] = '\0';
-		if (chat.verbose) uiFmt(">>> %s", line);
+		if (self.verbose) uiFmt(tagFor("(irc)"), "\00314>>>\3 %s", line);
 		handle(line);
 		line = &crlf[2];
 	}
