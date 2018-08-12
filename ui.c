@@ -358,16 +358,22 @@ void uiFmt(struct Tag tag, const wchar_t *format, ...) {
 	free(wcs);
 }
 
-static void logPageUp(void) {
+static void logScrollUp(int lines) {
 	int height = logHeight(ui.view);
 	if (ui.view->scroll == height) return;
 	if (ui.view->scroll == LOG_LINES) ui.view->mark = true;
-	ui.view->scroll = MAX(ui.view->scroll - height / 2, height);
+	ui.view->scroll = MAX(ui.view->scroll - lines, height);
+}
+static void logScrollDown(int lines) {
+	if (ui.view->scroll == LOG_LINES) return;
+	ui.view->scroll = MIN(ui.view->scroll + lines, LOG_LINES);
+	if (ui.view->scroll == LOG_LINES) ui.view->mark = false;
+}
+static void logPageUp(void) {
+	logScrollUp(logHeight(ui.view) / 2);
 }
 static void logPageDown(void) {
-	if (ui.view->scroll == LOG_LINES) return;
-	ui.view->scroll = MIN(ui.view->scroll + logHeight(ui.view) / 2, LOG_LINES);
-	if (ui.view->scroll == LOG_LINES) ui.view->mark = false;
+	logScrollDown(logHeight(ui.view) / 2);
 }
 
 static bool keyChar(wchar_t ch) {
@@ -439,6 +445,8 @@ static bool keyChar(wchar_t ch) {
 static bool keyCode(wchar_t ch) {
 	switch (ch) {
 		break; case KEY_RESIZE:    uiResize(); return false;
+		break; case KEY_SLEFT:     logScrollUp(1); return false;
+		break; case KEY_SRIGHT:    logScrollDown(1); return false;
 		break; case KEY_PPAGE:     logPageUp(); return false;
 		break; case KEY_NPAGE:     logPageDown(); return false;
 		break; case KEY_LEFT:      edit(ui.view->tag, EDIT_LEFT, 0);
