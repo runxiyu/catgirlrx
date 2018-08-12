@@ -123,7 +123,7 @@ static struct View *viewTag(struct Tag tag) {
 	view->log = newpad(LOG_LINES, COLS);
 	wsetscrreg(view->log, 0, lastLogLine());
 	scrollok(view->log, true);
-	wmove(view->log, lastLogLine() - logHeight(view), 0);
+	wmove(view->log, lastLogLine() - logHeight(view) + 2, 0);
 	view->scroll = LOG_LINES;
 
 	viewAppend(view);
