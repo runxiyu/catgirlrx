@@ -131,6 +131,17 @@ static struct View *viewTag(struct Tag tag) {
 	return view;
 }
 
+void uiHide(void) {
+	ui.hide = true;
+	termMode(TERM_FOCUS, false);
+	endwin();
+}
+
+static void uiShow(void) {
+	ui.hide = false;
+	termMode(TERM_FOCUS, true);
+}
+
 void uiInit(void) {
 	setlocale(LC_CTYPE, "");
 	initscr();
@@ -138,7 +149,6 @@ void uiInit(void) {
 	noecho();
 
 	colorInit();
-	termMode(TERM_FOCUS, true);
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
@@ -147,16 +157,12 @@ void uiInit(void) {
 	nodelay(ui.input, true);
 
 	ui.view = viewTag(TAG_STATUS);
-}
 
-void uiHide(void) {
-	ui.hide = true;
-	endwin();
+	uiShow();
 }
 
 void uiExit(void) {
 	uiHide();
-	termMode(TERM_FOCUS, false);
 	printf(
 		"This program is AGPLv3 free software!\n"
 		"The source is available at <" SOURCE_URL ">.\n"
@@ -461,7 +467,7 @@ static bool keyCode(wchar_t ch) {
 }
 
 void uiRead(void) {
-	ui.hide = false;
+	uiShow();
 
 	bool update = false;
 	int ret;
