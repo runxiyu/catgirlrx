@@ -64,6 +64,21 @@ static void inputJoin(struct Tag tag, char *params) {
 	ircFmt("JOIN %s\r\n", chan);
 }
 
+static void inputPart(struct Tag tag, char *params) {
+	if (params) {
+		ircFmt("PART %s :%s\r\n", tag.name, params);
+	} else {
+		ircFmt("PART %s :Goodbye\r\n", tag.name);
+	}
+}
+
+static void inputQuery(struct Tag tag, char *params) {
+	(void)tag;
+	char *nick = param("/query", &params, "name");
+	tabTouch(TAG_NONE, nick);
+	uiViewTag(tagFor(nick));
+}
+
 static void inputWho(struct Tag tag, char *params) {
 	(void)params;
 	ircFmt("WHO %s\r\n", tag.name);
@@ -113,15 +128,24 @@ static void inputView(struct Tag tag, char *params) {
 	}
 }
 
+static void inputClose(struct Tag tag, char *params) {
+	(void)params;
+	uiCloseTag(tag);
+	tabRemove(TAG_NONE, tag.name);
+}
+
 static const struct {
 	const char *command;
 	Handler handler;
 } COMMANDS[] = {
+	{ "/close", inputClose },
 	{ "/join", inputJoin },
 	{ "/me", inputMe },
 	{ "/names", inputWho },
 	{ "/nick", inputNick },
 	{ "/open", inputOpen },
+	{ "/part", inputPart },
+	{ "/query", inputQuery },
 	{ "/quit", inputQuit },
 	{ "/topic", inputTopic },
 	{ "/url", inputUrl },

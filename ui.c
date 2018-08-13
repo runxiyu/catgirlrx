@@ -70,11 +70,7 @@ static short pair8(short pair) {
 	return (pair & 0x70) >> 1 | (pair & 0x07);
 }
 
-static const int LOG_LINES   = 256;
-static const int TOPIC_COLS  = 512;
-static const int INPUT_COLS  = 512;
-
-static struct View {
+struct View {
 	struct Tag tag;
 	WINDOW *topic;
 	WINDOW *log;
@@ -82,15 +78,34 @@ static struct View {
 	bool mark;
 	struct View *prev;
 	struct View *next;
-} *viewHead, *viewTail;
+};
+
+static struct {
+	struct View *head;
+	struct View *tail;
+	struct View *tags[TAGS_LEN];
+} views;
 
 static void viewAppend(struct View *view) {
-	if (viewTail) viewTail->next = view;
-	view->prev = viewTail;
+	if (views.tail) views.tail->next = view;
+	view->prev = views.tail;
 	view->next = NULL;
-	viewTail = view;
-	if (!viewHead) viewHead = view;
+	if (!views.head) views.head = view;
+	views.tail = view;
+	views.tags[view->tag.id] = view;
 }
+
+static void viewRemove(struct View *view) {
+	if (view->prev) view->prev->next = view->next;
+	if (view->next) view->next->prev = view->prev;
+	if (views.head == view) views.head = view->next;
+	if (views.tail == view) views.tail = view->prev;
+	views.tags[view->tag.id] = NULL;
+}
+
+static const int LOG_LINES   = 256;
+static const int TOPIC_COLS  = 512;
+static const int INPUT_COLS  = 512;
 
 static int logHeight(const struct View *view) {
 	return LINES - (view->topic ? 2 : 0) - 2;
@@ -105,15 +120,8 @@ static int lastCol(void) {
 	return COLS - 1;
 }
 
-static struct {
-	bool hide;
-	WINDOW *input;
-	struct View *view;
-	struct View *tags[TAGS_LEN];
-} ui;
-
 static struct View *viewTag(struct Tag tag) {
-	struct View *view = ui.tags[tag.id];
+	struct View *view = views.tags[tag.id];
 	if (view) return view;
 
 	view = calloc(1, sizeof(*view));
@@ -127,9 +135,21 @@ static struct View *viewTag(struct Tag tag) {
 	view->scroll = LOG_LINES;
 
 	viewAppend(view);
-	ui.tags[tag.id] = view;
 	return view;
 }
+
+static void viewClose(struct View *view) {
+	viewRemove(view);
+	if (view->topic) delwin(view->topic);
+	delwin(view->log);
+	free(view);
+}
+
+static struct {
+	bool hide;
+	struct View *view;
+	WINDOW *input;
+} ui;
 
 void uiHide(void) {
 	ui.hide = true;
@@ -170,7 +190,7 @@ void uiExit(void) {
 }
 
 static void uiResize(void) {
-	for (struct View *view = viewHead; view; view = view->next) {
+	for (struct View *view = views.head; view; view = view->next) {
 		wresize(view->log, LOG_LINES, COLS);
 		wmove(view->log, lastLogLine(), lastCol());
 	}
@@ -215,19 +235,36 @@ static void uiView(struct View *view) {
 	ui.view = view;
 }
 
+static void uiClose(struct View *view) {
+	if (ui.view == view) {
+		if (view->next) {
+			uiView(view->next);
+		} else if (view->prev) {
+			uiView(view->prev);
+		} else {
+			return;
+		}
+	}
+	viewClose(view);
+}
+
 void uiViewTag(struct Tag tag) {
 	uiView(viewTag(tag));
 }
 
+void uiCloseTag(struct Tag tag) {
+	uiClose(viewTag(tag));
+}
+
 void uiViewNum(int num) {
 	if (num < 0) {
-		for (struct View *view = viewTail; view; view = view->prev) {
+		for (struct View *view = views.tail; view; view = view->prev) {
 			if (++num) continue;
 			uiView(view);
 			break;
 		}
 	} else {
-		for (struct View *view = viewHead; view; view = view->next) {
+		for (struct View *view = views.head; view; view = view->next) {
 			if (num--) continue;
 			uiView(view);
 			break;

@@ -93,6 +93,7 @@ void uiDraw(void);
 void uiRead(void);
 void uiViewTag(struct Tag tag);
 void uiViewNum(int num);
+void uiCloseTag(struct Tag tag);
 void uiTopic(struct Tag tag, const char *topic);
 void uiLog(struct Tag tag, const wchar_t *line);
 void uiFmt(struct Tag tag, const wchar_t *format, ...);

@@ -122,12 +122,15 @@ static void handleJoin(char *prefix, char *params) {
 	char *nick, *user, *chan;
 	shift(prefix, &nick, &user, NULL, params, 1, 0, &chan);
 	struct Tag tag = tagFor(chan);
+	if (isSelf(nick, user)) {
+		tabTouch(TAG_NONE, chan);
+		uiViewTag(tag);
+	}
 	tabTouch(tag, nick);
 	uiFmt(
 		tag, "\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
 	);
-	if (isSelf(nick, user)) uiViewTag(tag);
 }
 
 static void handlePart(char *prefix, char *params) {
