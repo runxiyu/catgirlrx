@@ -45,6 +45,7 @@ enum { TAGS_LEN = 256 };
 const struct Tag TAG_NONE;
 const struct Tag TAG_STATUS;
 const struct Tag TAG_VERBOSE;
+struct Tag tagFind(const char *name);
 struct Tag tagFor(const char *name);
 
 enum {

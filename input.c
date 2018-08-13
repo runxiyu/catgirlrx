@@ -37,6 +37,13 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 	free(line);
 }
 
+static char *param(const char *command, char **params, const char *name) {
+	char *param = strsep(params, " ");
+	if (param) return param;
+	uiFmt(TAG_STATUS, "%s requires a %s", command, name);
+	return NULL;
+}
+
 typedef void (*Handler)(struct Tag tag, char *params);
 
 static void inputMe(struct Tag tag, char *params) {
@@ -45,31 +52,25 @@ static void inputMe(struct Tag tag, char *params) {
 
 static void inputNick(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = strsep(&params, " ");
-	if (nick) {
-		ircFmt("NICK %s\r\n", nick);
-	} else {
-		uiLog(TAG_STATUS, L"/nick requires a name");
-	}
+	char *nick = param("/nick", &params, "name");
+	if (!nick) return;
+	ircFmt("NICK %s\r\n", nick);
 }
 
 static void inputJoin(struct Tag tag, char *params) {
 	(void)tag;
-	char *chan = strsep(&params, " ");
-	if (chan) {
-		ircFmt("JOIN %s\r\n", chan);
-	} else {
-		uiLog(TAG_STATUS, L"/join requires a channel");
-	}
+	char *chan = param("/join", &params, "channel");
+	if (!chan) return;
+	ircFmt("JOIN %s\r\n", chan);
 }
 
 static void inputWho(struct Tag tag, char *params) {
-	(void)params; // TODO
+	(void)params;
 	ircFmt("WHO %s\r\n", tag.name);
 }
 
 static void inputTopic(struct Tag tag, char *params) {
-	if (params) { // TODO
+	if (params) {
 		ircFmt("TOPIC %s :%s\r\n", tag.name, params);
 	} else {
 		ircFmt("TOPIC %s\r\n", tag.name);
@@ -96,13 +97,19 @@ static void inputOpen(struct Tag tag, char *params) {
 }
 
 static void inputView(struct Tag tag, char *params) {
-	char *view = strsep(&params, " ");
+	(void)tag;
+	char *view = param("/view", &params, "name or number");
 	if (!view) return;
 	int num = strtol(view, &view, 0);
-	if (view[0]) {
-		uiViewTag(tagFor(view));
-	} else {
+	if (!view[0]) {
 		uiViewNum(num);
+	} else {
+		struct Tag tag = tagFind(view);
+		if (tag.id != TAG_NONE.id) {
+			uiViewTag(tag);
+		} else {
+			uiFmt(TAG_STATUS, "No view for %s", view);
+		}
 	}
 }
 

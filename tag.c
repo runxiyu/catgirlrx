@@ -37,11 +37,17 @@ static struct Tag Tag(size_t id) {
 	return (struct Tag) { id, tags.name[id] };
 }
 
-struct Tag tagFor(const char *name) {
+struct Tag tagFind(const char *name) {
 	for (size_t id = 0; id < tags.len; ++id) {
 		if (strcmp(tags.name[id], name)) continue;
 		return Tag(id);
 	}
+	return TAG_NONE;
+}
+
+struct Tag tagFor(const char *name) {
+	struct Tag tag = tagFind(name);
+	if (tag.id != TAG_NONE.id) return tag;
 	if (tags.len == TAGS_LEN) return TAG_STATUS;
 	size_t id = tags.len++;
 	tags.name[id] = strdup(name);
