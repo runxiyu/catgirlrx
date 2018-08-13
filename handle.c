@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <err.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -81,6 +82,20 @@ static bool isSelf(const char *nick, const char *user) {
 	if (!user) return false;
 	if (!strcmp(nick, self.nick)) {
 		if (strcmp(user, self.user)) selfUser(user);
+		return true;
+	}
+	return false;
+}
+
+static bool isPing(const char *mesg) {
+	size_t len = strlen(self.nick);
+	const char *match = mesg;
+	while (NULL != (match = strcasestr(match, self.nick))) {
+		char b = (match > mesg ? *(match - 1) : ' ');
+		char a = (match[len] ? match[len] : ' ');
+		match = &match[len];
+		if (!isspace(b) && !ispunct(b)) continue;
+		if (!isspace(a) && !ispunct(a)) continue;
 		return true;
 	}
 	return false;
@@ -292,13 +307,12 @@ static void handlePrivmsg(char *prefix, char *params) {
 	}
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 	urlScan(tag, mesg);
-	bool ping = !strncasecmp(mesg, self.nick, strlen(self.nick));
 	bool self = isSelf(nick, user);
+	bool ping = isPing(mesg);
 	uiFmt(
 		tag, "%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
 	);
-	// TODO: always be beeping.
 }
 
 static void handleNotice(char *prefix, char *params) {
