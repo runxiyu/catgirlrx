@@ -72,14 +72,15 @@ void urlList(struct Tag tag) {
 	}
 }
 
-void urlOpen(struct Tag tag, size_t fromEnd) {
-	size_t count = 0;
+void urlOpen(struct Tag tag, size_t at, size_t to) {
+	size_t argc = 1;
+	char *argv[2 + RING_LEN] = { "open" };
+	size_t tagIndex = 0;
 	for (size_t i = 0; i < RING_LEN; ++i) {
 		struct Entry entry = ring.buf[(ring.end - i) & (RING_LEN - 1)];
 		if (!entry.url || entry.tag != tag.id) continue;
-		if (++count != fromEnd) continue;
-		char *argv[] = { "open", entry.url, NULL };
-		spawn(argv);
-		return;
+		if (tagIndex >= at && tagIndex < to) argv[argc++] = entry.url;
+		tagIndex++;
 	}
+	if (argc > 1) spawn(argv);
 }

@@ -90,14 +90,9 @@ static void inputUrl(struct Tag tag, char *params) {
 	urlList(tag);
 }
 static void inputOpen(struct Tag tag, char *params) {
-	if (!params) { urlOpen(tag, 1); return; }
-	size_t from = strtoul(strsep(&params, "-,"), NULL, 0);
-	if (!params) { urlOpen(tag, from); return; }
-	size_t to = strtoul(strsep(&params, "-,"), NULL, 0);
-	if (to < from) to = from;
-	for (size_t i = from; i <= to; ++i) {
-		urlOpen(tag, i);
-	}
+	size_t at = (params ? strtoul(strsep(&params, "-,"), NULL, 0) : 1);
+	size_t to = (params ? strtoul(params, NULL, 0) : at);
+	urlOpen(tag, at - 1, to);
 }
 
 static void inputView(struct Tag tag, char *params) {

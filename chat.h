@@ -141,7 +141,7 @@ void tabReject(void);
 
 void urlScan(struct Tag tag, const char *str);
 void urlList(struct Tag tag);
-void urlOpen(struct Tag tag, size_t fromEnd);
+void urlOpen(struct Tag tag, size_t at, size_t to);
 
 void spawn(char *const argv[]);
 
