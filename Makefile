@@ -1,8 +1,12 @@
-USER = chat
+LIBRESSL_PREFIX = /usr/local /usr/local/opt/libressl
+CHROOT_USER = chat
+CHROOT_GROUP = $(CHROOT_USER)
+
 CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += -I/usr/local/include -I/usr/local/opt/libressl/include
-LDFLAGS += -L/usr/local/lib -L/usr/local/opt/libressl/lib
+CFLAGS += $(LIBRESSL_PREFIX:%=-I%/include)
+LDFLAGS += $(LIBRESSL_PREFIX:%=-L%/lib)
 LDLIBS = -lcursesw -ltls
+
 OBJS = chat.o edit.o handle.o input.o irc.o pls.o tab.o tag.o term.o ui.o url.o
 
 all: tags chat
@@ -29,7 +33,7 @@ chroot.tar: chat
 		root/usr/local/etc/ssl \
 		root/usr/share \
 		root/usr/share/misc
-	install -d -o $(USER) -g $(USER) root/home/$(USER)
+	install -d -o $(CHROOT_USER) -g $(CHROOT_GROUP) root/home/$(CHROOT_USER)
 	cp -p -f /libexec/ld-elf.so.1 root/libexec
 	cp -p -f \
 		/lib/libc.so.7 \
