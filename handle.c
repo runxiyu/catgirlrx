@@ -308,7 +308,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 	urlScan(tag, mesg);
 	bool self = isSelf(nick, user);
-	bool ping = isPing(mesg);
+	bool ping = !self && isPing(mesg);
 	uiFmt(
 		tag, "%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
