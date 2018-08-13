@@ -210,8 +210,8 @@ static void uiRedraw(void) {
 static void uiView(struct View *view) {
 	if (view->topic) touchwin(view->topic);
 	touchwin(view->log);
-	view->mark = false;
 	ui.view->mark = true;
+	view->mark = false;
 	ui.view = view;
 }
 
