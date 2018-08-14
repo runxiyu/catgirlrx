@@ -17,10 +17,24 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "chat.h"
 
 #define PAIR(a, b) (((short)(a) << 8) | ((short)(b) & 0xFF))
+
+static bool xterm;
+
+void termInit(void) {
+	char *term = getenv("TERM");
+	xterm = term && !strncmp(term, "xterm", 5);
+}
+
+void termTitle(const char *title) {
+	if (!xterm) return;
+	printf("\33]0;%s\33\\", title);
+	fflush(stdout);
+}
 
 static void privateMode(const char *mode, bool set) {
 	printf("\33[?%s%c", mode, (set ? 'h' : 'l'));

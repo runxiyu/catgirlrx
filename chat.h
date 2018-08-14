@@ -109,6 +109,8 @@ enum TermEvent {
 	TERM_PASTE_START,
 	TERM_PASTE_END,
 };
+void termInit(void);
+void termTitle(const char *title);
 void termMode(enum TermMode mode, bool set);
 enum TermEvent termEvent(char ch);
 
