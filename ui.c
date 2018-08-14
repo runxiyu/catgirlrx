@@ -169,6 +169,7 @@ void uiInit(void) {
 	noecho();
 
 	colorInit();
+	termInit();
 
 	ui.input = newpad(2, INPUT_COLS);
 	mvwhline(ui.input, 0, 0, ACS_HLINE, INPUT_COLS);
@@ -177,6 +178,7 @@ void uiInit(void) {
 	nodelay(ui.input, true);
 
 	ui.view = viewTag(TAG_STATUS);
+	termTitle(TAG_STATUS.name);
 
 	uiShow();
 }
@@ -228,6 +230,7 @@ static void uiRedraw(void) {
 }
 
 static void uiView(struct View *view) {
+	termTitle(view->tag.name);
 	if (view->topic) touchwin(view->topic);
 	touchwin(view->log);
 	ui.view->mark = true;
