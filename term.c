@@ -21,7 +21,6 @@
 
 #include "chat.h"
 
-#define PAIR(a, b) (((short)(a) << 8) | ((short)(b) & 0xFF))
 
 static bool xterm;
 
@@ -48,20 +47,22 @@ void termMode(enum TermMode mode, bool set) {
 	}
 }
 
+#define ESC '\33'
+#define T(s, i) ((s) << 8 | (i))
+
 enum TermEvent termEvent(char ch) {
-	static char state = '\0';
-	switch (PAIR(state, ch)) {
-		break; case PAIR('\0', '\33'): state = '\33';
-		break; case PAIR('\33', '['):  state = '[';
-		break; case PAIR('[', 'I'):    state = '\0'; return TERM_FOCUS_IN;
-		break; case PAIR('[', 'O'):    state = '\0'; return TERM_FOCUS_OUT;
-		break; case PAIR('[', '2'):    state = '2';
-		break; case PAIR('2', '0'):    state = '0';
-		break; case PAIR('0', '0'):    state = '0';
-		break; case PAIR('0', '~'):    state = '\0'; return TERM_PASTE_START;
-		break; case PAIR('0', '1'):    state = '1';
-		break; case PAIR('1', '~'):    state = '\0'; return TERM_PASTE_END;
-		break; default:                state = '\0';
+	static int state = 0;
+	switch (T(state, ch)) {
+		case T(0, ESC): state = 1; return 0;
+		case T(1, '['): state = 2; return 0;
+		case T(2, 'I'): state = 0; return TERM_FOCUS_IN;
+		case T(2, 'O'): state = 0; return TERM_FOCUS_OUT;
+		case T(2, '2'): state = 3; return 0;
+		case T(3, '0'): state = 4; return 0;
+		case T(4, '0'): state = 5; return 0;
+		case T(5, '~'): state = 0; return TERM_PASTE_START;
+		case T(4, '1'): state = 6; return 0;
+		case T(6, '~'): state = 0; return TERM_PASTE_END;
+		default:        state = 0; return 0;
 	}
-	return TERM_NONE;
 }
