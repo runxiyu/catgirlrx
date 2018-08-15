@@ -93,7 +93,8 @@ static bool isSelf(const char *nick, const char *user) {
 	return false;
 }
 
-static bool isPing(const char *mesg) {
+static bool isPing(const char *nick, const char *user, const char *mesg) {
+	if (isSelf(nick, user)) return false;
 	size_t len = strlen(self.nick);
 	const char *match = mesg;
 	while (NULL != (match = strcasestr(match, self.nick))) {
@@ -297,9 +298,10 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 	if (strcmp(ctcp, "ACTION")) return;
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 	urlScan(tag, params);
+	bool ping = isPing(nick, user, params);
 	uiFmt(
-		tag, "\3%d* %s\3 %s",
-		color(user), nick, params
+		tag, "%c\3%d* %s\17 %s",
+		ping["\17\26"], color(user), nick, params
 	);
 }
 
@@ -314,7 +316,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 	urlScan(tag, mesg);
 	bool self = isSelf(nick, user);
-	bool ping = !self && isPing(mesg);
+	bool ping = isPing(nick, user, mesg);
 	uiFmt(
 		tag, "%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
