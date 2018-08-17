@@ -75,6 +75,8 @@ struct View {
 	WINDOW *topic;
 	WINDOW *log;
 	int scroll;
+	int unread;
+	bool hot;
 	bool mark;
 	struct View *prev;
 	struct View *next;
@@ -143,6 +145,15 @@ static void viewClose(struct View *view) {
 	if (view->topic) delwin(view->topic);
 	delwin(view->log);
 	free(view);
+}
+
+static void viewMark(struct View *view) {
+	view->mark = true;
+}
+static void viewUnmark(struct View *view) {
+	view->unread = 0;
+	view->hot = false;
+	view->mark = false;
 }
 
 static struct {
@@ -233,8 +244,8 @@ static void uiView(struct View *view) {
 	termTitle(view->tag.name);
 	if (view->topic) touchwin(view->topic);
 	touchwin(view->log);
-	ui.view->mark = true;
-	view->mark = false;
+	viewMark(ui.view);
+	viewUnmark(view);
 	ui.view = view;
 }
 
@@ -383,37 +394,40 @@ void uiTopic(struct Tag tag, const char *topic) {
 	free(wcs);
 }
 
-void uiLog(struct Tag tag, const wchar_t *line) {
+void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 	struct View *view = viewTag(tag);
 	waddch(view->log, '\n');
-	if (view->mark) {
-		waddch(view->log, '\n');
-		view->mark = false;
+	if (view->mark && heat > UI_COLD) {
+		if (!view->unread++) waddch(view->log, '\n');
+		if (heat > UI_WARM) {
+			view->hot = true;
+			beep(); // TODO: Notification.
+		}
 	}
 	addIRC(view->log, line);
 }
 
-void uiFmt(struct Tag tag, const wchar_t *format, ...) {
+void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
 	wchar_t *wcs;
 	va_list ap;
 	va_start(ap, format);
 	vaswprintf(&wcs, format, ap);
 	va_end(ap);
 	if (!wcs) err(EX_OSERR, "vaswprintf");
-	uiLog(tag, wcs);
+	uiLog(tag, heat, wcs);
 	free(wcs);
 }
 
 static void logScrollUp(int lines) {
 	int height = logHeight(ui.view);
 	if (ui.view->scroll == height) return;
-	if (ui.view->scroll == LOG_LINES) ui.view->mark = true;
+	if (ui.view->scroll == LOG_LINES) viewMark(ui.view);
 	ui.view->scroll = MAX(ui.view->scroll - lines, height);
 }
 static void logScrollDown(int lines) {
 	if (ui.view->scroll == LOG_LINES) return;
 	ui.view->scroll = MIN(ui.view->scroll + lines, LOG_LINES);
-	if (ui.view->scroll == LOG_LINES) ui.view->mark = false;
+	if (ui.view->scroll == LOG_LINES) viewUnmark(ui.view);
 }
 static void logPageUp(void) {
 	logScrollUp(logHeight(ui.view) / 2);
@@ -426,8 +440,8 @@ static bool keyChar(wchar_t ch) {
 	if (iswascii(ch)) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
-			break; case TERM_FOCUS_IN:  ui.view->mark = false;
-			break; case TERM_FOCUS_OUT: ui.view->mark = true;
+			break; case TERM_FOCUS_IN:  viewUnmark(ui.view);
+			break; case TERM_FOCUS_OUT: viewMark(ui.view);
 			break; default: {}
 		}
 		if (event) return false;

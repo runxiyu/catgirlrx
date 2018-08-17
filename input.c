@@ -40,7 +40,7 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 static char *param(const char *command, char **params, const char *name) {
 	char *param = strsep(params, " ");
 	if (param) return param;
-	uiFmt(TAG_STATUS, "%s requires a %s", command, name);
+	uiFmt(TAG_STATUS, UI_WARM, "%s requires a %s", command, name);
 	return NULL;
 }
 
@@ -123,7 +123,7 @@ static void inputView(struct Tag tag, char *params) {
 		if (tag.id != TAG_NONE.id) {
 			uiViewTag(tag);
 		} else {
-			uiFmt(TAG_STATUS, "No view for %s", view);
+			uiFmt(TAG_STATUS, UI_WARM, "No view for %s", view);
 		}
 	}
 }
@@ -178,7 +178,7 @@ void input(struct Tag tag, char *input) {
 		COMMANDS[i].handler(tag, input);
 		return;
 	}
-	uiFmt(TAG_STATUS, "%s isn't a recognized command", command);
+	uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
 }
 
 void inputTab(void) {

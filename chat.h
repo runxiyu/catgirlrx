@@ -91,12 +91,19 @@ void uiHide(void);
 void uiExit(void);
 void uiDraw(void);
 void uiRead(void);
+
 void uiViewTag(struct Tag tag);
 void uiViewNum(int num);
 void uiCloseTag(struct Tag tag);
+
+enum UIHeat {
+	UI_COLD,
+	UI_WARM,
+	UI_HOT,
+};
 void uiTopic(struct Tag tag, const char *topic);
-void uiLog(struct Tag tag, const wchar_t *line);
-void uiFmt(struct Tag tag, const wchar_t *format, ...);
+void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line);
+void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...);
 
 enum TermMode {
 	TERM_FOCUS,
@@ -155,10 +162,10 @@ int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
 
 // HACK: clang won't check wchar_t *format strings.
 #ifdef NDEBUG
-#define uiFmt(tag, format, ...) uiFmt(tag, L##format, __VA_ARGS__)
+#define uiFmt(tag, heat, format, ...) uiFmt(tag, heat, L##format, __VA_ARGS__)
 #else
-#define uiFmt(tag, format, ...) do { \
+#define uiFmt(tag, heat, format, ...) do { \
 	snprintf(NULL, 0, format, __VA_ARGS__); \
-	uiFmt(tag, L##format, __VA_ARGS__); \
+	uiFmt(tag, heat, L##format, __VA_ARGS__); \
 } while(0)
 #endif
