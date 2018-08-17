@@ -155,7 +155,14 @@ static const struct {
 static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
 
 void input(struct Tag tag, char *input) {
-	if (input[0] != '/') {
+	bool slash = (input[0] == '/');
+	if (slash) {
+		char *space = strchr(&input[1], ' ');
+		char *extra = strchr(&input[1], '/');
+		if (extra && (!space || extra < space)) slash = false;
+	}
+
+	if (!slash) {
 		if (tag.id == TAG_VERBOSE.id) {
 			ircFmt("%s\r\n", input);
 		} else if (tag.id != TAG_STATUS.id) {
@@ -163,6 +170,7 @@ void input(struct Tag tag, char *input) {
 		}
 		return;
 	}
+
 	char *command = strsep(&input, " ");
 	if (input && !input[0]) input = NULL;
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
