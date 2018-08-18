@@ -154,6 +154,11 @@ void urlScan(struct Tag tag, const char *str);
 void urlList(struct Tag tag);
 void urlOpen(struct Tag tag, size_t at, size_t to);
 
+void logOpen(const char *path);
+void logFmt(
+	struct Tag tag, const time_t *ts, const char *format, ...
+) __attribute__((format(printf, 3, 4)));
+
 void spawn(char *const argv[]);
 
 wchar_t *ambstowcs(const char *src);

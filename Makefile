@@ -7,7 +7,18 @@ CFLAGS += $(LIBRESSL_PREFIX:%=-I%/include)
 LDFLAGS += $(LIBRESSL_PREFIX:%=-L%/lib)
 LDLIBS = -lcursesw -ltls
 
-OBJS = chat.o edit.o handle.o input.o irc.o pls.o tab.o tag.o term.o ui.o url.o
+OBJS += chat.o
+OBJS += edit.o
+OBJS += handle.o
+OBJS += input.o
+OBJS += irc.o
+OBJS += log.o
+OBJS += pls.o
+OBJS += tab.o
+OBJS += tag.o
+OBJS += term.o
+OBJS += ui.o
+OBJS += url.o
 
 all: tags chat
 

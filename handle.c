@@ -166,6 +166,7 @@ static void handleJoin(char *prefix, char *params) {
 		"\3%d%s\3 arrives in \3%d%s\3",
 		color(user), nick, color(chan), chan
 	);
+	logFmt(tag, NULL, "%s arrives in %s", nick, chan);
 }
 
 static void handlePart(char *prefix, char *params) {
@@ -184,14 +185,16 @@ static void handlePart(char *prefix, char *params) {
 		uiFmt(
 			tag, UI_COLD,
 			"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
-			color(user), nick, color(chan), chan, mesg
+			color(user), nick, color(chan), chan, dequote(mesg)
 		);
+		logFmt(tag, NULL, "%s leaves %s, \"%s\"", nick, chan, dequote(mesg));
 	} else {
 		uiFmt(
 			tag, UI_COLD,
 			"\3%d%s\3 leaves \3%d%s\3",
 			color(user), nick, color(chan), chan
 		);
+		logFmt(tag, NULL, "%s leaves %s", nick, chan);
 	}
 }
 
@@ -215,12 +218,17 @@ static void handleKick(char *prefix, char *params) {
 			color(user), nick, color(kick), kick, color(chan), chan,
 			dequote(mesg)
 		);
+		logFmt(
+			tag, NULL,
+			"%s kicks %s out of %s, \"%s\"", nick, kick, chan, dequote(mesg)
+		);
 	} else {
 		uiFmt(
 			tag, (kicked ? UI_HOT : UI_COLD),
 			"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3",
 			color(user), nick, color(kick), kick, color(chan), chan
 		);
+		logFmt(tag, NULL, "%s kicks %s out of %s", nick, kick, chan);
 	}
 }
 
@@ -239,8 +247,10 @@ static void handleQuit(char *prefix, char *params) {
 				"\3%d%s\3 leaves, \"%s\"",
 				color(user), nick, dequote(mesg)
 			);
+			logFmt(tag, NULL, "%s leaves, \"%s\"", nick, dequote(mesg));
 		} else {
 			uiFmt(tag, UI_COLD, "\3%d%s\3 leaves", color(user), nick);
+			logFmt(tag, NULL, "%s leaves", nick);
 		}
 	}
 }
@@ -257,6 +267,7 @@ static void handleReplyTopic(char *prefix, char *params) {
 		"The sign in \3%d%s\3 reads, \"%s\"",
 		color(chan), chan, topic
 	);
+	logFmt(tag, NULL, "The sign in %s reads, \"%s\"", chan, topic);
 }
 
 static void handleTopic(char *prefix, char *params) {
@@ -273,6 +284,7 @@ static void handleTopic(char *prefix, char *params) {
 		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
 		color(user), nick, color(chan), chan, topic
 	);
+	logFmt(tag, NULL, "%s places a new sign in %s, \"%s\"", nick, chan, topic);
 }
 
 static void handleReplyEndOfNames(char *prefix, char *params) {
@@ -335,6 +347,7 @@ static void handleNick(char *prefix, char *params) {
 			"\3%d%s\3 is now known as \3%d%s\3",
 			color(user), prev, color(user), next
 		);
+		logFmt(tag, NULL, "%s is now known as %s", prev, next);
 	}
 }
 
@@ -354,6 +367,7 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 		"%c\3%d* %s\17 %s",
 		ping["\17\26"], color(user), nick, params
 	);
+	logFmt(tag, NULL, "* %s %s", nick, params);
 }
 
 static void handlePrivmsg(char *prefix, char *params) {
@@ -375,6 +389,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 		"%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
 	);
+	logFmt(tag, NULL, "<%s> %s", nick, mesg);
 }
 
 static void handleNotice(char *prefix, char *params) {
@@ -393,6 +408,7 @@ static void handleNotice(char *prefix, char *params) {
 		"%c\3%d-%s-\17 %s",
 		ping["\17\26"], color(user), nick, mesg
 	);
+	logFmt(tag, NULL, "-%s- %s", nick, mesg);
 }
 
 static const struct {
