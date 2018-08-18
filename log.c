@@ -80,7 +80,7 @@ static FILE *logFile(struct Tag tag, const struct tm *time) {
 	char path[sizeof("YYYY-MM-DD.log")];
 	strftime(path, sizeof(path), "%F.log", time);
 	int fd = openat(
-		log->dir, path, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0700
+		log->dir, path, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0600
 	);
 	if (fd < 0) err(EX_CANTCREAT, "%s/%s", tag.name, path);
 
