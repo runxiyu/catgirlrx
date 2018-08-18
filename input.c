@@ -178,7 +178,14 @@ void input(struct Tag tag, char *input) {
 		COMMANDS[i].handler(tag, input);
 		return;
 	}
-	uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
+
+	char *trail;
+	strtol(&command[1], &trail, 0);
+	if (!trail[0]) {
+		inputView(tag, &command[1]);
+	} else {
+		uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
+	}
 }
 
 void inputTab(void) {
