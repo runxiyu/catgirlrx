@@ -172,21 +172,31 @@ void input(struct Tag tag, char *input) {
 		return;
 	}
 
-	char *command = strsep(&input, " ");
+	char *word = strsep(&input, " ");
 	if (input && !input[0]) input = NULL;
+
+	char *trail;
+	strtol(&word[1], &trail, 0);
+	if (!trail[0]) {
+		inputView(tag, &word[1]);
+		return;
+	}
+
+	const char *command = word;
+	const char *uniq = tabNext(TAG_NONE, command);
+	if (uniq && uniq == tabNext(TAG_NONE, command)) {
+		command = uniq;
+		tabAccept();
+	} else {
+		tabReject();
+	}
+
 	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
 		if (strcasecmp(command, COMMANDS[i].command)) continue;
 		COMMANDS[i].handler(tag, input);
 		return;
 	}
-
-	char *trail;
-	strtol(&command[1], &trail, 0);
-	if (!trail[0]) {
-		inputView(tag, &command[1]);
-	} else {
-		uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
-	}
+	uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
 }
 
 void inputTab(void) {
