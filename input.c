@@ -74,7 +74,8 @@ static void inputPart(struct Tag tag, char *params) {
 
 static void inputQuery(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = param("/query", &params, "name");
+	char *nick = param("/query", &params, "nick");
+	if (!nick) return;
 	tabTouch(TAG_NONE, nick);
 	uiViewTag(tagFor(nick));
 }
