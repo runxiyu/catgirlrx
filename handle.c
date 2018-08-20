@@ -308,8 +308,7 @@ static void handleReplyWho(char *prefix, char *params) {
 	);
 	struct Tag tag = tagFor(chan);
 
-	// FIXME: Don't clobber order if they already exist.
-	tabTouch(tag, nick);
+	tabAdd(tag, nick);
 
 	size_t cap = sizeof(who.buf) - who.len;
 	int len = snprintf(

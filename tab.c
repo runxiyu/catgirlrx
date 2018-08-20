@@ -47,14 +47,16 @@ static void touch(struct Entry *entry) {
 	prepend(entry);
 }
 
-void tabTouch(struct Tag tag, const char *word) {
+static struct Entry *find(struct Tag tag, const char *word) {
 	for (struct Entry *entry = head; entry; entry = entry->next) {
 		if (entry->tag.id != tag.id) continue;
 		if (strcmp(entry->word, word)) continue;
-		touch(entry);
-		return;
+		return entry;
 	}
+	return NULL;
+}
 
+static void add(struct Tag tag, const char *word) {
 	struct Entry *entry = malloc(sizeof(*entry));
 	if (!entry) err(EX_OSERR, "malloc");
 
@@ -65,11 +67,26 @@ void tabTouch(struct Tag tag, const char *word) {
 	prepend(entry);
 }
 
+void tabTouch(struct Tag tag, const char *word) {
+	struct Entry *entry = find(tag, word);
+	if (entry) {
+		touch(entry);
+	} else {
+		add(tag, word);
+	}
+}
+
+void tabAdd(struct Tag tag, const char *word) {
+	if (!find(tag, word)) add(tag, word);
+}
+
 void tabReplace(struct Tag tag, const char *prev, const char *next) {
-	tabTouch(tag, prev);
-	free(head->word);
-	head->word = strdup(next);
-	if (!head->word) err(EX_OSERR, "strdup");
+	struct Entry *entry = find(tag, prev);
+	if (!entry) return;
+	touch(entry);
+	free(entry->word);
+	entry->word = strdup(next);
+	if (!entry->word) err(EX_OSERR, "strdup");
 }
 
 static struct Entry *iter;

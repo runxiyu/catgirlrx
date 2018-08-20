@@ -142,6 +142,7 @@ const wchar_t *editHead(void);
 const wchar_t *editTail(void);
 
 void tabTouch(struct Tag tag, const char *word);
+void tabAdd(struct Tag tag, const char *word);
 void tabRemove(struct Tag tag, const char *word);
 void tabReplace(struct Tag tag, const char *prev, const char *next);
 void tabClear(struct Tag tag);
