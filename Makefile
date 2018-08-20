@@ -31,9 +31,6 @@ $(OBJS): chat.h
 tags: *.h *.c
 	ctags -w *.h *.c
 
-install: chatte
-	install chatte $(PREFIX)/bin/chatte
-
 chroot.tar: chatte
 	mkdir -p root
 	install -d -o root -g wheel \
@@ -69,3 +66,9 @@ chroot.tar: chatte
 
 clean:
 	rm -f tags chatte $(OBJS) chroot.tar
+
+install: chatte
+	install chatte $(PREFIX)/bin/chatte
+
+uninstall:
+	rm -f $(PREFIX)/bin/chatte
