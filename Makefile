@@ -1,4 +1,5 @@
 LIBRESSL_PREFIX = /usr/local /usr/local/opt/libressl
+PREFIX = ~/.local
 CHROOT_USER = chat
 CHROOT_GROUP = $(CHROOT_USER)
 
@@ -29,6 +30,9 @@ $(OBJS): chat.h
 
 tags: *.h *.c
 	ctags -w *.h *.c
+
+install: chatte
+	install chatte $(PREFIX)/bin/chatte
 
 chroot.tar: chatte
 	mkdir -p root
