@@ -75,6 +75,7 @@ int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap) {
 
 		va_list _ap;
 		va_copy(_ap, ap);
+		errno = EOVERFLOW; // vswprintf may not set errno.
 		int len = vswprintf(*ret, 1 + cap, format, _ap);
 		va_end(_ap);
 
