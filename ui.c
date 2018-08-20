@@ -437,7 +437,7 @@ static void logPageDown(void) {
 }
 
 static bool keyChar(wchar_t ch) {
-	if (iswascii(ch)) {
+	if (ch < 0200) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
 			break; case TERM_FOCUS_IN:  viewUnmark(ui.view);
