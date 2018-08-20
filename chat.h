@@ -161,8 +161,11 @@ void logFmt(
 
 void spawn(char *const argv[]);
 
+wchar_t *wcsnchr(const wchar_t *wcs, size_t len, wchar_t chr);
+wchar_t *wcsnrchr(const wchar_t *wcs, size_t len, wchar_t chr);
 wchar_t *ambstowcs(const char *src);
 char *awcstombs(const wchar_t *src);
+char *awcsntombs(const wchar_t *src, size_t nwc);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
 
 // HACK: clang won't check wchar_t *format strings.

@@ -22,6 +22,22 @@
 
 #include "chat.h"
 
+wchar_t *wcsnchr(const wchar_t *wcs, size_t len, wchar_t chr) {
+	len = wcsnlen(wcs, len);
+	for (size_t i = 0; i < len; ++i) {
+		if (wcs[i] == chr) return (wchar_t *)&wcs[i];
+	}
+	return NULL;
+}
+
+wchar_t *wcsnrchr(const wchar_t *wcs, size_t len, wchar_t chr) {
+	len = wcsnlen(wcs, len);
+	for (size_t i = len - 1; i < len; --i) {
+		if (wcs[i] == chr) return (wchar_t *)&wcs[i];
+	}
+	return NULL;
+}
+
 wchar_t *ambstowcs(const char *src) {
 	size_t len = mbsrtowcs(NULL, &src, 0, NULL);
 	if (len == (size_t)-1) return NULL;
@@ -46,6 +62,22 @@ char *awcstombs(const wchar_t *src) {
 	if (!dst) return NULL;
 
 	len = wcsrtombs(dst, &src, 1 + len, NULL);
+	if (len == (size_t)-1) {
+		free(dst);
+		return NULL;
+	}
+
+	return dst;
+}
+
+char *awcsntombs(const wchar_t *src, size_t nwc) {
+	size_t len = wcsnrtombs(NULL, &src, nwc, 0, NULL);
+	if (len == (size_t)-1) return NULL;
+
+	char *dst = malloc(sizeof(*dst) * (1 + len));
+	if (!dst) return NULL;
+
+	len = wcsnrtombs(dst, &src, nwc, 1 + len, NULL);
 	if (len == (size_t)-1) {
 		free(dst);
 		return NULL;

@@ -57,15 +57,12 @@ static void right(void) {
 
 static void backWord(void) {
 	left();
-	editHead();
-	wchar_t *word = wcsrchr(line.buf, ' ');
-	editTail();
+	wchar_t *word = wcsnrchr(line.buf, line.ptr - line.buf, L' ');
 	line.ptr = (word ? &word[1] : line.buf);
 }
 static void foreWord(void) {
 	right();
-	editTail();
-	wchar_t *word = wcschr(line.ptr, ' ');
+	wchar_t *word = wcsnchr(line.ptr, line.end - line.ptr, L' ');
 	line.ptr = (word ? word : line.end);
 }
 
@@ -108,12 +105,10 @@ static void killForeWord(void) {
 static char *prefix;
 static void complete(struct Tag tag) {
 	if (!line.tab) {
-		editHead();
-		line.tab = wcsrchr(line.buf, L' ');
+		line.tab = wcsnrchr(line.buf, line.ptr - line.buf, L' ');
 		line.tab = (line.tab ? &line.tab[1] : line.buf);
-		prefix = awcstombs(line.tab);
+		prefix = awcsntombs(line.tab, line.ptr - line.tab);
 		if (!prefix) err(EX_DATAERR, "awcstombs");
-		editTail();
 	}
 
 	const char *next = tabNext(tag, prefix);
@@ -161,7 +156,7 @@ static void reject(void) {
 
 static void enter(struct Tag tag) {
 	if (line.end == line.buf) return;
-	editTail();
+	*line.end = L'\0';
 	char *str = awcstombs(line.buf);
 	if (!str) err(EX_DATAERR, "awcstombs");
 	input(tag, str);
