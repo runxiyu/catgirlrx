@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define SOURCE_URL "https://code.causal.agency/june/chat"
+#define SOURCE_URL "https://code.causal.agency/june/chatte"
 
 #include <stdarg.h>
 #include <stdbool.h>

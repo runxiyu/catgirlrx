@@ -20,9 +20,9 @@ OBJS += term.o
 OBJS += ui.o
 OBJS += url.o
 
-all: tags chat
+all: tags chatte
 
-chat: $(OBJS)
+chatte: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(OBJS): chat.h
@@ -30,7 +30,7 @@ $(OBJS): chat.h
 tags: *.h *.c
 	ctags -w *.h *.c
 
-chroot.tar: chat
+chroot.tar: chatte
 	mkdir -p root
 	install -d -o root -g wheel \
 		root/bin \
@@ -60,8 +60,8 @@ chroot.tar: chat
 	cp -a -f /usr/share/locale root/usr/share
 	cp -p -f /usr/share/misc/termcap.db root/usr/share/misc
 	cp -p -f /bin/sh root/bin
-	install -o root -g wheel -m 555 chat root/bin
+	install -o root -g wheel -m 555 chatte root/bin
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
 
 clean:
-	rm -f tags chat $(OBJS) chroot.tar
+	rm -f tags chatte $(OBJS) chroot.tar
