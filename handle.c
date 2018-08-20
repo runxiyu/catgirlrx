@@ -294,7 +294,6 @@ static void handleReplyEndOfNames(char *prefix, char *params) {
 	ircFmt("WHO %s\r\n", chan);
 }
 
-// FIXME: Track tag?
 static struct {
 	char buf[4096];
 	size_t len;
