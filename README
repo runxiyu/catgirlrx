@@ -1,10 +1,10 @@
-Simple IRC client for use over anonymous SSH.
+IRC client originally intended for use over anonymous SSH.
 
 This software requires LibreSSL and targets FreeBSD and Darwin.
 
 	chat.h      Shared state and function prototypes
 	chat.c      Command line parsing and event loop
-	tag.c       Tag (channel, query) management
+	tag.c       Tag (channel, query) ID assignment
 	handle.c    Incoming command handling
 	input.c     Input command handling
 	irc.c       TLS client connection
@@ -14,3 +14,5 @@ This software requires LibreSSL and targets FreeBSD and Darwin.
 	tab.c       Tab-complete
 	url.c       URL detection
 	pls.c       Functions which should not have to be written
+
+	sshd_config    Sample anonymous SSH configuration
