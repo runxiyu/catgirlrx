@@ -19,7 +19,6 @@
 #include <stdlib.h>
 #include <sysexits.h>
 #include <wchar.h>
-#include <wctype.h>
 
 #include "chat.h"
 
