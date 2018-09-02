@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <wchar.h>
 
 #define err(...) do { uiHide(); err(__VA_ARGS__); } while (0)
