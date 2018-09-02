@@ -45,12 +45,13 @@ wchar_t *ambstowcs(const char *src) {
 	wchar_t *dst = malloc(sizeof(*dst) * (1 + len));
 	if (!dst) return NULL;
 
-	len = mbsrtowcs(dst, &src, 1 + len, NULL);
+	len = mbsrtowcs(dst, &src, len, NULL);
 	if (len == (size_t)-1) {
 		free(dst);
 		return NULL;
 	}
 
+	dst[len] = L'\0';
 	return dst;
 }
 
@@ -61,12 +62,13 @@ char *awcstombs(const wchar_t *src) {
 	char *dst = malloc(sizeof(*dst) * (1 + len));
 	if (!dst) return NULL;
 
-	len = wcsrtombs(dst, &src, 1 + len, NULL);
+	len = wcsrtombs(dst, &src, len, NULL);
 	if (len == (size_t)-1) {
 		free(dst);
 		return NULL;
 	}
 
+	dst[len] = '\0';
 	return dst;
 }
 
@@ -77,12 +79,13 @@ char *awcsntombs(const wchar_t *src, size_t nwc) {
 	char *dst = malloc(sizeof(*dst) * (1 + len));
 	if (!dst) return NULL;
 
-	len = wcsnrtombs(dst, &src, nwc, 1 + len, NULL);
+	len = wcsnrtombs(dst, &src, nwc, len, NULL);
 	if (len == (size_t)-1) {
 		free(dst);
 		return NULL;
 	}
 
+	dst[len] = '\0';
 	return dst;
 }
 
