@@ -125,10 +125,8 @@ static void handlePing(char *prefix, char *params) {
 static void handleReplyErroneousNickname(char *prefix, char *params) {
 	char *mesg;
 	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
-	// FIXME: Better formatting.
-	uiLog(TAG_STATUS, UI_HOT, L"You can't use that name here");
-	uiFmt(TAG_STATUS, UI_HOT, "Sheriff says, \"%s\"", mesg);
-	uiLog(TAG_STATUS, UI_HOT, L"Type /nick <name> to choose a new one");
+	uiFmt(TAG_STATUS, UI_HOT, "You can't use that name here: \"%s\"", mesg);
+	uiLog(TAG_STATUS, UI_COLD, L"Type /nick <name> to choose a new one");
 }
 
 static void handleReplyWelcome(char *prefix, char *params) {
