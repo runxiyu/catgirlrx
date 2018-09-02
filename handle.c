@@ -370,7 +370,8 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 static void handlePrivmsg(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
-	struct Tag tag = (strcmp(chan, self.nick) ? tagFor(chan) : tagFor(nick));
+	bool direct = !strcmp(chan, self.nick);
+	struct Tag tag = (direct ? tagFor(nick) : tagFor(chan));
 	if (mesg[0] == '\1') {
 		handleCTCP(tag, nick, user, mesg);
 		return;
@@ -380,7 +381,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	if (!self) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
-	bool ping = !self && isPing(mesg);
+	bool ping = !self && (direct || isPing(mesg));
 	uiFmt(
 		tag, (ping ? UI_HOT : UI_WARM),
 		"%c\3%d%c%s%c\17 %s",
