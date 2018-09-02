@@ -121,14 +121,14 @@ struct Tag tabTag(const char *word) {
 		return entry->tag;
 	}
 	iter = NULL;
-	return TAG_NONE;
+	return TagNone;
 }
 
 const char *tabNext(struct Tag tag, const char *prefix) {
 	size_t len = strlen(prefix);
 	struct Entry *start = (iter ? iter->next : head);
 	for (struct Entry *entry = start; entry; entry = entry->next) {
-		if (entry->tag.id != TAG_NONE.id && entry->tag.id != tag.id) continue;
+		if (entry->tag.id != TagNone.id && entry->tag.id != tag.id) continue;
 		if (strncasecmp(entry->word, prefix, len)) continue;
 		iter = entry;
 		return entry->word;

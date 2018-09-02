@@ -22,9 +22,9 @@
 
 #include "chat.h"
 
-enum { BUF_LEN = 512 };
+enum { BufLen = 512 };
 static struct {
-	wchar_t buf[BUF_LEN];
+	wchar_t buf[BufLen];
 	wchar_t *ptr;
 	wchar_t *end;
 	wchar_t *tab;
@@ -66,7 +66,7 @@ static void foreWord(void) {
 }
 
 static void insert(wchar_t ch) {
-	if (line.end == &line.buf[BUF_LEN - 1]) return;
+	if (line.end == &line.buf[BufLen - 1]) return;
 	if (line.ptr != line.end) {
 		wmemmove(line.ptr + 1, line.ptr, line.end - line.ptr);
 	}
@@ -166,24 +166,24 @@ static void enter(struct Tag tag) {
 
 void edit(struct Tag tag, enum Edit op, wchar_t ch) {
 	switch (op) {
-		break; case EDIT_LEFT:  reject(); left();
-		break; case EDIT_RIGHT: reject(); right();
-		break; case EDIT_HOME:  reject(); line.ptr = line.buf;
-		break; case EDIT_END:   reject(); line.ptr = line.end;
+		break; case EditLeft:  reject(); left();
+		break; case EditRight: reject(); right();
+		break; case EditHome:  reject(); line.ptr = line.buf;
+		break; case EditEnd:   reject(); line.ptr = line.end;
 
-		break; case EDIT_BACK_WORD: reject(); backWord();
-		break; case EDIT_FORE_WORD: reject(); foreWord();
+		break; case EditBackWord: reject(); backWord();
+		break; case EditForeWord: reject(); foreWord();
 
-		break; case EDIT_INSERT:    accept(); insert(ch);
-		break; case EDIT_BACKSPACE: reject(); backspace();
-		break; case EDIT_DELETE:    reject(); delete();
+		break; case EditInsert:    accept(); insert(ch);
+		break; case EditBackspace: reject(); backspace();
+		break; case EditDelete:    reject(); delete();
 
-		break; case EDIT_KILL_BACK_WORD: reject(); killBackWord();
-		break; case EDIT_KILL_FORE_WORD: reject(); killForeWord();
-		break; case EDIT_KILL_LINE:      reject(); line.end = line.ptr;
+		break; case EditKillBackWord: reject(); killBackWord();
+		break; case EditKillForeWord: reject(); killForeWord();
+		break; case EditKillLine:      reject(); line.end = line.ptr;
 
-		break; case EDIT_COMPLETE: complete(tag);
+		break; case EditComplete: complete(tag);
 
-		break; case EDIT_ENTER: accept(); enter(tag);
+		break; case EditEnter: accept(); enter(tag);
 	}
 }

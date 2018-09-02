@@ -21,12 +21,12 @@
 
 #include "chat.h"
 
-const struct Tag TAG_NONE    = { 0, "" };
-const struct Tag TAG_STATUS  = { 1, "(status)" };
-const struct Tag TAG_VERBOSE = { 2, "(irc)" };
+const struct Tag TagNone    = { 0, "" };
+const struct Tag TagStatus  = { 1, "(status)" };
+const struct Tag TagVerbose = { 2, "(irc)" };
 
 static struct {
-	char *name[TAGS_LEN];
+	char *name[TagsLen];
 	size_t len;
 } tags = {
 	.name = { "", "(status)", "(irc)" },
@@ -42,13 +42,13 @@ struct Tag tagFind(const char *name) {
 		if (strcmp(tags.name[id], name)) continue;
 		return Tag(id);
 	}
-	return TAG_NONE;
+	return TagNone;
 }
 
 struct Tag tagFor(const char *name) {
 	struct Tag tag = tagFind(name);
-	if (tag.id != TAG_NONE.id) return tag;
-	if (tags.len == TAGS_LEN) return TAG_STATUS;
+	if (tag.id != TagNone.id) return tag;
+	if (tags.len == TagsLen) return TagStatus;
 	size_t id = tags.len++;
 	tags.name[id] = strdup(name);
 	if (!tags.name[id]) err(EX_OSERR, "strdup");

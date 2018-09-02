@@ -23,23 +23,23 @@
 
 #include "chat.h"
 
-static const char *SCHEMES[] = {
+static const char *Schemes[] = {
 	"https:",
 	"http:",
 	"ftp:",
 };
-static const size_t SCHEMES_LEN = sizeof(SCHEMES) / sizeof(SCHEMES[0]);
+static const size_t SchemesLen = sizeof(Schemes) / sizeof(Schemes[0]);
 
 struct Entry {
 	size_t tag;
 	char *url;
 };
 
-enum { RING_LEN = 32 };
-static_assert(!(RING_LEN & (RING_LEN - 1)), "power of two RING_LEN");
+enum { RingLen = 32 };
+static_assert(!(RingLen & (RingLen - 1)), "power of two RingLen");
 
 static struct {
-	struct Entry buf[RING_LEN];
+	struct Entry buf[RingLen];
 	size_t end;
 } ring;
 
@@ -48,14 +48,14 @@ static void push(struct Tag tag, const char *url, size_t len) {
 	ring.buf[ring.end].tag = tag.id;
 	ring.buf[ring.end].url = strndup(url, len);
 	if (!ring.buf[ring.end].url) err(EX_OSERR, "strndup");
-	ring.end = (ring.end + 1) & (RING_LEN - 1);
+	ring.end = (ring.end + 1) & (RingLen - 1);
 }
 
 void urlScan(struct Tag tag, const char *str) {
 	while (str[0]) {
 		size_t len = 1;
-		for (size_t i = 0; i < SCHEMES_LEN; ++i) {
-			if (strncmp(str, SCHEMES[i], strlen(SCHEMES[i]))) continue;
+		for (size_t i = 0; i < SchemesLen; ++i) {
+			if (strncmp(str, Schemes[i], strlen(Schemes[i]))) continue;
 			len = strcspn(str, " >\"");
 			push(tag, str, len);
 		}
@@ -65,8 +65,8 @@ void urlScan(struct Tag tag, const char *str) {
 
 void urlList(struct Tag tag) {
 	uiHide();
-	for (size_t i = 0; i < RING_LEN; ++i) {
-		struct Entry entry = ring.buf[(ring.end + i) & (RING_LEN - 1)];
+	for (size_t i = 0; i < RingLen; ++i) {
+		struct Entry entry = ring.buf[(ring.end + i) & (RingLen - 1)];
 		if (!entry.url || entry.tag != tag.id) continue;
 		printf("%s\n", entry.url);
 	}
@@ -74,10 +74,10 @@ void urlList(struct Tag tag) {
 
 void urlOpen(struct Tag tag, size_t at, size_t to) {
 	size_t argc = 1;
-	char *argv[2 + RING_LEN] = { "open" };
+	char *argv[2 + RingLen] = { "open" };
 	size_t tagIndex = 0;
-	for (size_t i = 0; i < RING_LEN; ++i) {
-		struct Entry entry = ring.buf[(ring.end - i) & (RING_LEN - 1)];
+	for (size_t i = 0; i < RingLen; ++i) {
+		struct Entry entry = ring.buf[(ring.end - i) & (RingLen - 1)];
 		if (!entry.url || entry.tag != tag.id) continue;
 		if (tagIndex >= at && tagIndex < to) argv[argc++] = entry.url;
 		tagIndex++;

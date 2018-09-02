@@ -42,38 +42,38 @@ struct Tag {
 	const char *name;
 };
 
-enum { TAGS_LEN = 256 };
-const struct Tag TAG_NONE;
-const struct Tag TAG_STATUS;
-const struct Tag TAG_VERBOSE;
+enum { TagsLen = 256 };
+const struct Tag TagNone;
+const struct Tag TagStatus;
+const struct Tag TagVerbose;
 struct Tag tagFind(const char *name);
 struct Tag tagFor(const char *name);
 
 enum {
-	IRC_WHITE,
-	IRC_BLACK,
-	IRC_BLUE,
-	IRC_GREEN,
-	IRC_RED,
-	IRC_BROWN,
-	IRC_MAGENTA,
-	IRC_ORANGE,
-	IRC_YELLOW,
-	IRC_LIGHT_GREEN,
-	IRC_CYAN,
-	IRC_LIGHT_CYAN,
-	IRC_LIGHT_BLUE,
-	IRC_PINK,
-	IRC_GRAY,
-	IRC_LIGHT_GRAY,
+	IRCWhite,
+	IRCBlack,
+	IRCBlue,
+	IRCGreen,
+	IRCRed,
+	IRCBrown,
+	IRCMagenta,
+	IRCOrange,
+	IRCYellow,
+	IRCLightGreen,
+	IRCCyan,
+	IRCLightCyan,
+	IRCLightBlue,
+	IRCPink,
+	IRCGray,
+	IRCLightGray,
 };
 enum {
-	IRC_BOLD      = 002,
-	IRC_COLOR     = 003,
-	IRC_REVERSE   = 026,
-	IRC_RESET     = 017,
-	IRC_ITALIC    = 035,
-	IRC_UNDERLINE = 037,
+	IRCBold      = 002,
+	IRCColor     = 003,
+	IRCReverse   = 026,
+	IRCReset     = 017,
+	IRCItalic    = 035,
+	IRCUnderline = 037,
 };
 
 void handle(char *line);
@@ -98,24 +98,24 @@ void uiViewNum(int num);
 void uiCloseTag(struct Tag tag);
 
 enum UIHeat {
-	UI_COLD,
-	UI_WARM,
-	UI_HOT,
+	UICold,
+	UIWarm,
+	UIHot,
 };
 void uiTopic(struct Tag tag, const char *topic);
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line);
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...);
 
 enum TermMode {
-	TERM_FOCUS,
-	TERM_PASTE,
+	TermFocus,
+	TermPaste,
 };
 enum TermEvent {
-	TERM_NONE,
-	TERM_FOCUS_IN,
-	TERM_FOCUS_OUT,
-	TERM_PASTE_START,
-	TERM_PASTE_END,
+	TermNone,
+	TermFocusIn,
+	TermFocusOut,
+	TermPasteStart,
+	TermPasteEnd,
 };
 void termInit(void);
 void termTitle(const char *title);
@@ -123,20 +123,20 @@ void termMode(enum TermMode mode, bool set);
 enum TermEvent termEvent(char ch);
 
 enum Edit {
-	EDIT_LEFT,
-	EDIT_RIGHT,
-	EDIT_HOME,
-	EDIT_END,
-	EDIT_BACK_WORD,
-	EDIT_FORE_WORD,
-	EDIT_INSERT,
-	EDIT_BACKSPACE,
-	EDIT_DELETE,
-	EDIT_KILL_BACK_WORD,
-	EDIT_KILL_FORE_WORD,
-	EDIT_KILL_LINE,
-	EDIT_COMPLETE,
-	EDIT_ENTER,
+	EditLeft,
+	EditRight,
+	EditHome,
+	EditEnd,
+	EditBackWord,
+	EditForeWord,
+	EditInsert,
+	EditBackspace,
+	EditDelete,
+	EditKillBackWord,
+	EditKillForeWord,
+	EditKillLine,
+	EditComplete,
+	EditEnter,
 };
 void edit(struct Tag tag, enum Edit op, wchar_t ch);
 const wchar_t *editHead(void);

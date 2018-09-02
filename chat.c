@@ -60,7 +60,7 @@ static union {
 
 void spawn(char *const argv[]) {
 	if (fds.pipe.events) {
-		uiLog(TAG_STATUS, UI_WARM, L"spawn: existing pipe");
+		uiLog(TagStatus, UIWarm, L"spawn: existing pipe");
 		return;
 	}
 
@@ -93,7 +93,7 @@ static void pipeRead(void) {
 	if (len) {
 		buf[len] = '\0';
 		len = strcspn(buf, "\n");
-		uiFmt(TAG_STATUS, UI_WARM, "spawn: %.*s", (int)len, buf);
+		uiFmt(TagStatus, UIWarm, "spawn: %.*s", (int)len, buf);
 	} else {
 		close(fds.pipe.fd);
 		fds.pipe.events = 0;
@@ -124,15 +124,15 @@ static void sigchld(int sig) {
 	pid_t pid = wait(&status);
 	if (pid < 0) err(EX_OSERR, "wait");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		uiFmt(TAG_STATUS, UI_WARM, "spawn: exit %d", WEXITSTATUS(status));
+		uiFmt(TagStatus, UIWarm, "spawn: exit %d", WEXITSTATUS(status));
 	} else if (WIFSIGNALED(status)) {
-		uiFmt(TAG_STATUS, UI_WARM, "spawn: signal %d", WTERMSIG(status));
+		uiFmt(TagStatus, UIWarm, "spawn: signal %d", WTERMSIG(status));
 	}
 }
 
 static void sigint(int sig) {
 	(void)sig;
-	input(TAG_STATUS, "/quit");
+	input(TagStatus, "/quit");
 	uiExit();
 	exit(EX_OK);
 }
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 	inputTab();
 
 	uiInit();
-	uiLog(TAG_STATUS, UI_WARM, L"Traveling...");
+	uiLog(TagStatus, UIWarm, L"Traveling...");
 	uiDraw();
 
 	fds.irc.fd = ircConnect(host, port, pass, webirc);

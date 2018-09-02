@@ -108,8 +108,8 @@ void ircFmt(const char *format, ...) {
 	if (!buf) err(EX_OSERR, "vasprintf");
 	if (self.verbose) {
 		uiFmt(
-			TAG_VERBOSE, UI_COLD,
-			"\3%d<<<\3 %.*s", IRC_WHITE, len - 2, buf
+			TagVerbose, UICold,
+			"\3%d<<<\3 %.*s", IRCWhite, len - 2, buf
 		);
 	}
 	ircWrite(buf, len);
@@ -133,8 +133,8 @@ void ircRead(void) {
 		crlf[0] = '\0';
 		if (self.verbose) {
 			uiFmt(
-				TAG_VERBOSE, UI_COLD,
-				"\3%d>>>\3 %s", IRC_GRAY, line
+				TagVerbose, UICold,
+				"\3%d>>>\3 %s", IRCGray, line
 			);
 		}
 		handle(line);

@@ -34,7 +34,7 @@ static struct Log {
 	int month;
 	int day;
 	FILE *file;
-} logs[TAGS_LEN];
+} logs[TagsLen];
 
 void logOpen(const char *path) {
 	logRoot = open(path, O_RDONLY | O_CLOEXEC);

@@ -42,27 +42,28 @@ static void privateMode(const char *mode, bool set) {
 
 void termMode(enum TermMode mode, bool set) {
 	switch (mode) {
-		break; case TERM_FOCUS: privateMode("1004", set);
-		break; case TERM_PASTE: privateMode("2004", set);
+		break; case TermFocus: privateMode("1004", set);
+		break; case TermPaste: privateMode("2004", set);
 	}
 }
 
-#define ESC '\33'
 #define T(s, i) ((s) << 8 | (i))
+
+enum { Esc = '\33' };
 
 enum TermEvent termEvent(char ch) {
 	static int state = 0;
 	switch (T(state, ch)) {
-		case T(0, ESC): state = 1; return 0;
+		case T(0, Esc): state = 1; return 0;
 		case T(1, '['): state = 2; return 0;
-		case T(2, 'I'): state = 0; return TERM_FOCUS_IN;
-		case T(2, 'O'): state = 0; return TERM_FOCUS_OUT;
+		case T(2, 'I'): state = 0; return TermFocusIn;
+		case T(2, 'O'): state = 0; return TermFocusOut;
 		case T(2, '2'): state = 3; return 0;
 		case T(3, '0'): state = 4; return 0;
 		case T(4, '0'): state = 5; return 0;
-		case T(5, '~'): state = 0; return TERM_PASTE_START;
+		case T(5, '~'): state = 0; return TermPasteStart;
 		case T(4, '1'): state = 6; return 0;
-		case T(6, '~'): state = 0; return TERM_PASTE_END;
+		case T(6, '~'): state = 0; return TermPasteEnd;
 		default:        state = 0; return 0;
 	}
 }

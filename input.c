@@ -40,7 +40,7 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 static char *param(const char *command, char **params, const char *name) {
 	char *param = strsep(params, " ");
 	if (param) return param;
-	uiFmt(TAG_STATUS, UI_WARM, "%s requires a %s", command, name);
+	uiFmt(TagStatus, UIHot, "%s requires a %s", command, name);
 	return NULL;
 }
 
@@ -76,7 +76,7 @@ static void inputQuery(struct Tag tag, char *params) {
 	(void)tag;
 	char *nick = param("/query", &params, "nick");
 	if (!nick) return;
-	tabTouch(TAG_NONE, nick);
+	tabTouch(TagNone, nick);
 	uiViewTag(tagFor(nick));
 }
 
@@ -121,10 +121,10 @@ static void inputView(struct Tag tag, char *params) {
 		uiViewNum(num);
 	} else {
 		struct Tag tag = tagFind(view);
-		if (tag.id != TAG_NONE.id) {
+		if (tag.id != TagNone.id) {
 			uiViewTag(tag);
 		} else {
-			uiFmt(TAG_STATUS, UI_WARM, "No view for %s", view);
+			uiFmt(TagStatus, UIHot, "No view for %s", view);
 		}
 	}
 }
@@ -132,13 +132,13 @@ static void inputView(struct Tag tag, char *params) {
 static void inputClose(struct Tag tag, char *params) {
 	(void)params;
 	uiCloseTag(tag);
-	tabRemove(TAG_NONE, tag.name);
+	tabRemove(TagNone, tag.name);
 }
 
 static const struct {
 	const char *command;
 	Handler handler;
-} COMMANDS[] = {
+} Commands[] = {
 	{ "/close", inputClose },
 	{ "/join", inputJoin },
 	{ "/me", inputMe },
@@ -153,7 +153,7 @@ static const struct {
 	{ "/view", inputView },
 	{ "/who", inputWho },
 };
-static const size_t COMMANDS_LEN = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
+static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 
 void input(struct Tag tag, char *input) {
 	bool slash = (input[0] == '/');
@@ -164,9 +164,9 @@ void input(struct Tag tag, char *input) {
 	}
 
 	if (!slash) {
-		if (tag.id == TAG_VERBOSE.id) {
+		if (tag.id == TagVerbose.id) {
 			ircFmt("%s\r\n", input);
-		} else if (tag.id != TAG_STATUS.id) {
+		} else if (tag.id != TagStatus.id) {
 			privmsg(tag, false, input);
 		}
 		return;
@@ -183,24 +183,24 @@ void input(struct Tag tag, char *input) {
 	}
 
 	const char *command = word;
-	const char *uniq = tabNext(TAG_NONE, command);
-	if (uniq && uniq == tabNext(TAG_NONE, command)) {
+	const char *uniq = tabNext(TagNone, command);
+	if (uniq && uniq == tabNext(TagNone, command)) {
 		command = uniq;
 		tabAccept();
 	} else {
 		tabReject();
 	}
 
-	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
-		if (strcasecmp(command, COMMANDS[i].command)) continue;
-		COMMANDS[i].handler(tag, input);
+	for (size_t i = 0; i < CommandsLen; ++i) {
+		if (strcasecmp(command, Commands[i].command)) continue;
+		Commands[i].handler(tag, input);
 		return;
 	}
-	uiFmt(TAG_STATUS, UI_WARM, "%s isn't a recognized command", command);
+	uiFmt(TagStatus, UIHot, "%s isn't a recognized command", command);
 }
 
 void inputTab(void) {
-	for (size_t i = 0; i < COMMANDS_LEN; ++i) {
-		tabTouch(TAG_NONE, COMMANDS[i].command);
+	for (size_t i = 0; i < CommandsLen; ++i) {
+		tabTouch(TagNone, Commands[i].command);
 	}
 }
