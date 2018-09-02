@@ -169,6 +169,7 @@ wchar_t *ambstowcs(const char *src);
 char *awcstombs(const wchar_t *src);
 char *awcsntombs(const wchar_t *src, size_t nwc);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
+int aswprintf(wchar_t **ret, const wchar_t *format, ...);
 
 // HACK: clang won't check wchar_t *format strings.
 #ifdef NDEBUG

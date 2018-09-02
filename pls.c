@@ -120,3 +120,11 @@ fail:
 	*ret = NULL;
 	return -1;
 }
+
+int aswprintf(wchar_t **ret, const wchar_t *format, ...) {
+	va_list ap;
+	va_start(ap, format);
+	int n = vaswprintf(ret, format, ap);
+	va_end(ap);
+	return n;
+}
