@@ -135,6 +135,7 @@ static struct View *viewTag(struct Tag tag) {
 	scrollok(view->log, true);
 	wmove(view->log, lastLogLine() - logHeight(view) + 2, 0);
 	view->scroll = LOG_LINES;
+	view->mark = true;
 
 	viewAppend(view);
 	return view;
