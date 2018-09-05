@@ -131,7 +131,7 @@ static struct View *viewTag(struct Tag tag) {
 	view->log = newpad(LogLines, COLS);
 	wsetscrreg(view->log, 0, lastLogLine());
 	scrollok(view->log, true);
-	wmove(view->log, lastLogLine() - logHeight(view) + 2, 0);
+	wmove(view->log, lastLogLine(), 0);
 	view->scroll = LogLines;
 	view->mark = true;
 
@@ -266,7 +266,7 @@ static const wchar_t *parseColor(short *pair, const wchar_t *str) {
 	return str;
 }
 
-static void wordWrap(WINDOW *win, const wchar_t *str) {
+static int wordWrap(WINDOW *win, const wchar_t *str) {
 	size_t len = wcscspn(str, L" ");
 	size_t width = 1;
 	for (size_t i = 0; i < len; ++i) {
@@ -279,8 +279,10 @@ static void wordWrap(WINDOW *win, const wchar_t *str) {
 
 	if (width >= (size_t)(xMax - x)) {
 		waddch(win, '\n');
+		return 1;
 	} else {
 		waddch(win, ' ');
+		return 0;
 	}
 }
 
@@ -295,9 +297,10 @@ static const wchar_t IRCCodes[] = {
 	L'\0',
 };
 
-static void addIRC(WINDOW *win, const wchar_t *str) {
+static int addIRC(WINDOW *win, const wchar_t *str) {
 	attr_t attr = A_NORMAL;
 	short pair = -1;
+	int lines = 0;
 	for (;;) {
 		size_t cc = wcscspn(str, IRCCodes);
 		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
@@ -306,7 +309,7 @@ static void addIRC(WINDOW *win, const wchar_t *str) {
 
 		str = &str[cc];
 		switch (*str++) {
-			break; case L' ':          wordWrap(win, str);
+			break; case L' ':         lines += wordWrap(win, str);
 			break; case IRCBold:      attr ^= A_BOLD;
 			break; case IRCItalic:    attr ^= A_ITALIC;
 			break; case IRCUnderline: attr ^= A_UNDERLINE;
@@ -315,6 +318,7 @@ static void addIRC(WINDOW *win, const wchar_t *str) {
 			break; case IRCReset:     attr = A_NORMAL; pair = -1;
 		}
 	}
+	return lines;
 }
 
 static void uiStatus(void) {
@@ -412,16 +416,21 @@ void uiTopic(struct Tag tag, const char *topic) {
 
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 	struct View *view = viewTag(tag);
+	int lines = 1;
 	waddch(view->log, '\n');
 	if (view->mark && heat > UICold) {
-		if (!view->unread++) waddch(view->log, '\n');
+		if (!view->unread++) {
+			lines++;
+			waddch(view->log, '\n');
+		}
 		if (heat > UIWarm) {
 			view->hot = true;
 			beep(); // TODO: Notification.
 		}
 		uiStatus();
 	}
-	addIRC(view->log, line);
+	lines += addIRC(view->log, line);
+	if (view->scroll != LogLines) view->scroll -= lines;
 }
 
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
