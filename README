@@ -3,7 +3,8 @@ IRC client originally intended for use over anonymous SSH.
 This software requires LibreSSL and targets FreeBSD and Darwin.
 
 	chat.h      Shared state and function prototypes
-	chat.c      Command line parsing and event loop
+	chat.c      Command line parsing
+	event.c     Event loop and process spawning
 	tag.c       Tag (channel, query) ID assignment
 	handle.c    Incoming command handling
 	input.c     Input command handling

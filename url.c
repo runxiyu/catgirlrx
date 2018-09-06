@@ -82,5 +82,5 @@ void urlOpen(struct Tag tag, size_t at, size_t to) {
 		if (tagIndex >= at && tagIndex < to) argv[argc++] = entry.url;
 		tagIndex++;
 	}
-	if (argc > 1) spawn(argv);
+	if (argc > 1) eventSpawn(argv);
 }

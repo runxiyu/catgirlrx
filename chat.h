@@ -37,6 +37,9 @@ void selfNick(const char *nick);
 void selfUser(const char *user);
 void selfJoin(const char *join);
 
+void eventSpawn(char *const argv[]);
+void eventLoop(int ui, int irc);
+
 struct Tag {
 	size_t id;
 	const char *name;
@@ -160,8 +163,6 @@ void logOpen(const char *path);
 void logFmt(
 	struct Tag tag, const time_t *ts, const char *format, ...
 ) __attribute__((format(printf, 3, 4)));
-
-void spawn(char *const argv[]);
 
 wchar_t *wcsnchr(const wchar_t *wcs, size_t len, wchar_t chr);
 wchar_t *wcsnrchr(const wchar_t *wcs, size_t len, wchar_t chr);

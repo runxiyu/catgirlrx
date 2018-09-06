@@ -17,15 +17,11 @@
 #define _WITH_GETLINE
 
 #include <err.h>
-#include <errno.h>
-#include <poll.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
 #include <unistd.h>
-#include <sys/wait.h>
 
 #include "chat.h"
 
@@ -43,98 +39,6 @@ void selfJoin(const char *join) {
 	free(self.join);
 	self.join = strdup(join);
 	if (!self.join) err(EX_OSERR, "strdup");
-}
-
-static union {
-	struct {
-		struct pollfd ui;
-		struct pollfd irc;
-		struct pollfd pipe;
-	};
-	struct pollfd fds[3];
-} fds = {
-	.ui   = { .events = POLLIN, .fd = STDIN_FILENO },
-	.irc  = { .events = POLLIN },
-	.pipe = { .events = 0 },
-};
-
-void spawn(char *const argv[]) {
-	if (fds.pipe.events) {
-		uiLog(TagStatus, UIWarm, L"spawn: existing pipe");
-		return;
-	}
-
-	int rw[2];
-	int error = pipe(rw);
-	if (error) err(EX_OSERR, "pipe");
-
-	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
-	if (!pid) {
-		close(rw[0]);
-		close(STDIN_FILENO);
-		dup2(rw[1], STDOUT_FILENO);
-		dup2(rw[1], STDERR_FILENO);
-		close(rw[1]);
-		execvp(argv[0], argv);
-		perror(argv[0]);
-		exit(EX_CONFIG);
-	}
-
-	close(rw[1]);
-	fds.pipe.fd = rw[0];
-	fds.pipe.events = POLLIN;
-}
-
-static void pipeRead(void) {
-	char buf[256];
-	ssize_t len = read(fds.pipe.fd, buf, sizeof(buf) - 1);
-	if (len < 0) err(EX_IOERR, "read");
-	if (len) {
-		buf[len] = '\0';
-		len = strcspn(buf, "\n");
-		uiFmt(TagStatus, UIWarm, "spawn: %.*s", (int)len, buf);
-	} else {
-		close(fds.pipe.fd);
-		fds.pipe.events = 0;
-		fds.pipe.revents = 0;
-	}
-}
-
-static void eventLoop(void) {
-	for (;;) {
-		uiDraw();
-
-		int n = poll(fds.fds, (fds.pipe.events ? 3 : 2), -1);
-		if (n < 0) {
-			if (errno != EINTR) err(EX_IOERR, "poll");
-			uiRead();
-			continue;
-		}
-
-		if (fds.ui.revents) uiRead();
-		if (fds.irc.revents) ircRead();
-		if (fds.pipe.revents) pipeRead();
-	}
-}
-
-static void sigchld(int sig) {
-	(void)sig;
-	int status;
-	pid_t pid = wait(&status);
-	if (pid < 0) err(EX_OSERR, "wait");
-	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		uiFmt(TagStatus, UIWarm, "spawn: exit %d", WEXITSTATUS(status));
-	} else if (WIFSIGNALED(status)) {
-		uiFmt(TagStatus, UIWarm, "spawn: signal %d", WTERMSIG(status));
-	}
-}
-
-static void sigint(int sig) {
-	(void)sig;
-	input(TagStatus, "/quit");
-	uiExit();
-	exit(EX_OK);
 }
 
 static char *prompt(const char *prompt) {
@@ -186,10 +90,8 @@ int main(int argc, char *argv[]) {
 	uiLog(TagStatus, UIWarm, L"Traveling...");
 	uiDraw();
 
-	fds.irc.fd = ircConnect(host, port, pass, webirc);
+	int irc = ircConnect(host, port, pass, webirc);
 	free(host);
 
-	signal(SIGINT, sigint);
-	signal(SIGCHLD, sigchld);
-	eventLoop();
+	eventLoop(STDIN_FILENO, irc);
 }
