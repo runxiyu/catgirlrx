@@ -76,8 +76,8 @@ void urlOpen(struct Tag tag, size_t at, size_t to) {
 	size_t argc = 1;
 	char *argv[2 + RingLen] = { "open" };
 	size_t tagIndex = 0;
-	for (size_t i = 0; i < RingLen; ++i) {
-		struct Entry entry = ring.buf[(ring.end - i) & (RingLen - 1)];
+	for (size_t i = RingLen - 1; i < RingLen; --i) {
+		struct Entry entry = ring.buf[(ring.end + i) & (RingLen - 1)];
 		if (!entry.url || entry.tag != tag.id) continue;
 		if (tagIndex >= at && tagIndex < to) argv[argc++] = entry.url;
 		tagIndex++;
