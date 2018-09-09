@@ -70,6 +70,80 @@ or
 .Fl n
 are not provided,
 they will be prompted for.
+.Ss Commands
+Commands may be entered
+as their shortest unique prefix.
+A slash followed immediately by a number
+is equivalent to
+.Ic /view .
+.Bl -tag
+.It Ic /close
+Close the current view.
+All views after the current one
+are renumbered.
+.It Ic /join Ar chan
+Join a channel.
+.It Ic /me Ar action
+Send a CTCP
+.Ql ACTION
+to the current target.
+.It Ic /names
+List users in the current channel.
+Equivalent to
+.Ic /who .
+.It Ic /nick Ar nick
+Change nicknames.
+.It Ic /open Op Ar range
+Open
+.Ar range
+most recent URLs
+appearing in the current view
+with
+.Xr open 1 .
+.Ar range
+may be a hypen- or comma-separated range
+from the most recent URL,
+starting at 1.
+The default
+.Ar range
+is 1.
+.It Ic /part
+Leave the current channel.
+.It Ic /query Ar nick
+Open a private message view with
+.Ar nick .
+.It Ic /quit Op Ar message
+Quit IRC.
+The default
+.Ar message
+is
+.Dq Goodbye .
+.It Ic /topic Op Ar topic
+Show the topic of the current channel
+or set it to
+.Ar topic .
+.It Ic /url
+Hide the UI and
+list the most recent URLS
+which appeared in the current view.
+Press
+.Aq enter
+to resume the UI.
+.It Ic /view Ar num
+Switch to view number
+.Ar num .
+.It Ic /view Ar name
+Switch to view for
+.Ar name .
+.It Ic /who
+List users in the current channel.
+.El
+.Pp
+Additionally,
+messages entered in the
+.Ql (irc)
+view
+will be sent as raw IRC commands.
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev SSH_CLIENT
