@@ -1,0 +1,104 @@
+.Dd September 8, 2018
+.Dt CHATTE 1
+.Os "Causal Agency"
+.Sh NAME
+.Nm chatte
+.Nd IRC for catgirls
+.Sh SYNOPSIS
+.Nm
+.Op Fl v
+.Op Fl W Ar pass
+.Op Fl h Ar host
+.Op Fl j Ar chan
+.Op Fl l Ar path
+.Op Fl n Ar nick
+.Op Fl p Ar port
+.Op Fl u Ar user
+.Op Fl w Ar pass
+.Sh DESCRIPTION
+.Nm
+is a curses IRC client
+which only supports TLS.
+.Pp
+The arguments are as follows:
+.Bl -tag -width Ds
+.It Fl W Ar pass
+Send
+.Ql WEBIRC
+command with
+.Ar pass .
+See
+.Sx ENVIRONMENT
+for details.
+.It Fl h Ar host
+Connect to
+.Ar host .
+.It Fl j Ar chan
+Join
+.Ar chan
+after connecting.
+.Ar chan
+may be a comma-separated list.
+.It Fl l Ar path
+Log messages to subdirectories by target
+and files by date under
+.Ar path .
+.It Fl n Ar nick
+Set nickname to
+.Ar nick .
+.It Fl p Ar port
+Connect to
+.Ar port .
+The default port is 6697.
+.It Fl u Ar user
+Set username to
+.Ar user .
+The default username is
+the same as the nickname.
+.It Fl v
+Show raw IRC protocol in the
+.Ql (irc)
+view.
+.It Fl w Ar pass
+Log in with
+.Ar pass .
+.El
+.Pp
+If
+.Fl h
+or
+.Fl n
+are not provided,
+they will be prompted for.
+.Sh ENVIRONMENT
+.Bl -tag
+.It Ev SSH_CLIENT
+If
+.Fl W
+is passed and
+.Ev SSH_CLIENT
+is set,
+the
+.Ql WEBIRC
+command is used
+to set the hostname
+to the first word of
+.Ev SSH_CLIENT ,
+usually the client IP address.
+.El
+.Sh EXAMPLES
+.Bd -literal -offset indent
+chatte -h ascii.town -j '&chatte'
+.Ed
+.Sh STANDARDS
+.Rs
+.%A C. Kalt
+.%T Internet Relay Chat: Client Protocol
+.%I IETF
+.%N RFC 2812
+.%D April 2000
+.%U https://tools.ietf.org/html/rfc2812
+.Re
+.Sh CAVEATS
+.Nm
+does not support unencrypted connections.
