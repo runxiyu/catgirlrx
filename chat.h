@@ -37,7 +37,8 @@ void selfNick(const char *nick);
 void selfUser(const char *user);
 void selfJoin(const char *join);
 
-void eventSpawn(char *const argv[]);
+void eventWait(char *const argv[]);
+void eventPipe(char *const argv[]);
 void eventLoop(int ui, int irc);
 
 struct Tag {

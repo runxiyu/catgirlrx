@@ -27,18 +27,26 @@
 
 #include "chat.h"
 
-static union {
-	struct {
-		struct pollfd ui;
-		struct pollfd irc;
-		struct pollfd pipe;
-	};
-	struct pollfd fds[3];
-} fds;
+static struct {
+	bool wait;
+	bool pipe;
+	int fd;
+} spawn;
 
-void eventSpawn(char *const argv[]) {
-	if (fds.pipe.events) {
-		uiLog(TagStatus, UIHot, L"eventSpawn: existing pipe");
+void eventWait(char *const argv[]) {
+	uiHide();
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (!pid) {
+		execvp(argv[0], argv);
+		err(EX_CONFIG, "%s", argv[0]);
+	}
+	spawn.wait = true;
+}
+
+void eventPipe(char *const argv[]) {
+	if (spawn.pipe) {
+		uiLog(TagStatus, UIHot, L"event: existing pipe");
 		return;
 	}
 
@@ -60,21 +68,21 @@ void eventSpawn(char *const argv[]) {
 	}
 
 	close(rw[1]);
-	fds.pipe.fd = rw[0];
-	fds.pipe.events = POLLIN;
+	spawn.fd = rw[0];
+	spawn.pipe = true;
 }
 
 static void pipeRead(void) {
 	char buf[256];
-	ssize_t len = read(fds.pipe.fd, buf, sizeof(buf) - 1);
+	ssize_t len = read(spawn.fd, buf, sizeof(buf) - 1);
 	if (len < 0) err(EX_IOERR, "read");
 	if (len) {
 		buf[len] = '\0';
 		len = strcspn(buf, "\n");
-		uiFmt(TagStatus, UIHot, "eventSpawn: %.*s", (int)len, buf);
+		uiFmt(TagStatus, UIHot, "event: %.*s", (int)len, buf);
 	} else {
-		close(fds.pipe.fd);
-		memset(&fds.pipe, 0, sizeof(fds.pipe));
+		close(spawn.fd);
+		spawn.pipe = false;
 	}
 }
 
@@ -84,10 +92,11 @@ static void sigchld(int sig) {
 	pid_t pid = wait(&status);
 	if (pid < 0) err(EX_OSERR, "wait");
 	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		uiFmt(TagStatus, UIHot, "eventSpawn: exit %d", WEXITSTATUS(status));
+		uiFmt(TagStatus, UIHot, "event: exit %d", WEXITSTATUS(status));
 	} else if (WIFSIGNALED(status)) {
-		uiFmt(TagStatus, UIHot, "eventSpawn: singal %d", WTERMSIG(status));
+		uiFmt(TagStatus, UIHot, "event: signal %d", WTERMSIG(status));
 	}
+	spawn.wait = false;
 }
 
 static void sigint(int sig) {
@@ -101,23 +110,31 @@ void eventLoop(int ui, int irc) {
 	signal(SIGINT, sigint);
 	signal(SIGCHLD, sigchld);
 
-	fds.ui.fd = ui;
-	fds.irc.fd = irc;
-	fds.ui.events = POLLIN;
-	fds.irc.events = POLLIN;
-
+	struct pollfd fds[3] = {
+		{ irc, POLLIN, 0 },
+		{ ui, POLLIN, 0 },
+		{ -1, POLLIN, 0 },
+	};
 	for (;;) {
-		uiDraw();
+		nfds_t nfds = 2;
+		if (spawn.wait) nfds = 1;
+		if (spawn.pipe) {
+			fds[2].fd = spawn.fd;
+			nfds = 3;
+		}
 
-		int ready = poll(fds.fds, (fds.pipe.events ? 3 : 2), -1);
+		int ready = poll(fds, nfds, -1);
 		if (ready < 0) {
 			if (errno != EINTR) err(EX_IOERR, "poll");
 			uiRead();
+			uiDraw();
 			continue;
 		}
 
-		if (fds.ui.revents) uiRead();
-		if (fds.irc.revents) ircRead();
-		if (fds.pipe.revents) pipeRead();
+		if (fds[0].revents) ircRead();
+		if (nfds > 1 && fds[1].revents) uiRead();
+		if (nfds > 2 && fds[2].revents) pipeRead();
+
+		if (nfds > 1) uiDraw();
 	}
 }

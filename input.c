@@ -135,12 +135,20 @@ static void inputClose(struct Tag tag, char *params) {
 	tabRemove(TagNone, tag.name);
 }
 
+static void inputMan(struct Tag tag, char *params) {
+	(void)tag;
+	(void)params;
+	char *argv[] = { "man", "1", "chatte", NULL };
+	eventWait(argv);
+}
+
 static const struct {
 	const char *command;
 	Handler handler;
 } Commands[] = {
 	{ "/close", inputClose },
 	{ "/join", inputJoin },
+	{ "/man", inputMan },
 	{ "/me", inputMe },
 	{ "/names", inputWho },
 	{ "/nick", inputNick },
