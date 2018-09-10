@@ -174,18 +174,19 @@ messages entered in the
 view
 will be sent as raw IRC commands.
 .
-.Sh LINE EDITING
+.Sh KEY BINDINGS
 .Nm
 provides Emacs-like
 line editing keys,
 as well as keys for entering
 IRC formatting codes.
 .
+.Ss View Keys
 .Bl -tag
 .It Aq C-l
 Redraw the UI.
 .
-.It Ao M-0 Ac \(en Ao M-9 Ac
+.It Ao M-0 Ac ... Ao M-9 Ac
 Switch to view by number.
 See
 .Ic /view .
@@ -201,7 +202,10 @@ Scroll view up by half a page.
 .
 .It Aq PageDown
 Scroll view down by half a page.
+.El
 .
+.Ss Line Editing
+.Bl -tag
 .It Ao C-b Ac Ao Left Ac
 Move cursor left.
 .
@@ -238,24 +242,82 @@ Delete line after cursor.
 .It Aq Tab
 Cycle through completions
 for commands, nicks and channels.
+.El
 .
+.Ss IRC Formatting
+.Bl -tag
 .It Aq C-n
-Insert IRC formatting reset.
+Reset formatting.
 .
 .It Aq C-o
-Insert IRC formatting bold.
+Toggle bold.
 .
 .It Aq C-t
-Insert IRC formatting italic.
+Toggle italic.
 .
 .It Aq C-u
-Insert IRC formatting underline.
+Toggle underline.
 .
 .It Aq C-v
-Insert IRC formatting reverse video.
+Toggle reverse video.
+Note: this must usually be typed as
+.Aq C-v C-v .
 .
 .It Aq C-r
-Insert IRC formatting color.
+Set or reset color.
+.El
+.
+.Pp
+To reset color,
+follow
+.Aq C-r
+by a non-digit.
+To set the foreground color,
+follow
+.Aq C-r
+by one or two digits.
+To set the foreground and background colors,
+follow
+.Aq C-r
+by one or two digits,
+a comma,
+and one or two digits.
+.
+.Pp
+The colors are as follows:
+.Bl -tag -width Ds -compact
+.It 0
+white
+.It 1
+black
+.It 2
+blue
+.It 3
+green
+.It 4
+red
+.It 5
+brown (dark red)
+.It 6
+magenta
+.It 7
+orange (dark yellow)
+.It 8
+yellow
+.It 9
+light green
+.It 10
+cyan
+.It 11
+light cyan
+.It 12
+light blue
+.It 13
+pink (light magenta)
+.It 14
+gray
+.It 15
+light gray
 .El
 .
 .Sh ENVIRONMENT
