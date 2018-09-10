@@ -1,9 +1,11 @@
 .Dd September 8, 2018
 .Dt CHATTE 1
 .Os "Causal Agency"
+.
 .Sh NAME
 .Nm chatte
 .Nd IRC for catgirls
+.
 .Sh SYNOPSIS
 .Nm
 .Op Fl v
@@ -15,12 +17,15 @@
 .Op Fl p Ar port
 .Op Fl u Ar user
 .Op Fl w Ar pass
+.
 .Sh DESCRIPTION
 .Nm
 is a curses IRC client
 which only supports TLS.
+.
 .Pp
 The arguments are as follows:
+.
 .Bl -tag -width Ds
 .It Fl W Ar pass
 Send
@@ -30,6 +35,7 @@ command with
 See
 .Sx ENVIRONMENT
 for details.
+.
 .It Fl h Ar host
 Connect to
 .Ar host .
@@ -39,30 +45,37 @@ Join
 after connecting.
 .Ar chan
 may be a comma-separated list.
+.
 .It Fl l Ar path
 Log messages to subdirectories by target
 and files by date under
 .Ar path .
+.
 .It Fl n Ar nick
 Set nickname to
 .Ar nick .
+.
 .It Fl p Ar port
 Connect to
 .Ar port .
 The default port is 6697.
+.
 .It Fl u Ar user
 Set username to
 .Ar user .
 The default username is
 the same as the nickname.
+.
 .It Fl v
 Show raw IRC protocol in the
 .Ql (irc)
 view.
+.
 .It Fl w Ar pass
 Log in with
 .Ar pass .
 .El
+.
 .Pp
 If
 .Fl h
@@ -70,29 +83,36 @@ or
 .Fl n
 are not provided,
 they will be prompted for.
+.
 .Sh COMMANDS
 Commands may be entered
 as their shortest unique prefix.
 A slash followed immediately by a number
 is equivalent to
 .Ic /view .
+.
 .Bl -tag
 .It Ic /close
 Close the current view.
 All views after the current one
 are renumbered.
+.
 .It Ic /join Ar chan
 Join a channel.
+.
 .It Ic /me Ar action
 Send a CTCP
 .Ql ACTION
 to the current target.
+.
 .It Ic /names
 List users in the current channel.
 Equivalent to
 .Ic /who .
+.
 .It Ic /nick Ar nick
 Change nicknames.
+.
 .It Ic /open Op Ar range
 Open
 .Ar range
@@ -107,21 +127,26 @@ starting at 1.
 The default
 .Ar range
 is 1.
+.
 .It Ic /part
 Leave the current channel.
+.
 .It Ic /query Ar nick
 Open a private message view with
 .Ar nick .
+.
 .It Ic /quit Op Ar message
 Quit IRC.
 The default
 .Ar message
 is
 .Dq Goodbye .
+.
 .It Ic /topic Op Ar topic
 Show the topic of the current channel
 or set it to
 .Ar topic .
+.
 .It Ic /url
 Hide the UI and
 list the most recent URLS
@@ -129,80 +154,110 @@ which appeared in the current view.
 Press
 .Aq Enter
 to resume the UI.
+.
 .It Ic /view Ar num
 Switch to view number
 .Ar num .
+.
 .It Ic /view Ar name
 Switch to view for
 .Ar name .
+.
 .It Ic /who
 List users in the current channel.
 .El
+.
 .Pp
 Additionally,
 messages entered in the
 .Ql (irc)
 view
 will be sent as raw IRC commands.
+.
 .Sh LINE EDITING
 .Nm
 provides Emacs-like
 line editing keys,
 as well as keys for entering
 IRC formatting codes.
+.
 .Bl -tag
 .It Aq C-l
 Redraw the UI.
+.
 .It Ao M-0 Ac \(en Ao M-9 Ac
 Switch to view by number.
 See
 .Ic /view .
+.
 .It Aq S-Left
 Scroll view up by one line.
+.
 .It Aq S-Right
 Scroll view down by one line.
+.
 .It Aq PageUp
 Scroll view up by half a page.
+.
 .It Aq PageDown
 Scroll view down by half a page.
+.
 .It Ao C-b Ac Ao Left Ac
 Move cursor left.
+.
 .It Ao C-f Ac Ao Right Ac
 Move cursor right.
+.
 .It Ao C-a Ac Ao Home Ac
 Move cursor to beginning of line.
+.
 .It Ao C-e Ac Ao End Ac
 Move cursor to end of line.
+.
 .It Aq M-b
 Move cursor to beginning of word.
+.
 .It Aq M-f
 Move cursor to end of word.
+.
 .It Aq Backspace
 Delete character before cursor.
+.
 .It Ao C-d Ac Ao Delete Ac
 Delete character under cursor.
+.
 .It Ao C-w Ac Ao M-Backspace Ac
 Delete word before cursor.
+.
 .It Aq M-d
 Delete word after cursor.
+.
 .It Aq C-k
 Delete line after cursor.
+.
 .It Aq Tab
 Cycle through completions
 for commands, nicks and channels.
+.
 .It Aq C-n
 Insert IRC formatting reset.
+.
 .It Aq C-o
 Insert IRC formatting bold.
+.
 .It Aq C-t
 Insert IRC formatting italic.
+.
 .It Aq C-u
 Insert IRC formatting underline.
+.
 .It Aq C-v
 Insert IRC formatting reverse video.
+.
 .It Aq C-r
 Insert IRC formatting color.
 .El
+.
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev SSH_CLIENT
@@ -219,10 +274,12 @@ to the first word of
 .Ev SSH_CLIENT ,
 usually the client IP address.
 .El
+.
 .Sh EXAMPLES
 .Bd -literal -offset indent
 chatte -h ascii.town -j '&chatte'
 .Ed
+.
 .Sh STANDARDS
 .Rs
 .%A C. Kalt
@@ -232,6 +289,7 @@ chatte -h ascii.town -j '&chatte'
 .%D April 2000
 .%U https://tools.ietf.org/html/rfc2812
 .Re
+.
 .Sh CAVEATS
 .Nm
 does not support unencrypted connections.
