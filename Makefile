@@ -42,7 +42,7 @@ uninstall:
 	rm -f $(PREFIX)/bin/chatte
 	rm -f $(MANPATH)/man1/chatte.1
 
-chroot.tar: chatte chatte.1
+chroot.tar: chatte chatte.1 man.sh
 	install -d -o root -g wheel \
 		root \
 		root/bin \
