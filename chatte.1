@@ -70,7 +70,7 @@ or
 .Fl n
 are not provided,
 they will be prompted for.
-.Ss Commands
+.Sh COMMANDS
 Commands may be entered
 as their shortest unique prefix.
 A slash followed immediately by a number
@@ -127,7 +127,7 @@ Hide the UI and
 list the most recent URLS
 which appeared in the current view.
 Press
-.Aq enter
+.Aq Enter
 to resume the UI.
 .It Ic /view Ar num
 Switch to view number
@@ -144,6 +144,65 @@ messages entered in the
 .Ql (irc)
 view
 will be sent as raw IRC commands.
+.Sh LINE EDITING
+.Nm
+provides Emacs-like
+line editing keys,
+as well as keys for entering
+IRC formatting codes.
+.Bl -tag
+.It Aq C-l
+Redraw the UI.
+.It Ao M-0 Ac \(en Ao M-9 Ac
+Switch to view by number.
+See
+.Ic /view .
+.It Aq S-Left
+Scroll view up by one line.
+.It Aq S-Right
+Scroll view down by one line.
+.It Aq PageUp
+Scroll view up by half a page.
+.It Aq PageDown
+Scroll view down by half a page.
+.It Ao C-b Ac Ao Left Ac
+Move cursor left.
+.It Ao C-f Ac Ao Right Ac
+Move cursor right.
+.It Ao C-a Ac Ao Home Ac
+Move cursor to beginning of line.
+.It Ao C-e Ac Ao End Ac
+Move cursor to end of line.
+.It Aq M-b
+Move cursor to beginning of word.
+.It Aq M-f
+Move cursor to end of word.
+.It Aq Backspace
+Delete character before cursor.
+.It Ao C-d Ac Ao Delete Ac
+Delete character under cursor.
+.It Ao C-w Ac Ao M-Backspace Ac
+Delete word before cursor.
+.It Aq M-d
+Delete word after cursor.
+.It Aq C-k
+Delete line after cursor.
+.It Aq Tab
+Cycle through completions
+for commands, nicks and channels.
+.It Aq C-n
+Insert IRC formatting reset.
+.It Aq C-o
+Insert IRC formatting bold.
+.It Aq C-t
+Insert IRC formatting italic.
+.It Aq C-u
+Insert IRC formatting underline.
+.It Aq C-v
+Insert IRC formatting reverse video.
+.It Aq C-r
+Insert IRC formatting color.
+.El
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev SSH_CLIENT
