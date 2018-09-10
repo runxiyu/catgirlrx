@@ -17,3 +17,4 @@ This software requires LibreSSL and targets FreeBSD and Darwin.
 	pls.c       Functions which should not have to be written
 
 	sshd_config    Sample anonymous SSH configuration
+	man.sh         man(1) implementation for chroot
