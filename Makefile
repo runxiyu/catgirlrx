@@ -1,5 +1,6 @@
-LIBRESSL_PREFIX = /usr/local /usr/local/opt/libressl
 PREFIX = ~/.local
+MANPATH = $(PREFIX)/share/man
+LIBRESSL_PREFIX = /usr/local /usr/local/opt/libressl
 CHROOT_USER = chat
 CHROOT_GROUP = $(CHROOT_USER)
 
@@ -31,6 +32,15 @@ $(OBJS): chat.h
 
 tags: *.h *.c
 	ctags -w *.h *.c
+
+install: chatte chatte.1
+	install -d $(PREFIX)/bin $(MANPATH)/man1
+	install chatte $(PREFIX)/bin/chatte
+	install -m 644 chatte.1 $(MANPATH)/man1/chatte.1
+
+uninstall:
+	rm -f $(PREFIX)/bin/chatte
+	rm -f $(MANPATH)/man1/chatte.1
 
 chroot.tar: chatte
 	mkdir -p root
@@ -67,9 +77,3 @@ chroot.tar: chatte
 
 clean:
 	rm -f tags chatte $(OBJS) chroot.tar
-
-install: chatte
-	install chatte $(PREFIX)/bin/chatte
-
-uninstall:
-	rm -f $(PREFIX)/bin/chatte
