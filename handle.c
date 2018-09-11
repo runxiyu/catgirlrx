@@ -381,9 +381,10 @@ static void handlePrivmsg(char *prefix, char *params) {
 	if (!self) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
-	bool ping = !self && (direct || isPing(mesg));
+	bool hot = !self && (direct || isPing(mesg));
+	bool ping = !self && isPing(mesg);
 	uiFmt(
-		tag, (ping ? UIHot : UIWarm),
+		tag, (hot ? UIHot : UIWarm),
 		"%c\3%d%c%s%c\17 %s",
 		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
 	);
