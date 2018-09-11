@@ -152,6 +152,7 @@ static const struct {
 	Handler handler;
 } Commands[] = {
 	{ "/close", inputClose },
+	{ "/help", inputMan },
 	{ "/join", inputJoin },
 	{ "/man", inputMan },
 	{ "/me", inputMe },

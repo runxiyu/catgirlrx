@@ -97,6 +97,10 @@ Close the current view.
 All views after the current one
 are renumbered.
 .
+.It Ic /help
+Equivalent to
+.Ic /man .
+.
 .It Ic /join Ar chan
 Join a channel.
 .
@@ -349,9 +353,7 @@ usually the client IP address.
 .El
 .
 .Sh EXAMPLES
-.Bd -literal -offset indent
-chatte -h ascii.town -j '&chatte'
-.Ed
+.Dl chatte -h ascii.town -j '&chatte'
 .
 .Sh STANDARDS
 .Rs
