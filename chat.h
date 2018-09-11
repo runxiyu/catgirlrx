@@ -158,7 +158,8 @@ void tabReject(void);
 
 void urlScan(struct Tag tag, const char *str);
 void urlList(struct Tag tag);
-void urlOpen(struct Tag tag, size_t at, size_t to);
+void urlOpenMatch(struct Tag tag, const char *substr);
+void urlOpenRange(struct Tag tag, size_t at, size_t to);
 
 void logOpen(const char *path);
 void logFmt(

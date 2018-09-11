@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <err.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -107,9 +108,13 @@ static void inputUrl(struct Tag tag, char *params) {
 	urlList(tag);
 }
 static void inputOpen(struct Tag tag, char *params) {
-	size_t at = (params ? strtoul(strsep(&params, "-,"), NULL, 0) : 1);
-	size_t to = (params ? strtoul(params, NULL, 0) : at);
-	urlOpen(tag, at - 1, to);
+	if (params && !isdigit(params[0])) {
+		urlOpenMatch(tag, params);
+	} else {
+		size_t at = (params ? strtoul(strsep(&params, "-,"), NULL, 0) : 1);
+		size_t to = (params ? strtoul(params, NULL, 0) : at);
+		urlOpenRange(tag, at - 1, to);
+	}
 }
 
 static void inputView(struct Tag tag, char *params) {

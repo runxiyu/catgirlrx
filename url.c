@@ -43,12 +43,16 @@ static struct {
 	size_t end;
 } ring;
 
-static void push(struct Tag tag, const char *url, size_t len) {
+static void ringPush(struct Tag tag, const char *url, size_t len) {
 	free(ring.buf[ring.end].url);
 	ring.buf[ring.end].tag = tag.id;
 	ring.buf[ring.end].url = strndup(url, len);
 	if (!ring.buf[ring.end].url) err(EX_OSERR, "strndup");
 	ring.end = (ring.end + 1) & (RingLen - 1);
+}
+
+static struct Entry ringEntry(size_t i) {
+	return ring.buf[(ring.end + i) & (RingLen - 1)];
 }
 
 void urlScan(struct Tag tag, const char *str) {
@@ -57,7 +61,7 @@ void urlScan(struct Tag tag, const char *str) {
 		for (size_t i = 0; i < SchemesLen; ++i) {
 			if (strncmp(str, Schemes[i], strlen(Schemes[i]))) continue;
 			len = strcspn(str, " >\"");
-			push(tag, str, len);
+			ringPush(tag, str, len);
 		}
 		str = &str[len];
 	}
@@ -66,18 +70,29 @@ void urlScan(struct Tag tag, const char *str) {
 void urlList(struct Tag tag) {
 	uiHide();
 	for (size_t i = 0; i < RingLen; ++i) {
-		struct Entry entry = ring.buf[(ring.end + i) & (RingLen - 1)];
+		struct Entry entry = ringEntry(i);
 		if (!entry.url || entry.tag != tag.id) continue;
 		printf("%s\n", entry.url);
 	}
 }
 
-void urlOpen(struct Tag tag, size_t at, size_t to) {
+void urlOpenMatch(struct Tag tag, const char *substr) {
+	for (size_t i = RingLen - 1; i < RingLen; --i) {
+		struct Entry entry = ringEntry(i);
+		if (!entry.url || entry.tag != tag.id) continue;
+		if (!strstr(entry.url, substr)) continue;
+		char *argv[] = { "open", entry.url, NULL };
+		eventPipe(argv);
+		break;
+	}
+}
+
+void urlOpenRange(struct Tag tag, size_t at, size_t to) {
 	size_t argc = 1;
 	char *argv[2 + RingLen] = { "open" };
 	size_t tagIndex = 0;
 	for (size_t i = RingLen - 1; i < RingLen; --i) {
-		struct Entry entry = ring.buf[(ring.end + i) & (RingLen - 1)];
+		struct Entry entry = ringEntry(i);
 		if (!entry.url || entry.tag != tag.id) continue;
 		if (tagIndex >= at && tagIndex < to) argv[argc++] = entry.url;
 		tagIndex++;
