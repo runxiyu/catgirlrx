@@ -502,7 +502,7 @@ void uiRead(void) {
 	formatReset(&format);
 	wmove(ui.input, 0, 0);
 
-	int _, x;
+	int _, x = 0;
 	while (formatParse(&format, editTail())) {
 		if (format.split) getyx(ui.input, _, x);
 		addFormat(ui.input, &format);
