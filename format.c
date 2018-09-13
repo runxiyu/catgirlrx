@@ -68,6 +68,7 @@ bool formatParse(struct Format *format, const wchar_t *split) {
 	format->str += format->len;
 	if (!format->str[0]) {
 		if (split == format->str && !format->split) {
+			format->len = 0;
 			format->split = true;
 			return true;
 		}
