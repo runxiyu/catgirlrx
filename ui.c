@@ -34,9 +34,6 @@
 #include "chat.h"
 #undef uiFmt
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-
 #define CTRL(c)   ((c) ^ 0100)
 
 static void colorInit(void) {
@@ -242,81 +239,35 @@ static const short IRCColors[] = {
 	[IRCLightGray]  = 0 + COLOR_WHITE,
 };
 
-static const wchar_t *parseColor(short *pair, const wchar_t *str) {
-	short fg = 0;
-	size_t fgLen = MIN(wcsspn(str, L"0123456789"), 2);
-	if (!fgLen) { *pair = -1; return str; }
-	for (size_t i = 0; i < fgLen; ++i) {
-		fg = fg * 10 + (str[i] - L'0');
-	}
-	str = &str[fgLen];
-
-	short bg = 0;
-	size_t bgLen = 0;
-	if (str[0] == L',') bgLen = MIN(wcsspn(&str[1], L"0123456789"), 2);
-	for (size_t i = 0; i < bgLen; ++i) {
-		bg = bg * 10 + (str[1 + i] - L'0');
-	}
-	if (bgLen) str = &str[1 + bgLen];
-
-	if (*pair == -1) *pair = 0;
-	*pair = (*pair & 0xF0) | IRCColors[fg & 0x0F];
-	if (bgLen) *pair = (*pair & 0x0F) | (IRCColors[bg & 0x0F] << 4);
-
-	return str;
-}
-
-static int wordWrap(WINDOW *win, const wchar_t *str) {
-	size_t len = wcscspn(str, L" ");
-	size_t width = 1;
-	for (size_t i = 0; i < len; ++i) {
-		if (iswprint(str[i])) width += wcwidth(str[i]);
-	}
-
-	int _, x, xMax;
-	getyx(win, _, x);
-	getmaxyx(win, _, xMax);
-
-	if (width >= (size_t)(xMax - x)) {
-		waddch(win, '\n');
-		return 1;
-	} else {
-		waddch(win, ' ');
-		return 0;
-	}
-}
-
-static const wchar_t IRCCodes[] = {
-	L' ',
-	IRCBold,
-	IRCColor,
-	IRCReverse,
-	IRCReset,
-	IRCItalic,
-	IRCUnderline,
-	L'\0',
-};
-
 static int addIRC(WINDOW *win, const wchar_t *str) {
-	attr_t attr = A_NORMAL;
-	short pair = -1;
 	int lines = 0;
-	for (;;) {
-		size_t cc = wcscspn(str, IRCCodes);
-		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
-		waddnwstr(win, str, cc);
-		if (!str[cc]) break;
-
-		str = &str[cc];
-		switch (*str++) {
-			break; case L' ':         lines += wordWrap(win, str);
-			break; case IRCBold:      attr ^= A_BOLD;
-			break; case IRCItalic:    attr ^= A_ITALIC;
-			break; case IRCUnderline: attr ^= A_UNDERLINE;
-			break; case IRCReverse:   attr ^= A_REVERSE;
-			break; case IRCColor:     str = parseColor(&pair, str);
-			break; case IRCReset:     attr = A_NORMAL; pair = -1;
+	struct Format format = { .str = str };
+	formatReset(&format);
+	while (formatParse(&format, NULL)) {
+		int _, x, xMax;
+		getyx(win, _, x);
+		getmaxyx(win, _, xMax);
+		if (xMax - x - 1 < wcswidth(format.str, format.len)) {
+			if (format.str[0] == L' ') {
+				format.str++;
+				format.len--;
+			}
+			waddch(win, '\n');
+			lines++;
 		}
+
+		attr_t attr = A_NORMAL;
+		if (format.bold)      attr |= A_BOLD;
+		if (format.italic)    attr |= A_ITALIC;
+		if (format.underline) attr |= A_UNDERLINE;
+		if (format.reverse)   attr |= A_REVERSE;
+
+		short pair = -1;
+		if (format.fg >= 0) pair = IRCColors[format.fg];
+		if (format.bg >= 0) pair |= IRCColors[format.bg] << 4;
+
+		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
+		waddnwstr(win, format.str, format.len);
 	}
 	return lines;
 }

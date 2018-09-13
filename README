@@ -9,7 +9,8 @@ This software requires LibreSSL and targets FreeBSD and Darwin.
 	handle.c    Incoming command handling
 	input.c     Input command handling
 	irc.c       TLS client connection
-	ui.c        Curses UI and mIRC formatting
+	format.c    IRC formatting
+	ui.c        Curses UI
 	term.c      Terminal features unsupported by curses
 	edit.c      Line editing
 	tab.c       Tab-complete

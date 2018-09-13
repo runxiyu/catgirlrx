@@ -12,6 +12,7 @@ LDLIBS = -lcursesw -ltls
 OBJS += chat.o
 OBJS += edit.o
 OBJS += event.o
+OBJS += format.o
 OBJS += handle.o
 OBJS += input.o
 OBJS += irc.o

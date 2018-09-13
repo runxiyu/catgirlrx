@@ -23,6 +23,9 @@
 #include <time.h>
 #include <wchar.h>
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 #define err(...) do { uiHide(); err(__VA_ARGS__); } while (0)
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
@@ -79,6 +82,19 @@ enum {
 	IRCItalic    = 035,
 	IRCUnderline = 037,
 };
+
+struct Format {
+	const wchar_t *str;
+	size_t len;
+	bool bold;
+	bool italic;
+	bool underline;
+	bool reverse;
+	int fg;
+	int bg;
+};
+void formatReset(struct Format *format);
+bool formatParse(struct Format *format, const wchar_t *stop);
 
 void handle(char *line);
 void input(struct Tag tag, char *line);
