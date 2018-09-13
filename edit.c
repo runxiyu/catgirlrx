@@ -125,7 +125,7 @@ static void complete(struct Tag tag) {
 	if (!pos && line.tab[0] != L'/') {
 		insert(L':');
 	} else if (pos >= 2) {
-		if (line.buf[pos - 2] == L':' || line.buf[pos - 2] == L',') {
+		if (line.buf[pos - 2] == L':') {
 			line.buf[pos - 2] = L',';
 			insert(L':');
 		}
