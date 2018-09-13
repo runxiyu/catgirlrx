@@ -33,17 +33,10 @@ static struct {
 	.end = line.buf,
 };
 
-// XXX: editTail must always be called after editHead.
-static wchar_t tail;
 const wchar_t *editHead(void) {
-	tail = *line.ptr;
-	*line.ptr = L'\0';
 	return line.buf;
 }
 const wchar_t *editTail(void) {
-	if (tail) *line.ptr = tail;
-	*line.end = L'\0';
-	tail = L'\0';
 	return line.ptr;
 }
 
@@ -180,10 +173,12 @@ void edit(struct Tag tag, enum Edit op, wchar_t ch) {
 
 		break; case EditKillBackWord: reject(); killBackWord();
 		break; case EditKillForeWord: reject(); killForeWord();
-		break; case EditKillLine:      reject(); line.end = line.ptr;
+		break; case EditKillLine:     reject(); line.end = line.ptr;
 
 		break; case EditComplete: complete(tag);
 
 		break; case EditEnter: accept(); enter(tag);
 	}
+
+	*line.end = L'\0';
 }

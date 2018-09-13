@@ -64,10 +64,11 @@ static const wchar_t Stops[] = {
 	L'\0',
 };
 
-bool formatParse(struct Format *format, const wchar_t *stop) {
+bool formatParse(struct Format *format, const wchar_t *split) {
 	format->str += format->len;
 	if (!format->str[0]) return false;
 
+	const wchar_t *init = format->str;
 	switch (format->str[0]) {
 		break; case IRCBold:      format->str++; format->bold ^= true;
 		break; case IRCItalic:    format->str++; format->italic ^= true;
@@ -76,14 +77,15 @@ bool formatParse(struct Format *format, const wchar_t *stop) {
 		break; case IRCColor:     format->str++; parseColor(format);
 		break; case IRCReset:     format->str++; formatReset(format);
 	}
+	format->split = (split >= init && split <= format->str);
 
 	if (format->str[0] == L' ') {
 		format->len = 1 + wcscspn(&format->str[1], Stops);
 	} else {
 		format->len = wcscspn(format->str, Stops);
 	}
-	if (stop && stop > format->str && stop < &format->str[format->len]) {
-		format->len = stop - format->str;
+	if (split > format->str && split < &format->str[format->len]) {
+		format->len = split - format->str;
 	}
 	return true;
 }

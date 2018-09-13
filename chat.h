@@ -86,15 +86,12 @@ enum {
 struct Format {
 	const wchar_t *str;
 	size_t len;
-	bool bold;
-	bool italic;
-	bool underline;
-	bool reverse;
-	int fg;
-	int bg;
+	bool split;
+	bool bold, italic, underline, reverse;
+	int fg, bg;
 };
 void formatReset(struct Format *format);
-bool formatParse(struct Format *format, const wchar_t *stop);
+bool formatParse(struct Format *format, const wchar_t *split);
 
 void handle(char *line);
 void input(struct Tag tag, char *line);

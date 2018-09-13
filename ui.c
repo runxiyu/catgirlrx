@@ -239,10 +239,25 @@ static const short IRCColors[] = {
 	[IRCLightGray]  = 0 + COLOR_WHITE,
 };
 
-static int addIRC(WINDOW *win, const wchar_t *str) {
-	int lines = 0;
+static void addFormat(WINDOW *win, const struct Format *format) {
+	attr_t attr = A_NORMAL;
+	if (format->bold)      attr |= A_BOLD;
+	if (format->italic)    attr |= A_ITALIC;
+	if (format->underline) attr |= A_UNDERLINE;
+	if (format->reverse)   attr |= A_REVERSE;
+
+	short pair = -1;
+	if (format->fg >= 0) pair = IRCColors[format->fg];
+	if (format->bg >= 0) pair |= IRCColors[format->bg] << 4;
+
+	wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
+	waddnwstr(win, format->str, format->len);
+}
+
+static int addWrap(WINDOW *win, const wchar_t *str) {
 	struct Format format = { .str = str };
 	formatReset(&format);
+	int lines = 0;
 	while (formatParse(&format, NULL)) {
 		int _, x, xMax;
 		getyx(win, _, x);
@@ -255,19 +270,7 @@ static int addIRC(WINDOW *win, const wchar_t *str) {
 			waddch(win, '\n');
 			lines++;
 		}
-
-		attr_t attr = A_NORMAL;
-		if (format.bold)      attr |= A_BOLD;
-		if (format.italic)    attr |= A_ITALIC;
-		if (format.underline) attr |= A_UNDERLINE;
-		if (format.reverse)   attr |= A_REVERSE;
-
-		short pair = -1;
-		if (format.fg >= 0) pair = IRCColors[format.fg];
-		if (format.bg >= 0) pair |= IRCColors[format.bg] << 4;
-
-		wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
-		waddnwstr(win, format.str, format.len);
+		addFormat(win, &format);
 	}
 	return lines;
 }
@@ -293,7 +296,7 @@ static void uiStatus(void) {
 		if (len < 0) err(EX_OSERR, "aswprintf");
 		if (view->unread == 1) str[unread] = L'\0';
 
-		addIRC(ui.status, count ? str : &str[1]);
+		addWrap(ui.status, count ? str : &str[1]);
 		free(str);
 		count++;
 	}
@@ -360,7 +363,7 @@ void uiTopic(struct Tag tag, const char *topic) {
 	wchar_t *wcs = ambstowcs(topic);
 	if (!wcs) err(EX_DATAERR, "ambstowcs");
 	wmove(view->topic, 0, 0);
-	addIRC(view->topic, wcs);
+	addWrap(view->topic, wcs);
 	wclrtoeol(view->topic);
 	free(wcs);
 }
@@ -380,7 +383,7 @@ void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 		}
 		uiStatus();
 	}
-	lines += addIRC(view->log, line);
+	lines += addWrap(view->log, line);
 	if (view->scroll != LogLines) view->scroll -= lines;
 }
 
@@ -545,9 +548,14 @@ void uiRead(void) {
 
 	int y, x;
 	wmove(ui.input, 0, 0);
-	addIRC(ui.input, editHead());
-	getyx(ui.input, y, x);
-	addIRC(ui.input, editTail());
+
+	struct Format format = { .str = editHead() };
+	formatReset(&format);
+	while (formatParse(&format, editTail())) {
+		if (format.split) getyx(ui.input, y, x);
+		addFormat(ui.input, &format);
+	}
+
 	wclrtoeol(ui.input);
 	wmove(ui.input, y, x);
 }
