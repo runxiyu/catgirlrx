@@ -66,7 +66,13 @@ static const wchar_t Stops[] = {
 
 bool formatParse(struct Format *format, const wchar_t *split) {
 	format->str += format->len;
-	if (!format->str[0]) return false;
+	if (!format->str[0]) {
+		if (split == format->str && !format->split) {
+			format->split = true;
+			return true;
+		}
+		return false;
+	}
 
 	const wchar_t *init = format->str;
 	switch (format->str[0]) {
