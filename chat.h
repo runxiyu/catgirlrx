@@ -119,7 +119,6 @@ enum UIHeat {
 	UIWarm,
 	UIHot,
 };
-void uiTopic(struct Tag tag, const char *topic);
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line);
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...);
 

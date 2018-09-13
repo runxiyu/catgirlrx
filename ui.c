@@ -34,8 +34,6 @@
 #include "chat.h"
 #undef uiFmt
 
-#define CTRL(c)   ((c) ^ 0100)
-
 static void colorInit(void) {
 	start_color();
 	use_default_colors();
@@ -69,101 +67,18 @@ static short pair8(short pair) {
 
 struct View {
 	struct Tag tag;
-	WINDOW *topic;
 	WINDOW *log;
-	int scroll;
-	int unread;
-	bool hot;
-	bool mark;
+	int scroll, unread;
+	bool hot, mark;
 	struct View *prev;
 	struct View *next;
 };
 
 static struct {
-	struct View *head;
-	struct View *tail;
-	struct View *tags[TagsLen];
-} views;
-
-static void viewAppend(struct View *view) {
-	if (views.tail) views.tail->next = view;
-	view->prev = views.tail;
-	view->next = NULL;
-	if (!views.head) views.head = view;
-	views.tail = view;
-	views.tags[view->tag.id] = view;
-}
-
-static void viewRemove(struct View *view) {
-	if (view->prev) view->prev->next = view->next;
-	if (view->next) view->next->prev = view->prev;
-	if (views.head == view) views.head = view->next;
-	if (views.tail == view) views.tail = view->prev;
-	views.tags[view->tag.id] = NULL;
-}
-
-static const int LogLines = 256;
-
-static int logHeight(const struct View *view) {
-	return LINES - (view->topic ? 2 : 0) - 2;
-}
-static int lastLogLine(void) {
-	return LogLines - 1;
-}
-static int lastLine(void) {
-	return LINES - 1;
-}
-static int lastCol(void) {
-	return COLS - 1;
-}
-
-static struct View *viewTag(struct Tag tag) {
-	struct View *view = views.tags[tag.id];
-	if (view) return view;
-
-	view = calloc(1, sizeof(*view));
-	if (!view) err(EX_OSERR, "calloc");
-
-	view->tag = tag;
-	view->log = newpad(LogLines, COLS);
-	wsetscrreg(view->log, 0, lastLogLine());
-	scrollok(view->log, true);
-	wmove(view->log, lastLogLine(), 0);
-	view->scroll = LogLines;
-	view->mark = true;
-
-	viewAppend(view);
-	return view;
-}
-
-static void viewResize(void) {
-	for (struct View *view = views.head; view; view = view->next) {
-		wresize(view->log, LogLines, COLS);
-		wmove(view->log, lastLogLine(), lastCol());
-	}
-}
-
-static void viewClose(struct View *view) {
-	viewRemove(view);
-	if (view->topic) delwin(view->topic);
-	delwin(view->log);
-	free(view);
-}
-
-static void viewMark(struct View *view) {
-	view->mark = true;
-}
-static void viewUnmark(struct View *view) {
-	view->unread = 0;
-	view->hot = false;
-	view->mark = false;
-}
-
-static struct {
 	bool hide;
-	struct View *view;
 	WINDOW *status;
 	WINDOW *input;
+	struct View *view;
 } ui;
 
 static void uiShow(void) {
@@ -177,31 +92,60 @@ void uiHide(void) {
 	endwin();
 }
 
+static const int ColsMax = 512;
+
+void uiInit(void) {
+	setlocale(LC_CTYPE, "");
+	initscr();
+	cbreak();
+	noecho();
+
+	colorInit();
+	termInit();
+
+	ui.status = newpad(1, ColsMax);
+	ui.input = newpad(1, ColsMax);
+	keypad(ui.input, true);
+	nodelay(ui.input, true);
+
+	uiViewTag(TagStatus);
+	uiShow();
+}
+
+void uiExit(void) {
+	uiHide();
+	printf(
+		"This program is AGPLv3 Free Software!\n"
+		"The source is available at <" SOURCE_URL ">.\n"
+	);
+}
+
+static int lastLine(void) {
+	return LINES - 1;
+}
+static int lastCol(void) {
+	return COLS - 1;
+}
+static int logHeight(void) {
+	return LINES - 2;
+}
+
 void uiDraw(void) {
 	if (ui.hide) return;
-
-	if (ui.view->topic) {
-		pnoutrefresh(
-			ui.view->topic,
-			0, 0,
-			0, 0,
-			1, lastCol()
-		);
-	}
-
-	pnoutrefresh(
-		ui.view->log,
-		ui.view->scroll - logHeight(ui.view), 0,
-		(ui.view->topic ? 2 : 0), 0,
-		lastLine() - 2, lastCol()
-	);
 
 	int _, x;
 	getyx(ui.status, _, x);
 	pnoutrefresh(
 		ui.status,
 		0, MAX(0, x - lastCol() - 1),
-		lastLine() - 1, 0,
+		0, 0,
+		0, lastCol()
+	);
+
+	pnoutrefresh(
+		ui.view->log,
+		ui.view->scroll - logHeight(), 0,
+		1, 0,
 		lastLine() - 1, lastCol()
 	);
 
@@ -214,10 +158,6 @@ void uiDraw(void) {
 	);
 
 	doupdate();
-}
-
-static void uiRedraw(void) {
-	clearok(curscr, true);
 }
 
 static const short IRCColors[] = {
@@ -257,6 +197,7 @@ static void addFormat(WINDOW *win, const struct Format *format) {
 static int addWrap(WINDOW *win, const wchar_t *str) {
 	struct Format format = { .str = str };
 	formatReset(&format);
+
 	int lines = 0;
 	while (formatParse(&format, NULL)) {
 		int _, x, xMax;
@@ -274,6 +215,12 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 	}
 	return lines;
 }
+
+static struct {
+	struct View *head;
+	struct View *tail;
+	struct View *tags[TagsLen];
+} views;
 
 static void uiStatus(void) {
 	mvwhline(ui.status, 0, 0, ACS_HLINE, COLS);
@@ -305,35 +252,76 @@ static void uiStatus(void) {
 	waddch(ui.status, ACS_HLINE);
 }
 
-static void uiView(struct View *view) {
-	termTitle(view->tag.name);
-	if (view->topic) touchwin(view->topic);
-	touchwin(view->log);
-	viewMark(ui.view);
-	viewUnmark(view);
-	ui.view = view;
+static void viewAppend(struct View *view) {
+	if (views.tail) views.tail->next = view;
+	view->prev = views.tail;
+	view->next = NULL;
+	views.tail = view;
+	if (!views.head) views.head = view;
+	views.tags[view->tag.id] = view;
+}
+
+static void viewRemove(struct View *view) {
+	if (view->prev) view->prev->next = view->next;
+	if (view->next) view->next->prev = view->prev;
+	if (views.head == view) views.head = view->next;
+	if (views.tail == view) views.tail = view->prev;
+	views.tags[view->tag.id] = NULL;
+}
+
+static const int LogLines = 256;
+
+static struct View *viewTag(struct Tag tag) {
+	struct View *view = views.tags[tag.id];
+	if (view) return view;
+
+	view = calloc(1, sizeof(*view));
+	if (!view) err(EX_OSERR, "calloc");
+
+	view->tag = tag;
+
+	view->log = newpad(LogLines, COLS);
+	wsetscrreg(view->log, 0, LogLines - 1);
+	scrollok(view->log, true);
+	wmove(view->log, LogLines - 1, 0);
+
+	view->scroll = LogLines;
+	view->mark = true;
+
+	viewAppend(view);
+	return view;
+}
+
+static void viewClose(struct View *view) {
+	viewRemove(view);
+	delwin(view->log);
+	free(view);
+}
+
+static void uiResize(void) {
+	for (struct View *view = views.head; view; view = view->next) {
+		wresize(view->log, LogLines, COLS);
+		wmove(view->log, LogLines - 1, lastCol());
+	}
+}
+
+static void viewUnmark(struct View *view) {
+	view->mark = false;
+	view->unread = 0;
+	view->hot = false;
 	uiStatus();
 }
 
-static void uiClose(struct View *view) {
-	if (ui.view == view) {
-		if (view->next) {
-			uiView(view->next);
-		} else if (view->prev) {
-			uiView(view->prev);
-		} else {
-			return;
-		}
-	}
-	viewClose(view);
+static void uiView(struct View *view) {
+	termTitle(view->tag.name);
+	touchwin(view->log);
+	if (ui.view) ui.view->mark = true;
+	viewUnmark(view);
+	ui.view = view;
 }
 
 void uiViewTag(struct Tag tag) {
 	uiView(viewTag(tag));
-}
-
-void uiCloseTag(struct Tag tag) {
-	uiClose(viewTag(tag));
 }
 
 void uiViewNum(int num) {
@@ -352,26 +340,25 @@ void uiViewNum(int num) {
 	}
 }
 
-static const int ColsMax = 512;
-
-void uiTopic(struct Tag tag, const char *topic) {
+void uiCloseTag(struct Tag tag) {
 	struct View *view = viewTag(tag);
-	if (!view->topic) {
-		view->topic = newpad(2, ColsMax);
-		mvwhline(view->topic, 1, 0, ACS_HLINE, ColsMax);
+	if (ui.view == view) {
+		if (view->next) {
+			uiView(view->next);
+		} else if (view->prev) {
+			uiView(view->prev);
+		} else {
+			return;
+		}
 	}
-	wchar_t *wcs = ambstowcs(topic);
-	if (!wcs) err(EX_DATAERR, "ambstowcs");
-	wmove(view->topic, 0, 0);
-	addWrap(view->topic, wcs);
-	wclrtoeol(view->topic);
-	free(wcs);
+	viewClose(view);
 }
 
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 	struct View *view = viewTag(tag);
 	int lines = 1;
 	waddch(view->log, '\n');
+
 	if (view->mark && heat > UICold) {
 		if (!view->unread++) {
 			lines++;
@@ -379,83 +366,67 @@ void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 		}
 		if (heat > UIWarm) {
 			view->hot = true;
-			beep(); // TODO: Notification.
+			beep(); // TODO: Notify.
 		}
 		uiStatus();
 	}
+
 	lines += addWrap(view->log, line);
 	if (view->scroll != LogLines) view->scroll -= lines;
 }
 
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
-	wchar_t *wcs;
+	wchar_t *str;
 	va_list ap;
 	va_start(ap, format);
-	vaswprintf(&wcs, format, ap);
+	vaswprintf(&str, format, ap);
 	va_end(ap);
-	if (!wcs) err(EX_OSERR, "vaswprintf");
-	uiLog(tag, heat, wcs);
-	free(wcs);
+	if (!str) err(EX_OSERR, "vaswprintf");
+	uiLog(tag, heat, str);
+	free(str);
 }
 
-void uiInit(void) {
-	setlocale(LC_CTYPE, "");
-	initscr();
-	cbreak();
-	noecho();
-
-	colorInit();
-	termInit();
-
-	ui.status = newpad(1, ColsMax);
-	ui.input = newpad(1, ColsMax);
-	keypad(ui.input, true);
-	nodelay(ui.input, true);
-
-	ui.view = viewTag(TagStatus);
-	uiViewTag(TagStatus);
-	uiStatus();
-	uiShow();
+static void scrollUp(int lines) {
+	if (ui.view->scroll == logHeight()) return;
+	if (ui.view->scroll == LogLines) ui.view->mark = true;
+	ui.view->scroll = MAX(ui.view->scroll - lines, logHeight());
 }
-
-void uiExit(void) {
-	uiHide();
-	printf(
-		"This program is AGPLv3 free software!\n"
-		"The source is available at <" SOURCE_URL ">.\n"
-	);
-}
-
-static void logScrollUp(int lines) {
-	int height = logHeight(ui.view);
-	if (ui.view->scroll == height) return;
-	if (ui.view->scroll == LogLines) viewMark(ui.view);
-	ui.view->scroll = MAX(ui.view->scroll - lines, height);
-}
-static void logScrollDown(int lines) {
+static void scrollDown(int lines) {
 	if (ui.view->scroll == LogLines) return;
 	ui.view->scroll = MIN(ui.view->scroll + lines, LogLines);
 	if (ui.view->scroll == LogLines) viewUnmark(ui.view);
 }
-static void logPageUp(void) {
-	logScrollUp(logHeight(ui.view) / 2);
+
+static bool keyCode(wchar_t ch) {
+	switch (ch) {
+		break; case KEY_RESIZE:    uiResize(); return false;
+		break; case KEY_SLEFT:     scrollUp(1); return false;
+		break; case KEY_SRIGHT:    scrollDown(1); return false;
+		break; case KEY_PPAGE:     scrollUp(logHeight() / 2); return false;
+		break; case KEY_NPAGE:     scrollDown(logHeight() / 2); return false;
+		break; case KEY_LEFT:      edit(ui.view->tag, EditLeft, 0);
+		break; case KEY_RIGHT:     edit(ui.view->tag, EditRight, 0);
+		break; case KEY_HOME:      edit(ui.view->tag, EditHome, 0);
+		break; case KEY_END:       edit(ui.view->tag, EditEnd, 0);
+		break; case KEY_DC:        edit(ui.view->tag, EditDelete, 0);
+		break; case KEY_BACKSPACE: edit(ui.view->tag, EditBackspace, 0);
+		break; case KEY_ENTER:     edit(ui.view->tag, EditEnter, 0);
+		break; default:            return false;
+	}
+	return true;
 }
-static void logPageDown(void) {
-	logScrollDown(logHeight(ui.view) / 2);
-}
+
+#define CTRL(ch) ((ch) ^ 0100)
 
 static bool keyChar(wchar_t ch) {
 	if (ch < 0200) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
 			break; case TermFocusIn:  viewUnmark(ui.view);
-			break; case TermFocusOut: viewMark(ui.view);
+			break; case TermFocusOut: ui.view->mark = true;
 			break; default: {}
 		}
-		if (event) {
-			uiStatus();
-			return false;
-		}
+		if (event) return false;
 	}
 
 	static bool meta;
@@ -464,26 +435,25 @@ static bool keyChar(wchar_t ch) {
 		return false;
 	}
 
+	if (ch == L'\177') ch = L'\b';
+
 	if (meta) {
-		bool update = true;
+		meta = false;
 		switch (ch) {
 			break; case L'b':  edit(ui.view->tag, EditBackWord, 0);
 			break; case L'f':  edit(ui.view->tag, EditForeWord, 0);
 			break; case L'\b': edit(ui.view->tag, EditKillBackWord, 0);
 			break; case L'd':  edit(ui.view->tag, EditKillForeWord, 0);
 			break; default: {
-				update = false;
-				if (ch < L'0' || ch > L'9') break;
-				uiViewNum(ch - L'0');
+				if (ch >= L'0' && ch <= L'9') uiViewNum(ch - L'0');
+				return false;
 			}
 		}
-		meta = false;
-		return update;
+		return true;
 	}
 
-	if (ch == L'\177') ch = L'\b';
 	switch (ch) {
-		break; case CTRL(L'L'): uiRedraw(); return false;
+		break; case CTRL(L'L'): clearok(curscr, true); return false;
 
 		break; case CTRL(L'A'): edit(ui.view->tag, EditHome, 0);
 		break; case CTRL(L'B'): edit(ui.view->tag, EditLeft, 0);
@@ -513,24 +483,6 @@ static bool keyChar(wchar_t ch) {
 	return true;
 }
 
-static bool keyCode(wchar_t ch) {
-	switch (ch) {
-		break; case KEY_RESIZE:    viewResize(); return false;
-		break; case KEY_SLEFT:     logScrollUp(1); return false;
-		break; case KEY_SRIGHT:    logScrollDown(1); return false;
-		break; case KEY_PPAGE:     logPageUp(); return false;
-		break; case KEY_NPAGE:     logPageDown(); return false;
-		break; case KEY_LEFT:      edit(ui.view->tag, EditLeft, 0);
-		break; case KEY_RIGHT:     edit(ui.view->tag, EditRight, 0);
-		break; case KEY_HOME:      edit(ui.view->tag, EditHome, 0);
-		break; case KEY_END:       edit(ui.view->tag, EditEnd, 0);
-		break; case KEY_DC:        edit(ui.view->tag, EditDelete, 0);
-		break; case KEY_BACKSPACE: edit(ui.view->tag, EditBackspace, 0);
-		break; case KEY_ENTER:     edit(ui.view->tag, EditEnter, 0);
-	}
-	return true;
-}
-
 void uiRead(void) {
 	uiShow();
 
@@ -546,16 +498,16 @@ void uiRead(void) {
 	}
 	if (!update) return;
 
-	int y, x;
-	wmove(ui.input, 0, 0);
-
 	struct Format format = { .str = editHead() };
 	formatReset(&format);
+	wmove(ui.input, 0, 0);
+
+	int _, x;
 	while (formatParse(&format, editTail())) {
-		if (format.split) getyx(ui.input, y, x);
+		if (format.split) getyx(ui.input, _, x);
 		addFormat(ui.input, &format);
 	}
 
 	wclrtoeol(ui.input);
-	wmove(ui.input, y, x);
+	wmove(ui.input, 0, x);
 }

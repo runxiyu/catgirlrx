@@ -260,7 +260,6 @@ static void handleReplyTopic(char *prefix, char *params) {
 	struct Tag tag = tagFor(chan);
 
 	urlScan(tag, topic);
-	uiTopic(tag, topic);
 	uiFmt(
 		tag, UICold,
 		"The sign in \3%d%s\3 reads, \"%s\"",
@@ -277,7 +276,6 @@ static void handleTopic(char *prefix, char *params) {
 	if (!isSelf(nick, user)) tabTouch(tag, nick);
 
 	urlScan(tag, topic);
-	uiTopic(tag, topic);
 	uiFmt(
 		tag, UICold,
 		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
