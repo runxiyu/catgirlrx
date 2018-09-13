@@ -17,32 +17,12 @@
 #include <ctype.h>
 #include <err.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
 
 #include "chat.h"
-
-// Adapted from <https://github.com/cbreeden/fxhash/blob/master/lib.rs>.
-static uint32_t hashChar(uint32_t hash, char ch) {
-	hash = (hash << 5) | (hash >> 27);
-	hash ^= ch;
-	hash *= 0x27220A95;
-	return hash;
-}
-static int color(const char *str) {
-	if (!str) return IRCGray;
-	uint32_t hash = 0;
-	for (; str[0]; ++str) {
-		hash = hashChar(hash, str[0]);
-	}
-	while (IRCBlack == (hash & IRCLightGray)) {
-		hash = hashChar(hash, '\0');
-	}
-	return (hash & IRCLightGray);
-}
 
 static char *paramField(char **params) {
 	char *rest = *params;
@@ -163,7 +143,7 @@ static void handleJoin(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"\3%d%s\3 arrives in \3%d%s\3",
-		color(user), nick, color(chan), chan
+		formatColor(user), nick, formatColor(chan), chan
 	);
 	logFmt(tag, NULL, "%s arrives in %s", nick, chan);
 }
@@ -184,14 +164,14 @@ static void handlePart(char *prefix, char *params) {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
-			color(user), nick, color(chan), chan, dequote(mesg)
+			formatColor(user), nick, formatColor(chan), chan, dequote(mesg)
 		);
 		logFmt(tag, NULL, "%s leaves %s, \"%s\"", nick, chan, dequote(mesg));
 	} else {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 leaves \3%d%s\3",
-			color(user), nick, color(chan), chan
+			formatColor(user), nick, formatColor(chan), chan
 		);
 		logFmt(tag, NULL, "%s leaves %s", nick, chan);
 	}
@@ -214,7 +194,9 @@ static void handleKick(char *prefix, char *params) {
 		uiFmt(
 			tag, (kicked ? UIHot : UICold),
 			"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
-			color(user), nick, color(kick), kick, color(chan), chan,
+			formatColor(user), nick,
+			formatColor(kick), kick,
+			formatColor(chan), chan,
 			dequote(mesg)
 		);
 		logFmt(
@@ -225,7 +207,9 @@ static void handleKick(char *prefix, char *params) {
 		uiFmt(
 			tag, (kicked ? UIHot : UICold),
 			"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3",
-			color(user), nick, color(kick), kick, color(chan), chan
+			formatColor(user), nick,
+			formatColor(kick), kick,
+			formatColor(chan), chan
 		);
 		logFmt(tag, NULL, "%s kicks %s out of %s", nick, kick, chan);
 	}
@@ -244,11 +228,11 @@ static void handleQuit(char *prefix, char *params) {
 			uiFmt(
 				tag, UICold,
 				"\3%d%s\3 leaves, \"%s\"",
-				color(user), nick, dequote(mesg)
+				formatColor(user), nick, dequote(mesg)
 			);
 			logFmt(tag, NULL, "%s leaves, \"%s\"", nick, dequote(mesg));
 		} else {
-			uiFmt(tag, UICold, "\3%d%s\3 leaves", color(user), nick);
+			uiFmt(tag, UICold, "\3%d%s\3 leaves", formatColor(user), nick);
 			logFmt(tag, NULL, "%s leaves", nick);
 		}
 	}
@@ -263,7 +247,7 @@ static void handleReplyTopic(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"The sign in \3%d%s\3 reads, \"%s\"",
-		color(chan), chan, topic
+		formatColor(chan), chan, topic
 	);
 	logFmt(tag, NULL, "The sign in %s reads, \"%s\"", chan, topic);
 }
@@ -279,7 +263,7 @@ static void handleTopic(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
-		color(user), nick, color(chan), chan, topic
+		formatColor(user), nick, formatColor(chan), chan, topic
 	);
 	logFmt(tag, NULL, "%s places a new sign in %s, \"%s\"", nick, chan, topic);
 }
@@ -309,7 +293,7 @@ static void handleReplyWho(char *prefix, char *params) {
 	int len = snprintf(
 		&who.buf[who.len], cap,
 		"%s\3%d%s\3",
-		(who.len ? ", " : ""), color(user), nick
+		(who.len ? ", " : ""), formatColor(user), nick
 	);
 	if ((size_t)len < cap) who.len += len;
 }
@@ -322,7 +306,7 @@ static void handleReplyEndOfWho(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"In \3%d%s\3 are %s",
-		color(chan), chan, who.buf
+		formatColor(chan), chan, who.buf
 	);
 	who.len = 0;
 }
@@ -340,7 +324,7 @@ static void handleNick(char *prefix, char *params) {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 is now known as \3%d%s\3",
-			color(user), prev, color(user), next
+			formatColor(user), prev, formatColor(user), next
 		);
 		logFmt(tag, NULL, "%s is now known as %s", prev, next);
 	}
@@ -360,7 +344,7 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d* %s\17 %s",
-		ping["\17\26"], color(user), nick, params
+		ping["\17\26"], formatColor(user), nick, params
 	);
 	logFmt(tag, NULL, "* %s %s", nick, params);
 }
@@ -384,7 +368,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 	uiFmt(
 		tag, (hot ? UIHot : UIWarm),
 		"%c\3%d%c%s%c\17 %s",
-		ping["\17\26"], color(user), self["<("], nick, self[">)"], mesg
+		ping["\17\26"], formatColor(user), self["<("], nick, self[">)"], mesg
 	);
 	logFmt(tag, NULL, "<%s> %s", nick, mesg);
 }
@@ -403,7 +387,7 @@ static void handleNotice(char *prefix, char *params) {
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d-%s-\17 %s",
-		ping["\17\26"], color(user), nick, mesg
+		ping["\17\26"], formatColor(user), nick, mesg
 	);
 	logFmt(tag, NULL, "-%s- %s", nick, mesg);
 }

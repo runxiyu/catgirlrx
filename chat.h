@@ -93,6 +93,7 @@ struct Format {
 };
 void formatReset(struct Format *format);
 bool formatParse(struct Format *format, const wchar_t *split);
+enum IRCColor formatColor(const char *str);
 
 void handle(char *line);
 void input(struct Tag tag, char *line);
