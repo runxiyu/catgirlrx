@@ -160,7 +160,7 @@ void uiDraw(void) {
 	doupdate();
 }
 
-static const short IRCColors[] = {
+static const short Colors[] = {
 	[IRCWhite]      = 8 + COLOR_WHITE,
 	[IRCBlack]      = 0 + COLOR_BLACK,
 	[IRCBlue]       = 0 + COLOR_BLUE,
@@ -187,8 +187,8 @@ static void addFormat(WINDOW *win, const struct Format *format) {
 	if (format->reverse)   attr |= A_REVERSE;
 
 	short pair = -1;
-	if (format->fg >= 0) pair = IRCColors[format->fg];
-	if (format->bg >= 0) pair |= IRCColors[format->bg] << 4;
+	if (format->fg != IRCDefault) pair = Colors[format->fg];
+	if (format->bg != IRCDefault) pair |= Colors[format->bg] << 4;
 
 	wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
 	waddnwstr(win, format->str, format->len);

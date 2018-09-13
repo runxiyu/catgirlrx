@@ -56,7 +56,7 @@ const struct Tag TagVerbose;
 struct Tag tagFind(const char *name);
 struct Tag tagFor(const char *name);
 
-enum {
+enum IRCColor {
 	IRCWhite,
 	IRCBlack,
 	IRCBlue,
@@ -73,6 +73,7 @@ enum {
 	IRCPink,
 	IRCGray,
 	IRCLightGray,
+	IRCDefault = 99,
 };
 enum {
 	IRCBold      = 002,
@@ -88,7 +89,7 @@ struct Format {
 	size_t len;
 	bool split;
 	bool bold, italic, underline, reverse;
-	int fg, bg;
+	enum IRCColor fg, bg;
 };
 void formatReset(struct Format *format);
 bool formatParse(struct Format *format, const wchar_t *split);

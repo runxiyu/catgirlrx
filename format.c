@@ -25,15 +25,15 @@ void formatReset(struct Format *format) {
 	format->italic = false;
 	format->underline = false;
 	format->reverse = false;
-	format->fg = -1;
-	format->bg = -1;
+	format->fg = IRCDefault;
+	format->bg = IRCDefault;
 }
 
 static void parseColor(struct Format *format) {
 	size_t len = MIN(wcsspn(format->str, L"0123456789"), 2);
 	if (!len) {
-		format->fg = -1;
-		format->bg = -1;
+		format->fg = IRCDefault;
+		format->bg = IRCDefault;
 		return;
 	}
 	format->fg = 0;
@@ -41,7 +41,7 @@ static void parseColor(struct Format *format) {
 		format->fg *= 10;
 		format->fg += format->str[i] - L'0';
 	}
-	if (format->fg > IRCLightGray) format->fg = -1;
+	if (format->fg > IRCLightGray) format->fg = IRCDefault;
 	format->str = &format->str[len];
 
 	len = 0;
@@ -54,7 +54,7 @@ static void parseColor(struct Format *format) {
 		format->bg *= 10;
 		format->bg += format->str[1 + i] - L'0';
 	}
-	if (format->bg > IRCLightGray) format->bg = -1;
+	if (format->bg > IRCLightGray) format->bg = IRCDefault;
 	format->str = &format->str[1 + len];
 }
 
