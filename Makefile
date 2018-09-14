@@ -27,7 +27,7 @@ OBJS += url.o
 TESTS += format.t
 TESTS += term.t
 
-all: tags chatte
+all: tags chatte test
 
 tags: *.h *.c
 	ctags -w *.h *.c
