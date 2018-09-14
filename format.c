@@ -117,3 +117,66 @@ bool formatParse(struct Format *format, const wchar_t *split) {
 	}
 	return true;
 }
+
+#ifdef TEST
+#include <assert.h>
+
+static bool testColor(
+	const wchar_t *str, enum IRCColor fg, enum IRCColor bg, size_t index
+) {
+	struct Format format = { .str = str };
+	formatReset(&format);
+	if (!formatParse(&format, NULL)) return false;
+	if (format.fg != fg) return false;
+	if (format.bg != bg) return false;
+	return (format.str == &str[index]);
+}
+
+static bool testSplit(const wchar_t *str, size_t index) {
+	struct Format format = { .str = str };
+	formatReset(&format);
+	bool split = false;
+	while (formatParse(&format, &str[index])) {
+		if (format.split && split) return false;
+		if (format.split) split = true;
+	}
+	return split;
+}
+
+static bool testSplits(const wchar_t *str) {
+	for (size_t i = 0; i <= wcslen(str); ++i) {
+		if (!testSplit(str, i)) return false;
+	}
+	return true;
+}
+
+int main() {
+	assert(testColor(L"\003a",      IRCDefault,   IRCDefault,   1));
+	assert(testColor(L"\003,a",     IRCDefault,   IRCDefault,   1));
+	assert(testColor(L"\003,1",     IRCDefault,   IRCDefault,   1));
+	assert(testColor(L"\0031a",     IRCBlack,     IRCDefault,   2));
+	assert(testColor(L"\0031,a",    IRCBlack,     IRCDefault,   2));
+	assert(testColor(L"\00312a",    IRCLightBlue, IRCDefault,   3));
+	assert(testColor(L"\00312,a",   IRCLightBlue, IRCDefault,   3));
+	assert(testColor(L"\003123",    IRCLightBlue, IRCDefault,   3));
+	assert(testColor(L"\0031,1a",   IRCBlack,     IRCBlack,     4));
+	assert(testColor(L"\0031,12a",  IRCBlack,     IRCLightBlue, 5));
+	assert(testColor(L"\0031,123",  IRCBlack,     IRCLightBlue, 5));
+	assert(testColor(L"\00312,1a",  IRCLightBlue, IRCBlack,     5));
+	assert(testColor(L"\00312,12a", IRCLightBlue, IRCLightBlue, 6));
+	assert(testColor(L"\00312,123", IRCLightBlue, IRCLightBlue, 6));
+
+	assert(testColor(L"\00316,16a", IRCDefault, IRCDefault, 6));
+	assert(testColor(L"\00399,99a", IRCDefault, IRCDefault, 6));
+
+	assert(testSplits(L"ab"));
+	assert(testSplits(L"\002ab"));
+	assert(testSplits(L"a\002b"));
+	assert(testSplits(L"a\002\003b"));
+	assert(testSplits(L"a\0031b"));
+	assert(testSplits(L"a\00312b"));
+	assert(testSplits(L"a\00312,1b"));
+	assert(testSplits(L"a\00312,12b"));
+}
+
+#endif

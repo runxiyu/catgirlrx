@@ -24,15 +24,25 @@ OBJS += term.o
 OBJS += ui.o
 OBJS += url.o
 
+TESTS += format.t
+
 all: tags chatte
+
+tags: *.h *.c
+	ctags -w *.h *.c
 
 chatte: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(OBJS): chat.h
 
-tags: *.h *.c
-	ctags -w *.h *.c
+test: $(TESTS)
+	$(TESTS:%=./%;)
+
+.SUFFIXES: .t
+
+.c.t:
+	$(CC) $(CFLAGS) -DTEST $(LDFLAGS) $< $(LDLIBS) -o $@
 
 install: chatte chatte.1
 	install -d $(PREFIX)/bin $(MANPATH)/man1
@@ -77,4 +87,4 @@ chroot.tar: chatte chatte.1 man.sh
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
 
 clean:
-	rm -rf tags chatte $(OBJS) root chroot.tar
+	rm -rf tags chatte $(OBJS) $(TESTS) root chroot.tar
