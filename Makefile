@@ -25,6 +25,7 @@ OBJS += ui.o
 OBJS += url.o
 
 TESTS += format.t
+TESTS += term.t
 
 all: tags chatte
 

@@ -21,7 +21,6 @@
 
 #include "chat.h"
 
-
 static bool xterm;
 
 void termInit(void) {
@@ -67,3 +66,24 @@ enum TermEvent termEvent(char ch) {
 		default:        state = 0; return 0;
 	}
 }
+
+#ifdef TEST
+#include <assert.h>
+
+static bool testEvent(const char *str, enum TermEvent event) {
+	enum TermEvent e = TermNone;
+	for (size_t i = 0; i < strlen(str); ++i) {
+		if (e) return false;
+		e = termEvent(str[i]);
+	}
+	return (e == event);
+}
+
+int main() {
+	assert(testEvent("\33[I", TermFocusIn));
+	assert(testEvent("\33[O", TermFocusOut));
+	assert(testEvent("\33[200~", TermPasteStart));
+	assert(testEvent("\33[201~", TermPasteEnd));
+}
+
+#endif
