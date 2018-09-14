@@ -193,6 +193,14 @@ static void addFormat(WINDOW *win, const struct Format *format) {
 	waddnwstr(win, format->str, format->len);
 }
 
+static int printWidth(const wchar_t *str, size_t len) {
+	int width = 0;
+	for (size_t i = 0; i < len; ++i) {
+		if (iswprint(str[i])) width += wcwidth(str[i]);
+	}
+	return width;
+}
+
 static int addWrap(WINDOW *win, const wchar_t *str) {
 	int lines = 0;
 
@@ -205,7 +213,7 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 		int _, x, xMax;
 		getyx(win, _, x);
 		getmaxyx(win, _, xMax);
-		if (xMax - x - 1 < wcswidth(format.str, format.len)) {
+		if (xMax - x - 1 < printWidth(format.str, word)) {
 			if (format.str[0] == L' ') {
 				format.str++;
 				format.len--;
