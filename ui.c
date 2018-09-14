@@ -194,11 +194,14 @@ static void addFormat(WINDOW *win, const struct Format *format) {
 }
 
 static int addWrap(WINDOW *win, const wchar_t *str) {
+	int lines = 0;
+
 	struct Format format = { .str = str };
 	formatReset(&format);
-
-	int lines = 0;
 	while (formatParse(&format, NULL)) {
+		size_t word = 1 + wcscspn(&format.str[1], L" ");
+		if (word < format.len) format.len = word;
+
 		int _, x, xMax;
 		getyx(win, _, x);
 		getmaxyx(win, _, xMax);
@@ -210,6 +213,7 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 			waddch(win, '\n');
 			lines++;
 		}
+
 		addFormat(win, &format);
 	}
 	return lines;

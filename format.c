@@ -79,10 +79,8 @@ static void parseColor(struct Format *format) {
 	format->str = &format->str[1 + len];
 }
 
-static const wchar_t Stops[] = {
-	L' ',
-	IRCBold, IRCColor, IRCReverse, IRCReset, IRCItalic, IRCUnderline,
-	L'\0',
+static const wchar_t Codes[] = {
+	IRCBold, IRCColor, IRCReverse, IRCReset, IRCItalic, IRCUnderline, L'\0',
 };
 
 bool formatParse(struct Format *format, const wchar_t *split) {
@@ -110,11 +108,7 @@ bool formatParse(struct Format *format, const wchar_t *split) {
 	}
 	format->split = (split >= init && split <= format->str);
 
-	if (format->str[0] == L' ') {
-		format->len = 1 + wcscspn(&format->str[1], Stops);
-	} else {
-		format->len = wcscspn(format->str, Stops);
-	}
+	format->len = wcscspn(format->str, Codes);
 	if (split > format->str && split < &format->str[format->len]) {
 		format->len = split - format->str;
 	}
@@ -172,6 +166,7 @@ int main() {
 	assert(testColor(L"\00316,16a", IRCDefault, IRCDefault, 6));
 	assert(testColor(L"\00399,99a", IRCDefault, IRCDefault, 6));
 
+	assert(testSplits(L""));
 	assert(testSplits(L"ab"));
 	assert(testSplits(L"\002"));
 	assert(testSplits(L"\002ab"));
