@@ -109,7 +109,6 @@ void uiInit(void) {
 	nodelay(ui.input, true);
 
 	uiViewTag(TagStatus);
-	uiShow();
 }
 
 void uiExit(void) {
@@ -318,6 +317,7 @@ static void uiView(struct View *view) {
 	if (ui.view) ui.view->mark = true;
 	viewUnmark(view);
 	ui.view = view;
+	uiRead();
 }
 
 void uiViewTag(struct Tag tag) {
@@ -397,13 +397,13 @@ static void scrollDown(int lines) {
 	if (ui.view->scroll == LogLines) viewUnmark(ui.view);
 }
 
-static bool keyCode(wchar_t ch) {
+static void keyCode(wchar_t ch) {
 	switch (ch) {
-		break; case KEY_RESIZE:    uiResize(); return false;
-		break; case KEY_SLEFT:     scrollUp(1); return false;
-		break; case KEY_SRIGHT:    scrollDown(1); return false;
-		break; case KEY_PPAGE:     scrollUp(logHeight() / 2); return false;
-		break; case KEY_NPAGE:     scrollDown(logHeight() / 2); return false;
+		break; case KEY_RESIZE:    uiResize();
+		break; case KEY_SLEFT:     scrollUp(1);
+		break; case KEY_SRIGHT:    scrollDown(1);
+		break; case KEY_PPAGE:     scrollUp(logHeight() / 2);
+		break; case KEY_NPAGE:     scrollDown(logHeight() / 2);
 		break; case KEY_LEFT:      edit(ui.view->tag, EditLeft, 0);
 		break; case KEY_RIGHT:     edit(ui.view->tag, EditRight, 0);
 		break; case KEY_HOME:      edit(ui.view->tag, EditHome, 0);
@@ -411,14 +411,12 @@ static bool keyCode(wchar_t ch) {
 		break; case KEY_DC:        edit(ui.view->tag, EditDelete, 0);
 		break; case KEY_BACKSPACE: edit(ui.view->tag, EditBackspace, 0);
 		break; case KEY_ENTER:     edit(ui.view->tag, EditEnter, 0);
-		break; default:            return false;
 	}
-	return true;
 }
 
 #define CTRL(ch) ((ch) ^ 0100)
 
-static bool keyChar(wchar_t ch) {
+static void keyChar(wchar_t ch) {
 	if (ch < 0200) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
@@ -426,13 +424,13 @@ static bool keyChar(wchar_t ch) {
 			break; case TermFocusOut: ui.view->mark = true;
 			break; default: {}
 		}
-		if (event) return false;
+		if (event) return;
 	}
 
 	static bool meta;
 	if (ch == L'\33') {
 		meta = true;
-		return false;
+		return;
 	}
 
 	if (ch == L'\177') ch = L'\b';
@@ -446,14 +444,13 @@ static bool keyChar(wchar_t ch) {
 			break; case L'd':  edit(ui.view->tag, EditKillForeWord, 0);
 			break; default: {
 				if (ch >= L'0' && ch <= L'9') uiViewNum(ch - L'0');
-				return false;
 			}
 		}
-		return true;
+		return;
 	}
 
 	switch (ch) {
-		break; case CTRL(L'L'): clearok(curscr, true); return false;
+		break; case CTRL(L'L'): clearok(curscr, true);
 
 		break; case CTRL(L'A'): edit(ui.view->tag, EditHome, 0);
 		break; case CTRL(L'B'): edit(ui.view->tag, EditLeft, 0);
@@ -476,33 +473,65 @@ static bool keyChar(wchar_t ch) {
 		break; case L'\n': edit(ui.view->tag, EditEnter, 0);
 
 		break; default: {
-			if (!iswprint(ch)) return false;
-			edit(ui.view->tag, EditInsert, ch);
+			if (iswprint(ch)) edit(ui.view->tag, EditInsert, ch);
 		}
 	}
-	return true;
+}
+
+static bool isAction(struct Tag tag, const wchar_t *input) {
+	if (tag.id == TagStatus.id || tag.id == TagVerbose.id) return false;
+	return !wcsncasecmp(input, L"/me ", 4);
+}
+
+// FIXME: This duplicates logic from input.c for wcs.
+static bool isCommand(struct Tag tag, const wchar_t *input) {
+	if (tag.id == TagStatus.id || tag.id == TagVerbose.id) return true;
+	if (input[0] != L'/') return false;
+	const wchar_t *space = wcschr(&input[1], L' ');
+	const wchar_t *extra = wcschr(&input[1], L'/');
+	return !extra || (space && extra > space);
 }
 
 void uiRead(void) {
 	uiShow();
 
-	bool update = false;
 	int ret;
 	wint_t ch;
 	while (ERR != (ret = wget_wch(ui.input, &ch))) {
 		if (ret == KEY_CODE_YES) {
-			update |= keyCode(ch);
+			keyCode(ch);
 		} else {
-			update |= keyChar(ch);
+			keyChar(ch);
 		}
 	}
-	if (!update) return;
 
-	struct Format format = { .str = editHead() };
-	formatReset(&format);
+	const wchar_t *input = editHead();
+
+	// TODO: Avoid reformatting these on every read.
+	// FIXME: Reformat when nick changes. Wouldn't FRP be nice?
+	wchar_t *prompt = NULL;
+	int len = 0;
+	if (isAction(ui.view->tag, input) && editTail() >= &input[4]) {
+		input = &input[4];
+		len = aswprintf(
+			&prompt, L"\3%d* %s\3 ",
+			formatColor(self.user), self.nick
+		);
+	} else if (!isCommand(ui.view->tag, input)) {
+		len = aswprintf(
+			&prompt, L"\3%d(%s)\3 ",
+			formatColor(self.user), self.nick
+		);
+	}
+	if (len < 0) err(EX_OSERR, "aswprintf");
+
 	wmove(ui.input, 0, 0);
+	if (prompt) addWrap(ui.input, prompt);
+	free(prompt);
 
 	int _, x = 0;
+	struct Format format = { .str = input };
+	formatReset(&format);
 	while (formatParse(&format, editTail())) {
 		if (format.split) getyx(ui.input, _, x);
 		addFormat(ui.input, &format);
