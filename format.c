@@ -97,13 +97,16 @@ bool formatParse(struct Format *format, const wchar_t *split) {
 	}
 
 	const wchar_t *init = format->str;
-	switch (format->str[0]) {
-		break; case IRCBold:      format->str++; format->bold ^= true;
-		break; case IRCItalic:    format->str++; format->italic ^= true;
-		break; case IRCUnderline: format->str++; format->underline ^= true;
-		break; case IRCReverse:   format->str++; format->reverse ^= true;
-		break; case IRCColor:     format->str++; parseColor(format);
-		break; case IRCReset:     format->str++; formatReset(format);
+	for (bool done = false; !done;) {
+		switch (format->str[0]) {
+			break; case IRCBold:      format->str++; format->bold ^= true;
+			break; case IRCItalic:    format->str++; format->italic ^= true;
+			break; case IRCUnderline: format->str++; format->underline ^= true;
+			break; case IRCReverse:   format->str++; format->reverse ^= true;
+			break; case IRCColor:     format->str++; parseColor(format);
+			break; case IRCReset:     format->str++; formatReset(format);
+			break; default:           done = true;
+		}
 	}
 	format->split = (split >= init && split <= format->str);
 
@@ -170,8 +173,10 @@ int main() {
 	assert(testColor(L"\00399,99a", IRCDefault, IRCDefault, 6));
 
 	assert(testSplits(L"ab"));
+	assert(testSplits(L"\002"));
 	assert(testSplits(L"\002ab"));
 	assert(testSplits(L"a\002b"));
+	assert(testSplits(L"\002\003"));
 	assert(testSplits(L"a\002\003b"));
 	assert(testSplits(L"a\0031b"));
 	assert(testSplits(L"a\00312b"));
