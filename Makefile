@@ -38,7 +38,7 @@ chatte: $(OBJS)
 $(OBJS): chat.h
 
 test: $(TESTS)
-	$(TESTS:%=./% &&) true
+	set -e; $(TESTS:%=./%;)
 
 .SUFFIXES: .t
 
