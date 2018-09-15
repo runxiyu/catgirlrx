@@ -315,7 +315,10 @@ static void handleNick(char *prefix, char *params) {
 	char *prev, *user, *next;
 	shift(prefix, &prev, &user, NULL, params, 1, 0, &next);
 
-	if (isSelf(prev, user)) selfNick(next);
+	if (isSelf(prev, user)) {
+		selfNick(next);
+		uiPrompt();
+	}
 
 	struct Tag tag;
 	while (TagNone.id != (tag = tabTag(prev)).id) {

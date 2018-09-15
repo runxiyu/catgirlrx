@@ -111,6 +111,7 @@ void uiHide(void);
 void uiExit(void);
 void uiDraw(void);
 void uiRead(void);
+void uiPrompt(void);
 
 void uiViewTag(struct Tag tag);
 void uiViewNum(int num);

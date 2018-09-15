@@ -329,7 +329,8 @@ static void uiView(struct View *view) {
 	if (ui.view) ui.view->mark = true;
 	viewUnmark(view);
 	ui.view = view;
-	uiRead();
+	uiStatus();
+	uiPrompt();
 }
 
 void uiViewTag(struct Tag tag) {
@@ -504,23 +505,10 @@ static bool isCommand(struct Tag tag, const wchar_t *input) {
 	return !extra || (space && extra > space);
 }
 
-void uiRead(void) {
-	uiShow();
-
-	int ret;
-	wint_t ch;
-	while (ERR != (ret = wget_wch(ui.input, &ch))) {
-		if (ret == KEY_CODE_YES) {
-			keyCode(ch);
-		} else {
-			keyChar(ch);
-		}
-	}
-
+void uiPrompt(void) {
 	const wchar_t *input = editHead();
 
 	// TODO: Avoid reformatting these on every read.
-	// FIXME: Reformat when nick changes. Wouldn't FRP be nice?
 	wchar_t *prompt = NULL;
 	int len = 0;
 	if (isAction(ui.view->tag, input) && editTail() >= &input[4]) {
@@ -551,4 +539,18 @@ void uiRead(void) {
 
 	wclrtoeol(ui.input);
 	wmove(ui.input, 0, x);
+}
+
+void uiRead(void) {
+	uiShow();
+	int ret;
+	wint_t ch;
+	while (ERR != (ret = wget_wch(ui.input, &ch))) {
+		if (ret == KEY_CODE_YES) {
+			keyCode(ch);
+		} else {
+			keyChar(ch);
+		}
+	}
+	uiPrompt();
 }
