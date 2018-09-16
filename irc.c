@@ -86,7 +86,7 @@ int ircConnect(
 	if (error) err(EX_IOERR, "fcntl");
 
 	error = tls_connect_socket(client, sock, host);
-	if (error) err(EX_PROTOCOL, "tls_connect");
+	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
 
 	if (webPass) webirc(webPass);
 	if (pass) ircFmt("PASS :%s\r\n", pass);
