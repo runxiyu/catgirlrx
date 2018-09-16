@@ -1,21 +1,34 @@
-IRC client originally intended for use over anonymous SSH.
+CHATTE(7)              Miscellaneous Information Manual              CHATTE(7)
 
-This software requires LibreSSL and targets FreeBSD and Darwin.
+NAME
+     chatte – IRC for catgirls
 
-	chat.h      Shared state and function prototypes
-	chat.c      Command line parsing
-	event.c     Event loop and process spawning
-	tag.c       Tag (channel, query) ID assignment
-	handle.c    Incoming command handling
-	input.c     Input command handling
-	irc.c       TLS client connection
-	format.c    IRC formatting
-	ui.c        Curses UI
-	term.c      Terminal features unsupported by curses
-	edit.c      Line editing
-	tab.c       Tab-complete
-	url.c       URL detection
-	pls.c       Functions which should not have to be written
+DESCRIPTION
+     chatte is a curses IRC client originally intended for use over anonymous
+     SSH.
 
-	sshd_config    Sample anonymous SSH configuration
-	man.sh         man(1) implementation for chroot
+     It requires LibreSSL and targets FreeBSD and Darwin.
+
+FILES
+     chat.h    Shared state and function prototypes
+     chat.c    Command line parsing
+     event.c   Event loop and process spawning
+     tag.c     Tag (channel, query) ID assignment
+     handle.c  Incoming command handling
+     input.c   Input command handling
+     irc.c     TLS client connection
+     format.c  IRC formatting
+     ui.c      Curses UI
+     term.c    Terminal features unsupported by curses
+     edit.c    Line editing
+     tab.c     Tab-complete
+     url.c     URL detection
+     pls.c     Functions which should not have to be written
+
+     sshd_config  Anonymous SSH configuration
+     man.sh       man(1) implementation for chroot
+
+SEE ALSO
+     chatte(1)
+
+Causal Agency                 September 15, 2018                 Causal Agency

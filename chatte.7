@@ -1,0 +1,63 @@
+.Dd September 15, 2018
+.Dt CHATTE 7
+.Os "Causal Agency"
+.
+.Sh NAME
+.Nm chatte
+.Nd IRC for catgirls
+.
+.Sh DESCRIPTION
+.Nm
+is a curses IRC client
+originally intended for
+use over anonymous SSH.
+.
+.Pp
+It requires LibreSSL
+and targets
+.Fx
+and Darwin.
+.
+.Sh FILES
+.Bl -tag -width format.c -compact
+.It Pa chat.h
+Shared state and function prototypes
+.It Pa chat.c
+Command line parsing
+.It Pa event.c
+Event loop and process spawning
+.It Pa tag.c
+Tag (channel, query) ID assignment
+.It Pa handle.c
+Incoming command handling
+.It Pa input.c
+Input command handling
+.It Pa irc.c
+TLS client connection
+.It Pa format.c
+IRC formatting
+.It Pa ui.c
+Curses UI
+.It Pa term.c
+Terminal features unsupported by curses
+.It Pa edit.c
+Line editing
+.It Pa tab.c
+Tab-complete
+.It Pa url.c
+URL detection
+.It Pa pls.c
+Functions which should not have to be written
+.El
+.
+.Pp
+.Bl -tag -width sshd_config -compact
+.It Pa sshd_config
+Anonymous SSH configuration
+.It Pa man.sh
+.Xr man 1
+implementation for chroot
+.El
+.
+.Sh SEE ALSO
+.Xr chatte 1

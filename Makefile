@@ -89,3 +89,6 @@ chroot.tar: chatte chatte.1 man.sh
 
 clean:
 	rm -rf tags chatte $(OBJS) $(TESTS) root chroot.tar
+
+README: chatte.7
+	mandoc chatte.7 | sed $$'s/.\b//g' > README
