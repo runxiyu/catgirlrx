@@ -15,11 +15,9 @@
  */
 
 #include <err.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <poll.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,60 +28,6 @@
 #include <unistd.h>
 
 #include "chat.h"
-
-static int connectRace(const char *host, const char *port) {
-	int error;
-	struct addrinfo *head;
-	struct addrinfo hints = {
-		.ai_family = AF_UNSPEC,
-		.ai_socktype = SOCK_STREAM,
-		.ai_protocol = IPPROTO_TCP,
-	};
-	error = getaddrinfo(host, port, &hints, &head);
-	if (error) errx(EX_NOHOST, "getaddrinfo: %s", gai_strerror(error));
-
-	nfds_t len = 0;
-	enum { SocksLen = 16 };
-	struct pollfd socks[SocksLen];
-	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
-		if (len == SocksLen) break;
-
-		socks[len].events = POLLOUT;
-		socks[len].fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (socks[len].fd < 0) err(EX_OSERR, "socket");
-
-		error = fcntl(socks[len].fd, F_SETFL, O_NONBLOCK);
-		if (error) err(EX_OSERR, "fcntl");
-
-		error = connect(socks[len].fd, ai->ai_addr, ai->ai_addrlen);
-		if (error && errno != EINPROGRESS && errno != EINTR) {
-			close(socks[len].fd);
-			continue;
-		}
-
-		len++;
-	}
-	if (!len) err(EX_UNAVAILABLE, "connect");
-	freeaddrinfo(head);
-
-	int ready = poll(socks, len, -1);
-	if (ready < 0) err(EX_IOERR, "poll");
-
-	int sock = -1;
-	for (nfds_t i = 0; i < len; ++i) {
-		if ((socks[i].revents & POLLOUT) && sock < 0) {
-			sock = socks[i].fd;
-		} else {
-			close(socks[i].fd);
-		}
-	}
-	if (sock < 0) errx(EX_UNAVAILABLE, "no socket became writable");
-
-	error = fcntl(sock, F_SETFL, 0);
-	if (error) err(EX_IOERR, "fcntl");
-
-	return sock;
-}
 
 static struct tls *client;
 
@@ -115,7 +59,28 @@ int ircConnect(
 	if (error) errx(EX_SOFTWARE, "tls_configure");
 	tls_config_free(config);
 
-	int sock = connectRace(host, port);
+	struct addrinfo *head;
+	struct addrinfo hints = {
+		.ai_family = AF_UNSPEC,
+		.ai_socktype = SOCK_STREAM,
+		.ai_protocol = IPPROTO_TCP,
+	};
+	error = getaddrinfo(host, port, &hints, &head);
+	if (error) errx(EX_NOHOST, "getaddrinfo: %s", gai_strerror(error));
+
+	int sock = -1;
+	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
+		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+		if (sock < 0) err(EX_OSERR, "socket");
+
+		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
+		if (!error) break;
+
+		close(sock);
+		sock = -1;
+	}
+	if (sock < 0) err(EX_UNAVAILABLE, "connect");
+	freeaddrinfo(head);
 
 	error = fcntl(sock, F_SETFD, FD_CLOEXEC);
 	if (error) err(EX_IOERR, "fcntl");
