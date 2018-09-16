@@ -59,24 +59,31 @@ int ircConnect(
 	if (error) errx(EX_SOFTWARE, "tls_configure");
 	tls_config_free(config);
 
-	struct addrinfo *ai;
+	struct addrinfo *head;
 	struct addrinfo hints = {
 		.ai_family = AF_UNSPEC,
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
 	};
-	error = getaddrinfo(host, port, &hints, &ai);
+	error = getaddrinfo(host, port, &hints, &head);
 	if (error) errx(EX_NOHOST, "getaddrinfo: %s", gai_strerror(error));
 
-	int sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-	if (sock < 0) err(EX_OSERR, "socket");
+	int sock = -1;
+	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
+		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+		if (sock < 0) err(EX_OSERR, "socket");
+
+		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
+		if (!error) break;
+
+		close(sock);
+		sock = -1;
+	}
+	if (sock < 0) err(EX_UNAVAILABLE, "connect");
+	freeaddrinfo(head);
 
 	error = fcntl(sock, F_SETFD, FD_CLOEXEC);
 	if (error) err(EX_IOERR, "fcntl");
-
-	error = connect(sock, ai->ai_addr, ai->ai_addrlen);
-	if (error) err(EX_UNAVAILABLE, "connect");
-	freeaddrinfo(ai);
 
 	error = tls_connect_socket(client, sock, host);
 	if (error) err(EX_PROTOCOL, "tls_connect");
