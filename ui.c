@@ -92,8 +92,6 @@ void uiHide(void) {
 	endwin();
 }
 
-static const int ColsMax = 512;
-
 void uiInit(void) {
 	setlocale(LC_CTYPE, "");
 	initscr();
@@ -103,8 +101,8 @@ void uiInit(void) {
 	colorInit();
 	termInit();
 
-	ui.status = newpad(1, ColsMax);
-	ui.input = newpad(1, ColsMax);
+	ui.status = newwin(1, COLS, 0, 0);
+	ui.input = newpad(1, 512);
 	keypad(ui.input, true);
 	nodelay(ui.input, true);
 
@@ -131,23 +129,14 @@ static int logHeight(void) {
 
 void uiDraw(void) {
 	if (ui.hide) return;
-
-	int _, x;
-	getyx(ui.status, _, x);
-	pnoutrefresh(
-		ui.status,
-		0, MAX(0, x - lastCol() - 1),
-		0, 0,
-		0, lastCol()
-	);
-
+	wnoutrefresh(ui.status);
 	pnoutrefresh(
 		ui.view->log,
 		ui.view->scroll - logHeight(), 0,
 		1, 0,
 		lastLine() - 1, lastCol()
 	);
-
+	int _, x;
 	getyx(ui.input, _, x);
 	pnoutrefresh(
 		ui.input,
@@ -155,7 +144,6 @@ void uiDraw(void) {
 		lastLine(), 0,
 		lastLine(), lastCol()
 	);
-
 	doupdate();
 }
 
@@ -234,33 +222,27 @@ static struct {
 } views;
 
 static void uiStatus(void) {
-	mvwhline(ui.status, 0, 0, ACS_HLINE, COLS);
-	mvwaddch(ui.status, 0, COLS, ACS_RTEE);
-
+	wmove(ui.status, 0, 0);
 	int num = 0;
-	int count = 0;
 	for (const struct View *view = views.head; view; view = view->next, ++num) {
-		if (!view->unread) continue;
-		bool status = (view->tag.id == TagStatus.id);
-
+		if (!view->unread && view != ui.view) continue;
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
-			&str, L",\3%02d%d\3%s%s%n(%d)",
-			(view->hot ? IRCYellow : IRCWhite), num,
-			&status[":"], (status ? "" : view->tag.name),
-			&unread, view->unread
+			&str, L"%c %d:%s%n(\3%02d%d\3) ",
+			(view == ui.view ? IRCReverse : IRCReset),
+			num, view->tag.name,
+			&unread, (view->hot ? IRCYellow : IRCDefault), view->unread
 		);
 		if (len < 0) err(EX_OSERR, "aswprintf");
-		if (view->unread == 1) str[unread] = L'\0';
-
-		addWrap(ui.status, count ? str : &str[1]);
+		if (!view->unread) {
+			str[unread + 0] = L' ';
+			str[unread + 1] = L'\0';
+		}
+		addWrap(ui.status, str);
 		free(str);
-		count++;
 	}
-
-	waddch(ui.status, count ? ACS_LTEE : '\b');
-	waddch(ui.status, ACS_HLINE);
+	wclrtoeol(ui.status);
 }
 
 static void viewAppend(struct View *view) {
@@ -310,6 +292,7 @@ static void viewClose(struct View *view) {
 }
 
 static void uiResize(void) {
+	wresize(ui.status, 1, COLS);
 	for (struct View *view = views.head; view; view = view->next) {
 		wresize(view->log, LogLines, COLS);
 		wmove(view->log, LogLines - 1, lastCol());
