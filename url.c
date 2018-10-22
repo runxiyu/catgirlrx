@@ -24,9 +24,19 @@
 #include "chat.h"
 
 static const char *Schemes[] = {
-	"https:",
-	"http:",
+	"cvs:",
 	"ftp:",
+	"git:",
+	"http:",
+	"https:",
+	"irc:",
+	"ircs:",
+	"magnet:",
+	"sftp:",
+	"ssh:",
+	"svn:",
+	"telnet:",
+	"vnc:",
 };
 static const size_t SchemesLen = sizeof(Schemes) / sizeof(Schemes[0]);
 
@@ -81,8 +91,7 @@ void urlOpenMatch(struct Tag tag, const char *substr) {
 		struct Entry entry = ringEntry(i);
 		if (!entry.url || entry.tag != tag.id) continue;
 		if (!strstr(entry.url, substr)) continue;
-		char *argv[] = { "open", entry.url, NULL };
-		eventPipe(argv);
+		eventPipe((char *[]) { "open", entry.url, NULL });
 		break;
 	}
 }
