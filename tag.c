@@ -21,26 +21,26 @@
 
 #include "chat.h"
 
-const struct Tag TagNone    = { 0, "" };
-const struct Tag TagStatus  = { 1, "(status)" };
-const struct Tag TagVerbose = { 2, "(irc)" };
+#define NONE    ""
+#define STATUS  "~status"
+#define VERBOSE "~irc"
+
+const struct Tag TagNone    = { 0, NONE };
+const struct Tag TagStatus  = { 1, STATUS };
+const struct Tag TagVerbose = { 2, VERBOSE };
 
 static struct {
 	char *name[TagsLen];
 	size_t len;
 } tags = {
-	.name = { "", "(status)", "(irc)" },
+	.name = { NONE, STATUS, VERBOSE },
 	.len = 3,
 };
-
-static struct Tag Tag(size_t id) {
-	return (struct Tag) { id, tags.name[id] };
-}
 
 struct Tag tagFind(const char *name) {
 	for (size_t id = 0; id < tags.len; ++id) {
 		if (strcmp(tags.name[id], name)) continue;
-		return Tag(id);
+		return (struct Tag) { id, tags.name[id] };
 	}
 	return TagNone;
 }
@@ -52,5 +52,5 @@ struct Tag tagFor(const char *name) {
 	size_t id = tags.len++;
 	tags.name[id] = strdup(name);
 	if (!tags.name[id]) err(EX_OSERR, "strdup");
-	return Tag(id);
+	return (struct Tag) { id, tags.name[id] };
 }
