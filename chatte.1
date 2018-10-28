@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl v
+.Op Fl Nv
 .Op Fl W Ar pass
 .Op Fl h Ar host
 .Op Fl j Ar chan
@@ -27,6 +27,10 @@ which only supports TLS.
 The arguments are as follows:
 .
 .Bl -tag -width Ds
+.It Fl N
+Send notifications with
+.Xr notify-send 1 .
+.
 .It Fl W Ar pass
 Send
 .Ql WEBIRC

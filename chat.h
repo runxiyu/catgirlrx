@@ -30,10 +30,11 @@
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
 struct {
-	bool verbose;
 	char *nick;
 	char *user;
 	char *join;
+	bool verbose;
+	bool notify;
 } self;
 
 void selfNick(const char *nick);

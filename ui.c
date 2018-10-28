@@ -350,6 +350,28 @@ void uiCloseTag(struct Tag tag) {
 	viewClose(view);
 }
 
+static void notify(struct Tag tag, const wchar_t *line) {
+	beep();
+	if (!self.notify) return;
+
+	char buf[256];
+	size_t cap = sizeof(buf);
+
+	struct Format format = { .str = line };
+	formatReset(&format);
+	while (formatParse(&format, NULL)) {
+		int len = snprintf(
+			&buf[sizeof(buf) - cap], cap,
+			"%.*ls", (int)format.len, format.str
+		);
+		if (len < 0) err(EX_OSERR, "snprintf");
+		if ((size_t)len >= cap) break;
+		cap -= len;
+	}
+
+	eventPipe((const char *[]) { "notify-send", tag.name, buf, NULL });
+}
+
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 	struct View *view = viewTag(tag);
 	int lines = 1;
@@ -362,7 +384,7 @@ void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 		}
 		if (heat > UIWarm) {
 			view->hot = true;
-			beep(); // TODO: Notify.
+			notify(tag, line);
 		}
 		uiStatus();
 	}

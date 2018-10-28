@@ -65,8 +65,9 @@ int main(int argc, char *argv[]) {
 	const char *webirc = NULL;
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "W:h:j:l:n:p:u:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:u:vw:"))) {
 		switch (opt) {
+			break; case 'N': self.notify = true;
 			break; case 'W': webirc = optarg;
 			break; case 'h': host = strdup(optarg);
 			break; case 'j': selfJoin(optarg);
