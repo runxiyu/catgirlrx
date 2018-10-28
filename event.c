@@ -33,18 +33,18 @@ static struct {
 	int fd;
 } spawn;
 
-void eventWait(char *const argv[]) {
+void eventWait(const char *argv[static 2]) {
 	uiHide();
 	pid_t pid = fork();
 	if (pid < 0) err(EX_OSERR, "fork");
 	if (!pid) {
-		execvp(argv[0], argv);
+		execvp(argv[0], (char *const *)argv);
 		err(EX_CONFIG, "%s", argv[0]);
 	}
 	spawn.wait = true;
 }
 
-void eventPipe(char *const argv[]) {
+void eventPipe(const char *argv[static 2]) {
 	if (spawn.pipe) {
 		uiLog(TagStatus, UIHot, L"event: existing pipe");
 		return;
@@ -62,7 +62,7 @@ void eventPipe(char *const argv[]) {
 		dup2(rw[1], STDOUT_FILENO);
 		dup2(rw[1], STDERR_FILENO);
 		close(rw[1]);
-		execvp(argv[0], argv);
+		execvp(argv[0], (char *const *)argv);
 		perror(argv[0]);
 		exit(EX_CONFIG);
 	}

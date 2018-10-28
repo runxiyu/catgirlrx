@@ -91,14 +91,14 @@ void urlOpenMatch(struct Tag tag, const char *substr) {
 		struct Entry entry = ringEntry(i);
 		if (!entry.url || entry.tag != tag.id) continue;
 		if (!strstr(entry.url, substr)) continue;
-		eventPipe((char *[]) { "open", entry.url, NULL });
+		eventPipe((const char *[]) { "open", entry.url, NULL });
 		break;
 	}
 }
 
 void urlOpenRange(struct Tag tag, size_t at, size_t to) {
 	size_t argc = 1;
-	char *argv[2 + RingLen] = { "open" };
+	const char *argv[2 + RingLen] = { "open" };
 	size_t tagIndex = 0;
 	for (size_t i = RingLen - 1; i < RingLen; --i) {
 		struct Entry entry = ringEntry(i);

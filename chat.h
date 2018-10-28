@@ -40,8 +40,8 @@ void selfNick(const char *nick);
 void selfUser(const char *user);
 void selfJoin(const char *join);
 
-void eventWait(char *const argv[]);
-void eventPipe(char *const argv[]);
+void eventWait(const char *argv[static 2]);
+void eventPipe(const char *argv[static 2]);
 void eventLoop(int ui, int irc);
 
 struct Tag {
