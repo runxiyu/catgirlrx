@@ -2,5 +2,6 @@
 *.t
 catgirl
 chroot.tar
+config.mk
 root
 tags

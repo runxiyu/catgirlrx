@@ -1,13 +1,15 @@
 PREFIX = ~/.local
-MANPATH = $(PREFIX)/share/man
-LIBRESSL_PREFIX = /usr/local /usr/local/opt/libressl
+MANDIR = $(PREFIX)/share/man/man
 CHROOT_USER = chat
 CHROOT_GROUP = $(CHROOT_USER)
+LIBRESSL_PREFIX = /usr/local
 
-CFLAGS += -Wall -Wextra -Wpedantic
-CFLAGS += $(LIBRESSL_PREFIX:%=-I%/include)
-LDFLAGS += $(LIBRESSL_PREFIX:%=-L%/lib)
+CFLAGS += -std=c11 -Wall -Wextra -Wpedantic
+CFLAGS += -I$(LIBRESSL_PREFIX)/include
+LDFLAGS += -L$(LIBRESSL_PREFIX)/lib
 LDLIBS = -lcursesw -ltls
+
+-include config.mk
 
 OBJS += chat.o
 OBJS += edit.o
@@ -29,30 +31,30 @@ TESTS += term.t
 
 all: tags catgirl test
 
-tags: *.h *.c
-	ctags -w *.h *.c
+$(OBJS): chat.h
 
 catgirl: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
-
-$(OBJS): chat.h
-
-test: $(TESTS)
-	set -e; $(TESTS:%=./%;)
 
 .SUFFIXES: .t
 
 .c.t:
 	$(CC) $(CFLAGS) -DTEST $(LDFLAGS) $< $(LDLIBS) -o $@
 
+test: $(TESTS)
+	set -e; $(TESTS:%=./%;)
+
+tags: *.h *.c
+	ctags -w *.h *.c
+
 install: catgirl catgirl.1
-	install -d $(PREFIX)/bin $(MANPATH)/man1
+	install -d $(PREFIX)/bin $(MANDIR)1
 	install catgirl $(PREFIX)/bin/catgirl
-	install -m 644 catgirl.1 $(MANPATH)/man1/catgirl.1
+	install -m 644 catgirl.1 $(MANDIR)1/catgirl.1
 
 uninstall:
 	rm -f $(PREFIX)/bin/catgirl
-	rm -f $(MANPATH)/man1/catgirl.1
+	rm -f $(MANDIR)1/catgirl.1
 
 chroot.tar: catgirl catgirl.1 man.sh
 	install -d -o root -g wheel \
@@ -67,10 +69,9 @@ chroot.tar: catgirl catgirl.1 man.sh
 		root/usr/share/man \
 		root/usr/share/misc
 	install -d -o $(CHROOT_USER) -g $(CHROOT_GROUP) root/home/$(CHROOT_USER)
-	cp -p -f /libexec/ld-elf.so.1 root/libexec
-	cp -p -f \
+	cp -fp /libexec/ld-elf.so.1 root/libexec
+	cp -fp \
 		/lib/libc.so.7 \
-	    /lib/libedit.so.7 \
 		/lib/libncursesw.so.8 \
 		/lib/libthr.so.3 \
 		/lib/libz.so.6 \
@@ -78,17 +79,20 @@ chroot.tar: catgirl catgirl.1 man.sh
 		/usr/local/lib/libssl.so.45 \
 		/usr/local/lib/libtls.so.17 \
 		root/lib
-	cp -p -f /etc/hosts /etc/resolv.conf root/etc
-	cp -p -f /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
-	cp -a -f /usr/share/locale root/usr/share
-	cp -p -f /usr/share/misc/termcap.db root/usr/share/misc
-	cp -p -f /bin/sh /usr/bin/mandoc /usr/bin/less root/bin
+	cp -fp /etc/hosts /etc/resolv.conf root/etc
+	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
+	cp -af /usr/share/locale root/usr/share
+	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
+	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
 	$(MAKE) install PREFIX=root/usr
 	install man.sh root/usr/bin/man
-	tar -c -f chroot.tar -C root bin etc home lib libexec usr
+	tar -cf chroot.tar -C root bin etc home lib libexec usr
+
+install-chroot: chroot.tar
+	tar -xf chroot.tar -C /home/$(CHROOT_USER)
 
 clean:
-	rm -rf tags catgirl $(OBJS) $(TESTS) root chroot.tar
+	rm -fr $(OBJS) catgirl $(TESTS) tags root chroot.tar
 
 README: catgirl.7
-	mandoc catgirl.7 | col -b -x > README
+	mandoc catgirl.7 | col -bx > README
