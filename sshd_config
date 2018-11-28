@@ -4,7 +4,7 @@ Match User chat
 	PasswordAuthentication yes
 	PermitEmptyPasswords yes
 	ChrootDirectory /home/chat
-	ForceCommand chatte
+	ForceCommand catgirl
 
 	AllowAgentForwarding no
 	AllowTcpForwarding no

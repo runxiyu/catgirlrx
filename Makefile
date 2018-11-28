@@ -27,12 +27,12 @@ OBJS += url.o
 TESTS += format.t
 TESTS += term.t
 
-all: tags chatte test
+all: tags catgirl test
 
 tags: *.h *.c
 	ctags -w *.h *.c
 
-chatte: $(OBJS)
+catgirl: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(OBJS): chat.h
@@ -45,16 +45,16 @@ test: $(TESTS)
 .c.t:
 	$(CC) $(CFLAGS) -DTEST $(LDFLAGS) $< $(LDLIBS) -o $@
 
-install: chatte chatte.1
+install: catgirl catgirl.1
 	install -d $(PREFIX)/bin $(MANPATH)/man1
-	install chatte $(PREFIX)/bin/chatte
-	install -m 644 chatte.1 $(MANPATH)/man1/chatte.1
+	install catgirl $(PREFIX)/bin/catgirl
+	install -m 644 catgirl.1 $(MANPATH)/man1/catgirl.1
 
 uninstall:
-	rm -f $(PREFIX)/bin/chatte
-	rm -f $(MANPATH)/man1/chatte.1
+	rm -f $(PREFIX)/bin/catgirl
+	rm -f $(MANPATH)/man1/catgirl.1
 
-chroot.tar: chatte chatte.1 man.sh
+chroot.tar: catgirl catgirl.1 man.sh
 	install -d -o root -g wheel \
 		root \
 		root/bin \
@@ -88,7 +88,7 @@ chroot.tar: chatte chatte.1 man.sh
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
 
 clean:
-	rm -rf tags chatte $(OBJS) $(TESTS) root chroot.tar
+	rm -rf tags catgirl $(OBJS) $(TESTS) root chroot.tar
 
-README: chatte.7
-	mandoc chatte.7 | sed $$'s/.\b//g' > README
+README: catgirl.7
+	mandoc catgirl.7 | col -b -x > README

@@ -1,10 +1,10 @@
-CHATTE(7)              Miscellaneous Information Manual              CHATTE(7)
+CATGIRL(7)             Miscellaneous Information Manual             CATGIRL(7)
 
 NAME
-     chatte – IRC for catgirls
+     catgirl – IRC client
 
 DESCRIPTION
-     chatte is a curses IRC client originally intended for use over anonymous
+     catgirl is a curses IRC client originally intended for use over anonymous
      SSH.
 
      It requires LibreSSL and targets FreeBSD and Darwin.
@@ -29,6 +29,6 @@ FILES
      man.sh       man(1) implementation for chroot
 
 SEE ALSO
-     chatte(1)
+     catgirl(1)
 
-Causal Agency                 September 15, 2018                 Causal Agency
+Causal Agency                  November 27, 2018                 Causal Agency

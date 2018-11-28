@@ -144,7 +144,7 @@ static void inputClose(struct Tag tag, char *params) {
 static void inputMan(struct Tag tag, char *params) {
 	(void)tag;
 	(void)params;
-	eventWait((const char *[]) { "man", "1", "chatte", NULL });
+	eventWait((const char *[]) { "man", "1", "catgirl", NULL });
 }
 
 static const struct {
