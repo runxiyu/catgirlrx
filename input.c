@@ -87,6 +87,13 @@ static void inputWho(struct Tag tag, char *params) {
 	ircFmt("WHO %s\r\n", tag.name);
 }
 
+static void inputWhois(struct Tag tag, char *params) {
+	(void)tag;
+	char *nick = param("/whois", &params, "nick");
+	if (!nick) return;
+	ircFmt("WHOIS %s\r\n", nick);
+}
+
 static void inputTopic(struct Tag tag, char *params) {
 	if (params) {
 		ircFmt("TOPIC %s :%s\r\n", tag.name, params);
@@ -104,7 +111,7 @@ static void inputQuit(struct Tag tag, char *params) {
 	}
 }
 
-static void inputUrl(struct Tag tag, char *params) {
+static void inputURL(struct Tag tag, char *params) {
 	(void)params;
 	urlList(tag);
 }
@@ -163,9 +170,10 @@ static const struct {
 	{ "/query", inputQuery },
 	{ "/quit", inputQuit },
 	{ "/topic", inputTopic },
-	{ "/url", inputUrl },
+	{ "/url", inputURL },
 	{ "/view", inputView },
 	{ "/who", inputWho },
+	{ "/whois", inputWhois },
 };
 static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 

@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
+#include <time.h>
 
 #include "chat.h"
 
@@ -127,6 +128,58 @@ static void handleReplyMOTD(char *prefix, char *params) {
 
 	urlScan(TagStatus, mesg);
 	uiFmt(TagStatus, UICold, "%s", mesg);
+}
+
+static enum IRCColor whoisColor;
+static void handleReplyWhoisUser(char *prefix, char *params) {
+	char *nick, *user, *host, *real;
+	shift(
+		prefix, NULL, NULL, NULL,
+		params, 6, 0, NULL, &nick, &user, &host, NULL, &real
+	);
+	whoisColor = formatColor(user);
+	uiFmt(
+		TagStatus, UIWarm,
+		"\3%d%s\3 is %s@%s \"%s\"",
+		whoisColor, nick, user, host, real
+	);
+}
+
+static void handleReplyWhoisServer(char *prefix, char *params) {
+	char *nick, *serv, *info;
+	shift(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &serv, &info);
+	uiFmt(
+		TagStatus, UIWarm,
+		"\3%d%s\3 is connected to %s, \"%s\"",
+		whoisColor, nick, serv, info
+	);
+}
+
+static void handleReplyWhoisOperator(char *prefix, char *params) {
+	char *nick, *oper;
+	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &oper);
+	uiFmt(TagStatus, UIWarm, "\3%d%s\3 %s", whoisColor, nick, oper);
+}
+
+static void handleReplyWhoisIdle(char *prefix, char *params) {
+	char *nick, *idle, *sign;
+	shift(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &idle, &sign);
+	time_t time = strtoul(sign, NULL, 10);
+	const char *at = ctime(&time);
+	unsigned long secs  = strtoul(idle, NULL, 10);
+	unsigned long mins  = secs / 60; secs %= 60;
+	unsigned long hours = mins / 60; mins %= 60;
+	uiFmt(
+		TagStatus, UIWarm,
+		"\3%d%s\3 signed on at %.24s and has been idle for %02lu:%02lu:%02lu",
+		whoisColor, nick, at, hours, mins, secs
+	);
+}
+
+static void handleReplyWhoisChannels(char *prefix, char *params) {
+	char *nick, *chans;
+	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &chans);
+	uiFmt(TagStatus, UIWarm, "\3%d%s\3 is in %s", whoisColor, nick, chans);
 }
 
 static void handleJoin(char *prefix, char *params) {
@@ -400,7 +453,12 @@ static const struct {
 	Handler handler;
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
+	{ "311", handleReplyWhoisUser },
+	{ "312", handleReplyWhoisServer },
+	{ "313", handleReplyWhoisOperator },
 	{ "315", handleReplyEndOfWho },
+	{ "317", handleReplyWhoisIdle },
+	{ "319", handleReplyWhoisChannels },
 	{ "332", handleReplyTopic },
 	{ "352", handleReplyWho },
 	{ "366", handleReplyEndOfNames },
