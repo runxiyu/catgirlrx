@@ -221,24 +221,34 @@ static struct {
 	struct View *tags[TagsLen];
 } views;
 
+static void uiTitle(const struct View *view) {
+	int unread;
+	char *str;
+	int len = asprintf(
+		&str, "%s%n (%d)", view->tag.name, &unread, view->unread
+	);
+	if (len < 0) err(EX_OSERR, "asprintf");
+	if (!view->unread) str[unread] = '\0';
+	termTitle(str);
+	free(str);
+}
+
 static void uiStatus(void) {
 	wmove(ui.status, 0, 0);
 	int num = 0;
 	for (const struct View *view = views.head; view; view = view->next, ++num) {
 		if (!view->unread && view != ui.view) continue;
+		if (view == ui.view) uiTitle(view);
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
-			&str, L"%c %d:%s%n(\3%02d%d\3) ",
+			&str, L"%c %d %s %n(\3%02d%d\3) ",
 			(view == ui.view ? IRCReverse : IRCReset),
 			num, view->tag.name,
 			&unread, (view->hot ? IRCYellow : IRCDefault), view->unread
 		);
 		if (len < 0) err(EX_OSERR, "aswprintf");
-		if (!view->unread) {
-			str[unread + 0] = L' ';
-			str[unread + 1] = L'\0';
-		}
+		if (!view->unread) str[unread] = L'\0';
 		addWrap(ui.status, str);
 		free(str);
 	}
@@ -307,7 +317,6 @@ static void viewUnmark(struct View *view) {
 }
 
 static void uiView(struct View *view) {
-	termTitle(view->tag.name);
 	touchwin(view->log);
 	if (ui.view) ui.view->mark = true;
 	viewUnmark(view);
