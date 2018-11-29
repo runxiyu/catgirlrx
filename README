@@ -1,13 +1,13 @@
 CATGIRL(7)             Miscellaneous Information Manual             CATGIRL(7)
 
 NAME
-     catgirl – IRC client
+     catgirl  IRC client
 
 DESCRIPTION
      catgirl is a curses IRC client originally intended for use over anonymous
      SSH.
 
-     It requires LibreSSL and targets FreeBSD and Darwin.
+     It requires LibreSSL and targets FreeBSD, NetBSD and Darwin.
 
 FILES
      chat.h    Shared state and function prototypes
@@ -31,4 +31,4 @@ FILES
 SEE ALSO
      catgirl(1)
 
-Causal Agency                  November 27, 2018                 Causal Agency
+Causal Agency                  November 28, 2018                 Causal Agency
