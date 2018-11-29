@@ -196,6 +196,7 @@ static void handleJoin(char *prefix, char *params) {
 	if (isSelf(nick, user)) {
 		tabTouch(TagNone, chan);
 		uiViewTag(tag);
+		logReplay(tag);
 	}
 	tabTouch(tag, nick);
 

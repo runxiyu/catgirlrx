@@ -80,11 +80,11 @@ static FILE *logFile(struct Tag tag, const struct tm *time) {
 	char path[sizeof("YYYY-MM-DD.log")];
 	strftime(path, sizeof(path), "%F.log", time);
 	int fd = openat(
-		log->dir, path, O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC, 0600
+		log->dir, path, O_RDWR | O_APPEND | O_CREAT | O_CLOEXEC, 0600
 	);
 	if (fd < 0) err(EX_CANTCREAT, "%s/%s", tag.name, path);
 
-	log->file = fdopen(fd, "a");
+	log->file = fdopen(fd, "a+");
 	if (!log->file) err(EX_CANTCREAT, "%s/%s", tag.name, path);
 	setlinebuf(log->file);
 
@@ -117,5 +117,23 @@ void logFmt(struct Tag tag, const time_t *ts, const char *format, ...) {
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
 
 	fprintf(file, "\n");
+	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
+}
+
+void logReplay(struct Tag tag) {
+	if (logRoot < 0) return;
+
+	time_t t = time(NULL);
+	struct tm *time = localtime(&t);
+	if (!time) err(EX_SOFTWARE, "localtime");
+
+	FILE *file = logFile(tag, time);
+	rewind(file);
+
+	size_t len;
+	char *line;
+	while (NULL != (line = fgetln(file, &len))) {
+		uiFmt(tag, UICold, "\3%d%.*s", IRCGray, (int)(len - 1), line);
+	}
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
 }

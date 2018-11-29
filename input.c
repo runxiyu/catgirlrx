@@ -80,6 +80,7 @@ static void inputQuery(struct Tag tag, char *params) {
 	if (!nick) return;
 	tabTouch(TagNone, nick);
 	uiViewTag(tagFor(nick));
+	logReplay(tagFor(nick));
 }
 
 static void inputWho(struct Tag tag, char *params) {
