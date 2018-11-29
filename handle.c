@@ -103,7 +103,7 @@ static void handlePing(char *prefix, char *params) {
 	ircFmt("PONG %s\r\n", params);
 }
 
-static void handleReplyErroneousNickname(char *prefix, char *params) {
+static void handleErrorErroneousNickname(char *prefix, char *params) {
 	char *mesg;
 	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
 	uiFmt(TagStatus, UIHot, "You can't use that name here: \"%s\"", mesg);
@@ -140,7 +140,7 @@ static void handleReplyWhoisUser(char *prefix, char *params) {
 	whoisColor = formatColor(user);
 	uiFmt(
 		TagStatus, UIWarm,
-		"\3%d%s\3 is %s@%s \"%s\"",
+		"\3%d%s\3 is %s@%s, \"%s\"",
 		whoisColor, nick, user, host, real
 	);
 }
@@ -180,6 +180,12 @@ static void handleReplyWhoisChannels(char *prefix, char *params) {
 	char *nick, *chans;
 	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &chans);
 	uiFmt(TagStatus, UIWarm, "\3%d%s\3 is in %s", whoisColor, nick, chans);
+}
+
+static void handleErrorNoSuchNick(char *prefix, char *params) {
+	char *nick, *mesg;
+	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &mesg);
+	uiFmt(TagStatus, UIWarm, "%s, \"%s\"", mesg, nick);
 }
 
 static void handleJoin(char *prefix, char *params) {
@@ -464,8 +470,9 @@ static const struct {
 	{ "366", handleReplyEndOfNames },
 	{ "372", handleReplyMOTD },
 	{ "375", handleReplyMOTD },
-	{ "432", handleReplyErroneousNickname },
-	{ "433", handleReplyErroneousNickname },
+	{ "401", handleErrorNoSuchNick },
+	{ "432", handleErrorErroneousNickname },
+	{ "433", handleErrorErroneousNickname },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "NICK", handleNick },
