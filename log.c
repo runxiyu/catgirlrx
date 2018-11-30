@@ -91,7 +91,7 @@ static FILE *logFile(struct Tag tag, const struct tm *time) {
 	return log->file;
 }
 
-enum { StampSize = sizeof("YYYY-MM-DDThh:mm:ss+hhmm") };
+enum { StampLen = sizeof("YYYY-MM-DDThh:mm:ss+hhmm") - 1 };
 
 void logFmt(struct Tag tag, const time_t *ts, const char *format, ...) {
 	if (logRoot < 0) return;
@@ -107,8 +107,8 @@ void logFmt(struct Tag tag, const time_t *ts, const char *format, ...) {
 
 	FILE *file = logFile(tag, time);
 
-	char stamp[StampSize];
-	strftime(stamp, StampSize, "%FT%T%z", time);
+	char stamp[StampLen + 1];
+	strftime(stamp, sizeof(stamp), "%FT%T%z", time);
 	fprintf(file, "[%s] ", stamp);
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
 
@@ -136,7 +136,7 @@ void logReplay(struct Tag tag) {
 	char *line;
 	while (NULL != (line = fgetln(file, &len))) {
 		line[len - 1] = '\0';
-		if (len > 2 + StampSize) line = &line[2 + StampSize];
+		if (len > 1 + StampLen + 2) line = &line[1 + StampLen + 2];
 		uiFmt(tag, UICold, "\3%d%s", IRCGray, line);
 	}
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
