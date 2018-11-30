@@ -9,6 +9,9 @@ CFLAGS += -I$(LIBRESSL_PREFIX)/include
 LDFLAGS += -L$(LIBRESSL_PREFIX)/lib
 LDLIBS = -lcursesw -ltls
 
+BINS = catgirl
+MANS = catgirl.1
+
 -include config.mk
 
 OBJS += chat.o
@@ -29,7 +32,7 @@ OBJS += url.o
 TESTS += format.t
 TESTS += term.t
 
-all: tags catgirl test
+all: tags $(BINS) test
 
 $(OBJS): chat.h
 
@@ -47,14 +50,14 @@ test: $(TESTS)
 tags: *.h *.c
 	ctags -w *.h *.c
 
-install: catgirl catgirl.1
+install: $(BINS) $(MANS)
 	install -d $(PREFIX)/bin $(MANDIR)1
-	install catgirl $(PREFIX)/bin/catgirl
-	install -m 644 catgirl.1 $(MANDIR)1/catgirl.1
+	install $(BINS) $(PREFIX)/bin
+	install -m 644 $(MANS) $(MANDIR)1
 
 uninstall:
-	rm -f $(PREFIX)/bin/catgirl
-	rm -f $(MANDIR)1/catgirl.1
+	rm -f $(BINS:%=$(PREFIX)/bin/%)
+	rm -f $(MAN:%=%(MANDIR)1/%)
 
 chroot.tar: catgirl catgirl.1 man.sh
 	install -d -o root -g wheel \
@@ -92,7 +95,7 @@ install-chroot: chroot.tar
 	tar -xf chroot.tar -C /home/$(CHROOT_USER)
 
 clean:
-	rm -fr $(OBJS) catgirl $(TESTS) tags root chroot.tar
+	rm -fr $(OBJS) $(BINS) $(TESTS) tags root chroot.tar
 
 README: catgirl.7
 	mandoc catgirl.7 | col -bx > README

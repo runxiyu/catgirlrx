@@ -1,0 +1,34 @@
+.Dd November 30, 2018
+.Dt SANDMAN 1
+.Os "Causal Agency"
+.
+.Sh NAME
+.Nm sandman
+.Nd signal sleep
+.
+.Sh SYNOPSIS
+.Nm
+.Ar command ...
+.
+.Sh DESCRIPTION
+.Nm
+is a utility for Darwin systems.
+.Nm
+runs the
+.Ar command
+in a child process
+and sends it
+.Dv SIGTSTP
+and
+.Dv SIGCONT
+signals
+when the computer goes to sleep
+and wakes from sleep,
+respectively.
+.
+.Sh EXIT STATUS
+.Nm
+exits with the exit status of the child process.
+.
+.Sh SEE ALSO
+.Xr signal 3
