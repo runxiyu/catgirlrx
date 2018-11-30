@@ -60,39 +60,35 @@ static char *prompt(const char *prompt) {
 
 int main(int argc, char *argv[]) {
 	char *host = NULL;
-	const char *port = "6697";
-	const char *pass = NULL;
-	const char *webirc = NULL;
+	char *port = "6697";
+	char *pass = NULL;
+	char *webirc = NULL;
 
 	int opt;
 	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
-			break; case 'W': webirc = optarg;
+			break; case 'W': webirc = strdup(optarg);
 			break; case 'h': host = strdup(optarg);
 			break; case 'j': selfJoin(optarg);
 			break; case 'l': logOpen(optarg);
 			break; case 'n': selfNick(optarg);
-			break; case 'p': port = optarg;
+			break; case 'p': port = strdup(optarg);
 			break; case 'u': selfUser(optarg);
 			break; case 'v': self.verbose = true;
-			break; case 'w': pass = optarg;
+			break; case 'w': pass = strdup(optarg);
 			break; default:  return EX_USAGE;
 		}
 	}
+	if (!port) err(EX_OSERR, "strdup");
 
 	if (!host) host = prompt("Host: ");
 	if (!self.nick) self.nick = prompt("Name: ");
 	if (!self.user) selfUser(self.nick);
 
 	inputTab();
-
 	uiInit();
-	uiLog(TagStatus, UIWarm, L"Traveling...");
 	uiDraw();
-
-	int irc = ircConnect(host, port, pass, webirc);
-	free(host);
-
-	eventLoop(STDIN_FILENO, irc);
+	ircInit(host, port, pass, webirc);
+	eventLoop();
 }

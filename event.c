@@ -106,13 +106,15 @@ static void sigint(int sig) {
 	exit(EX_OK);
 }
 
-void eventLoop(int ui, int irc) {
+void eventLoop(void) {
 	signal(SIGINT, sigint);
 	signal(SIGCHLD, sigchld);
 
+	int irc = ircConnect();
+
 	struct pollfd fds[3] = {
 		{ irc, POLLIN, 0 },
-		{ ui, POLLIN, 0 },
+		{ STDIN_FILENO, POLLIN, 0 },
 		{ -1, POLLIN, 0 },
 	};
 	for (;;) {

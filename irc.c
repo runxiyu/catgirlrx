@@ -29,35 +29,40 @@
 
 #include "chat.h"
 
-static struct tls *client;
+static struct {
+	char *host;
+	char *port;
+	char *pass;
+	char *webirc;
+	int sock;
+	struct tls_config *config;
+	struct tls *client;
+} irc = {
+	.sock = -1,
+};
 
-static void webirc(const char *pass) {
-	const char *ssh = getenv("SSH_CLIENT");
-	if (!ssh) return;
-	int len = strlen(ssh);
-	const char *sp = strchr(ssh, ' ');
-	if (sp) len = sp - ssh;
-	ircFmt(
-		"WEBIRC %s %s %.*s %.*s\r\n",
-		pass, self.user, len, ssh, len, ssh
-	);
+void ircInit(char *host, char *port, char *pass, char *webirc) {
+	irc.host = host;
+	irc.port = port;
+	irc.pass = pass;
+	irc.webirc = webirc;
+
+	irc.config = tls_config_new();
+	int error = tls_config_set_ciphers(irc.config, "compat");
+	if (error) errx(EX_SOFTWARE, "tls_config");
+
+	irc.client = tls_client();
+	if (!irc.client) errx(EX_SOFTWARE, "tls_client");
 }
 
-int ircConnect(
-	const char *host, const char *port, const char *pass, const char *webPass
-) {
+int ircConnect(void) {
 	int error;
 
-	struct tls_config *config = tls_config_new();
-	error = tls_config_set_ciphers(config, "compat");
-	if (error) errx(EX_SOFTWARE, "tls_config: %s", tls_config_error(config));
+	tls_reset(irc.client);
+	error = tls_configure(irc.client, irc.config);
+	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(irc.client));
 
-	client = tls_client();
-	if (!client) errx(EX_SOFTWARE, "tls_client");
-
-	error = tls_configure(client, config);
-	if (error) errx(EX_SOFTWARE, "tls_configure");
-	tls_config_free(config);
+	uiFmt(TagStatus, UIWarm, "Traveling to %s", irc.host);
 
 	struct addrinfo *head;
 	struct addrinfo hints = {
@@ -65,42 +70,65 @@ int ircConnect(
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
 	};
-	error = getaddrinfo(host, port, &hints, &head);
+	error = getaddrinfo(irc.host, irc.port, &hints, &head);
 	if (error) errx(EX_NOHOST, "getaddrinfo: %s", gai_strerror(error));
 
-	int sock = -1;
 	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
-		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (sock < 0) err(EX_OSERR, "socket");
+		irc.sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+		if (irc.sock < 0) err(EX_OSERR, "socket");
 
-		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
+		error = connect(irc.sock, ai->ai_addr, ai->ai_addrlen);
 		if (!error) break;
 
-		close(sock);
-		sock = -1;
+		close(irc.sock);
+		irc.sock = -1;
 	}
-	if (sock < 0) err(EX_UNAVAILABLE, "connect");
+	if (irc.sock < 0) err(EX_UNAVAILABLE, "connect");
 	freeaddrinfo(head);
 
-	error = fcntl(sock, F_SETFD, FD_CLOEXEC);
+	error = fcntl(irc.sock, F_SETFD, FD_CLOEXEC);
 	if (error) err(EX_IOERR, "fcntl");
 
-	error = tls_connect_socket(client, sock, host);
-	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
+	error = tls_connect_socket(irc.client, irc.sock, irc.host);
+	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(irc.client));
 
-	if (webPass) webirc(webPass);
-	if (pass) ircFmt("PASS :%s\r\n", pass);
-	ircFmt("NICK %s\r\n", self.nick);
-	ircFmt("USER %s 0 * :%s\r\n", self.user, self.nick);
+	const char *ssh = getenv("SSH_CLIENT");
+	if (irc.webirc && ssh) {
+		int len = strlen(ssh);
+		const char *sp = strchr(ssh, ' ');
+		if (sp) len = sp - ssh;
+		ircFmt(
+			"WEBIRC %s %s %.*s %.*s\r\n",
+			irc.webirc, self.user, len, ssh, len, ssh
+		);
+	}
 
-	return sock;
+	if (irc.pass) ircFmt("PASS :%s\r\n", irc.pass);
+	ircFmt(
+		"NICK %s\r\n"
+		"USER %s 0 * :%s\r\n",
+		self.nick, self.user, self.nick
+	);
+
+	return irc.sock;
+}
+
+void ircDisconnect(const char *quit) {
+	// TODO: Wait for response, send quit to UI.
+	ircFmt("QUIT :%s\r\n", quit);
+
+	int error = tls_close(irc.client);
+	if (error) errx(EX_IOERR, "tls_close: %s", tls_error(irc.client));
+
+	error = close(irc.sock);
+	if (error) err(EX_IOERR, "close");
 }
 
 void ircWrite(const char *ptr, size_t len) {
 	while (len) {
-		ssize_t ret = tls_write(client, ptr, len);
+		ssize_t ret = tls_write(irc.client, ptr, len);
 		if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT) continue;
-		if (ret < 0) errx(EX_IOERR, "tls_write: %s", tls_error(client));
+		if (ret < 0) errx(EX_IOERR, "tls_write: %s", tls_error(irc.client));
 		ptr += ret;
 		len -= ret;
 	}
@@ -127,8 +155,8 @@ void ircRead(void) {
 	static char buf[4096];
 	static size_t len;
 
-	ssize_t read = tls_read(client, &buf[len], sizeof(buf) - len);
-	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
+	ssize_t read = tls_read(irc.client, &buf[len], sizeof(buf) - len);
+	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(irc.client));
 	if (!read) {
 		uiExit();
 		exit(EX_OK);

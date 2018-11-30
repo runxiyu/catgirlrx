@@ -43,7 +43,7 @@ void selfJoin(const char *join);
 
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
-void eventLoop(int ui, int irc);
+void eventLoop(void);
 
 struct Tag {
 	size_t id;
@@ -100,9 +100,9 @@ void handle(char *line);
 void input(struct Tag tag, char *line);
 void inputTab(void);
 
-int ircConnect(
-	const char *host, const char *port, const char *pass, const char *webPass
-);
+void ircInit(char *host, char *port, char *pass, char *webPass);
+int ircConnect(void);
+void ircDisconnect(const char *quit);
 void ircRead(void);
 void ircWrite(const char *ptr, size_t len);
 void ircFmt(const char *format, ...) __attribute__((format(printf, 1, 2)));
