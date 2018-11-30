@@ -40,33 +40,34 @@ int main(int argc, char *argv[]) {
 
 	pid_t pid = fork();
 	if (pid < 0) err(EX_OSERR, "fork");
-
 	if (!pid) {
 		execvp(argv[1], &argv[1]);
 		err(EX_NOINPUT, "%s", argv[1]);
 	}
 
-	NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
-	NSNotificationCenter *center = [workspace notificationCenter];
-	NSOperationQueue *main = [NSOperationQueue mainQueue];
-
-	[center addObserverForName:NSWorkspaceWillSleepNotification
-						object:nil
-						 queue:main
-					usingBlock:^(NSNotification *note) {
-						(void)note;
-						int error = kill(pid, SIGTSTP);
-						if (error) err(EX_UNAVAILABLE, "kill %d", pid);
-					}];
-
-	[center addObserverForName:NSWorkspaceDidWakeNotification
-						object:nil
-						 queue:main
-					usingBlock:^(NSNotification *note) {
-						(void)note;
-						int error = kill(pid, SIGCONT);
-						if (error) err(EX_UNAVAILABLE, "kill %d", pid);
-					}];
+	[
+		[[NSWorkspace sharedWorkspace] notificationCenter]
+		addObserverForName: NSWorkspaceWillSleepNotification
+		object: nil
+		queue: [NSOperationQueue mainQueue]
+		usingBlock: ^(NSNotification *note) {
+			(void)note;
+			int error = kill(pid, SIGTSTP);
+			if (error) err(EX_UNAVAILABLE, "kill %d", pid);
+		}
+	];
+	
+	[
+		[[NSWorkspace sharedWorkspace] notificationCenter]
+		addObserverForName: NSWorkspaceDidWakeNotification
+		object: nil
+		queue: [NSOperationQueue mainQueue]
+		usingBlock: ^(NSNotification *note) {
+			(void)note;
+			int error = kill(pid, SIGCONT);
+			if (error) err(EX_UNAVAILABLE, "kill %d", pid);
+		}
+	];
 
 	[[NSApplication sharedApplication] run];
 }
