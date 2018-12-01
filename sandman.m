@@ -21,11 +21,11 @@
 #import <sysexits.h>
 #import <unistd.h>
 
-void sigchld(int sig) {
+void handler(int sig) {
 	(void)sig;
 	int status;
 	pid_t pid = wait(&status);
-	if (pid < 0) err(EX_OSERR, "wait");
+	if (pid < 0) _exit(EX_OSERR);
 	if (WIFSIGNALED(status)) {
 		_exit(128 + WTERMSIG(status));
 	} else {
@@ -36,7 +36,14 @@ void sigchld(int sig) {
 int main(int argc, char *argv[]) {
 	if (argc < 2) return EX_USAGE;
 
-	signal(SIGCHLD, sigchld);
+	sigset_t mask;
+	sigemptyset(&mask);
+	struct sigaction sa = {
+		.sa_handler = handler,
+		.sa_mask = mask,
+		.sa_flags = SA_RESTART,
+	};
+	sigaction(SIGCHLD, &sa, NULL);
 
 	pid_t pid = fork();
 	if (pid < 0) err(EX_OSERR, "fork");
