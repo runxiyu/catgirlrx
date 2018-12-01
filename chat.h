@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 #include <time.h>
 #include <wchar.h>
 
@@ -43,7 +44,7 @@ void selfJoin(const char *join);
 
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
-void eventLoop(void);
+noreturn void eventLoop(void);
 
 struct Tag {
 	size_t id;

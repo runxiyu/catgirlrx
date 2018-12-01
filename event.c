@@ -14,16 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <sysexits.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include "chat.h"
 
@@ -86,8 +88,7 @@ static void pipeRead(void) {
 	}
 }
 
-static void sigchld(int sig) {
-	(void)sig;
+static void handleChild(void) {
 	int status;
 	pid_t pid = wait(&status);
 	if (pid < 0) err(EX_OSERR, "wait");
@@ -99,16 +100,31 @@ static void sigchld(int sig) {
 	spawn.wait = false;
 }
 
-static void sigint(int sig) {
-	(void)sig;
+static void handleInterrupt(void) {
 	input(TagStatus, "/quit");
 	uiExit();
 	exit(EX_OK);
 }
 
-void eventLoop(void) {
-	signal(SIGINT, sigint);
-	signal(SIGCHLD, sigchld);
+static sig_atomic_t sig[NSIG];
+static void handler(int n) {
+	sig[n] = 1;
+}
+
+noreturn void eventLoop(void) {
+	sigset_t mask;
+	sigemptyset(&mask);
+	struct sigaction sa = {
+		.sa_handler = handler,
+		.sa_mask = mask,
+		.sa_flags = SA_RESTART,
+	};
+	sigaction(SIGCHLD, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
+
+	struct sigaction curses;
+	sigaction(SIGWINCH, &sa, &curses);
+	assert(!(curses.sa_flags & SA_SIGINFO));
 
 	int irc = ircConnect();
 
@@ -118,6 +134,17 @@ void eventLoop(void) {
 		{ -1, POLLIN, 0 },
 	};
 	for (;;) {
+		if (sig[SIGCHLD]) handleChild();
+		if (sig[SIGINT]) handleInterrupt();
+		if (sig[SIGWINCH]) {
+			curses.sa_handler(SIGWINCH);
+			uiRead();
+			uiDraw();
+		}
+		sig[SIGCHLD] = 0;
+		sig[SIGINT] = 0;
+		sig[SIGWINCH] = 0;
+
 		nfds_t nfds = 2;
 		if (spawn.wait) nfds = 1;
 		if (spawn.pipe) {
@@ -127,10 +154,8 @@ void eventLoop(void) {
 
 		int ready = poll(fds, nfds, -1);
 		if (ready < 0) {
-			if (errno != EINTR) err(EX_IOERR, "poll");
-			uiRead();
-			uiDraw();
-			continue;
+			if (errno == EINTR) continue;
+			err(EX_IOERR, "poll");
 		}
 
 		if (fds[0].revents) ircRead();
