@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 	struct sigaction sa = {
 		.sa_handler = handler,
 		.sa_mask = mask,
-		.sa_flags = SA_RESTART,
+		.sa_flags = SA_NOCLDSTOP | SA_RESTART,
 	};
 	sigaction(SIGCHLD, &sa, NULL);
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 		[[NSWorkspace sharedWorkspace] notificationCenter]
 		addObserverForName: NSWorkspaceWillSleepNotification
 		object: nil
-		queue: [NSOperationQueue mainQueue]
+		queue: nil
 		usingBlock: ^(NSNotification *note) {
 			(void)note;
 			int error = kill(pid, SIGTSTP);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 		[[NSWorkspace sharedWorkspace] notificationCenter]
 		addObserverForName: NSWorkspaceDidWakeNotification
 		object: nil
-		queue: [NSOperationQueue mainQueue]
+		queue: nil
 		usingBlock: ^(NSNotification *note) {
 			(void)note;
 			int error = kill(pid, SIGCONT);
