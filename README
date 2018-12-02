@@ -7,29 +7,40 @@ DESCRIPTION
      catgirl is a curses IRC client originally intended for use over anonymous
      SSH.
 
-     It requires LibreSSL and targets FreeBSD, NetBSD and Darwin.
+     It requires LibreSSL (-ltls) and targets FreeBSD, Darwin, NetBSD.
+
+   Build
+     On platforms other than FreeBSD, copy the appropriate file to config.mk
+     and modify as needed.  The default install PREFIX is ~/.local.
+
+           cp $(uname).mk config.mk
+           make
+           make install
 
 FILES
-     chat.h     Shared state and function prototypes
-     chat.c     Command line parsing
-     event.c    Event loop and process spawning
-     tag.c      Tag (channel, query) ID assignment
-     handle.c   Incoming command handling
-     input.c    Input command handling
+     chat.h     shared state and function prototypes
+     chat.c     command line parsing
+     event.c    event loop and process spawning
+     tag.c      tag (channel, query) ID assignment
+     handle.c   incoming command handling
+     input.c    input command handling
      irc.c      TLS client connection
      format.c   IRC formatting
-     ui.c       Curses UI
-     term.c     Terminal features unsupported by curses
-     edit.c     Line editing
-     tab.c      Tab-complete
+     ui.c       cursed UI
+     term.c     terminal features unsupported by curses
+     edit.c     line editing
+     tab.c      tab-complete
      url.c      URL detection
-     pls.c      Functions which should not have to be written
-     sandman.m  Utility for Darwin to signal sleep
+     pls.c      functions which should not have to be written
+     sandman.m  utility for Darwin to signal sleep
 
-     sshd_config  Anonymous SSH configuration
+     sshd_config  anonymous SSH configuration
      man.sh       man(1) implementation for chroot
 
 SEE ALSO
      catgirl(1), sandman(1)
+
+BUGS
+     The UI is currently broken with NetBSD's curses implementation.
 
 Causal Agency                  December 2, 2018                  Causal Agency

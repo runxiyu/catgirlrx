@@ -1,6 +1,6 @@
-.Dd November 27, 2018
+.Dd December 2, 2018
 .Dt CATGIRL 1
-.Os "Causal Agency"
+.Os
 .
 .Sh NAME
 .Nm catgirl
@@ -20,13 +20,12 @@
 .
 .Sh DESCRIPTION
 .Nm
-is a curses IRC client
-which only supports TLS.
+is a curses, TLS-only IRC client.
 .
 .Pp
 The arguments are as follows:
 .
-.Bl -tag -width Ds
+.Bl -tag -width "-w pass"
 .It Fl N
 Send notifications with
 .Xr notify-send 1 .
@@ -90,17 +89,16 @@ are not provided,
 they will be prompted for.
 .
 .Sh COMMANDS
-Commands may be entered
-as their shortest unique prefix.
+Any unique prefix
+may be used to abbreviate a command.
 A slash followed immediately by a number
 is equivalent to
 .Ic /view .
 .
-.Bl -tag
+.Bl -tag -width Ds
 .It Ic /close
 Close the current view.
-All views after the current one
-are renumbered.
+Later views are renumbered.
 .
 .It Ic /help
 Equivalent to
@@ -126,12 +124,10 @@ Equivalent to
 Change nicknames.
 .
 .It Ic /open Op Ar range
-Open
+.Xr open 1
 .Ar range
 most recent URLs
-appearing in the current view
-with
-.Xr open 1 .
+appearing in the current view.
 .Ar range
 may be a hypen- or comma-separated range
 from the most recent URL,
@@ -141,12 +137,11 @@ The default
 is 1.
 .
 .It Ic /open Ar substring
-Open the most recent URL
+.Xr open 1
+the most recent URL
 appearing in the current view
 matching
-.Ar substring
-with
-.Xr open 1 .
+.Ar substring .
 .
 .It Ic /part
 Leave the current channel.
@@ -169,7 +164,7 @@ or set it to
 .
 .It Ic /url
 Hide the UI and
-list the most recent URLS
+list the most recent URLs
 which appeared in the current view.
 Press
 .Aq Enter
@@ -203,116 +198,126 @@ provides Emacs-like
 line editing keys,
 as well as keys for entering
 IRC formatting codes.
+The prefixes
+.Sy C- ,
+.Sy M-
+and
+.Sy S-
+represent the control, meta and shift modifiers,
+respectively.
+Special keys are enclosed in
+.Aq angle brackets .
 .
 .Ss View Keys
-.Bl -tag
-.It Aq C-l
+.Bl -tag -width <PageDown>
+.It Sy C-l
 Redraw the UI.
 .
-.It Aq M-m
+.It Sy M-m
 Insert a blank line in the view.
 .
-.It Ao M-0 Ac ... Ao M-9 Ac
+.It Sy M-0 .. Sy M-9
 Switch to view by number.
 See
 .Ic /view .
 .
-.It Aq S-Left
+.It Sy S- Ns Aq Sy Left
 Scroll view up by one line.
 .
-.It Aq S-Right
+.It Sy S- Ns Aq Sy Right
 Scroll view down by one line.
 .
-.It Aq PageUp
+.It Aq Sy PageUp
 Scroll view up by half a page.
 .
-.It Aq PageDown
+.It Aq Sy PageDown
 Scroll view down by half a page.
 .El
 .
 .Ss Line Editing
-.Bl -tag
-.It Ao C-b Ac Ao Left Ac
+.Bl -tag -width "C-f, <Right>"
+.It Sy C-b , Aq Sy Left
 Move cursor left.
 .
-.It Ao C-f Ac Ao Right Ac
+.It Sy C-f , Aq Sy Right
 Move cursor right.
 .
-.It Ao C-a Ac Ao Home Ac
+.It Sy C-a , Aq Sy Home
 Move cursor to beginning of line.
 .
-.It Ao C-e Ac Ao End Ac
+.It Sy C-e , Aq Sy End
 Move cursor to end of line.
 .
-.It Aq M-b
+.It Sy M-b
 Move cursor to beginning of word.
 .
-.It Aq M-f
+.It Sy M-f
 Move cursor to end of word.
 .
-.It Aq Backspace
+.It Aq Sy Backspace
 Delete character before cursor.
 .
-.It Ao C-d Ac Ao Delete Ac
+.It Sy C-d , Aq Sy Delete
 Delete character under cursor.
 .
-.It Ao C-w Ac Ao M-Backspace Ac
+.It Sy C-w , Sy M- Ns Aq Sy Backspace
 Delete word before cursor.
 .
-.It Aq M-d
+.It Sy M-d
 Delete word after cursor.
 .
-.It Aq C-k
+.It Sy C-k
 Delete line after cursor.
 .
-.It Aq Tab
+.It Aq Sy Tab
 Cycle through completions
 for commands, nicks and channels.
 .El
 .
 .Ss IRC Formatting
-.Bl -tag
-.It Aq C-n
+.Bl -tag -width Ds
+.It Sy C-n
 Reset formatting.
 .
-.It Aq C-o
+.It Sy C-o
 Toggle bold.
 Note: this may need to be typed as
-.Aq C-v C-o .
+.Sy C-v C-o .
 .
-.It Aq C-t
+.It Sy C-t
 Toggle italic.
 .
-.It Aq C-u
+.It Sy C-u
 Toggle underline.
 .
-.It Aq C-v
+.It Sy C-v
 Toggle reverse video.
 Note: this must usually be typed as
-.Aq C-v C-v .
+.Sy C-v C-v .
 .
-.It Aq C-r
+.It Sy C-r
 Set or reset color.
 .El
 .
 .Pp
 To reset color,
 follow
-.Aq C-r
+.Sy C-r
 by a non-digit.
 To set the foreground color,
 follow
-.Aq C-r
+.Sy C-r
 by one or two digits.
 To set the foreground and background colors,
 follow
-.Aq C-r
+.Sy C-r
 by one or two digits,
 a comma,
 and one or two digits.
 .
 .Pp
 The colors are as follows:
+.Pp
 .Bl -tag -width Ds -compact
 .It 0
 white
@@ -349,7 +354,7 @@ light gray
 .El
 .
 .Sh ENVIRONMENT
-.Bl -tag
+.Bl -tag -width SSH_CLIENT
 .It Ev SSH_CLIENT
 If
 .Fl W
@@ -366,7 +371,7 @@ usually the client IP address.
 .El
 .
 .Sh EXAMPLES
-.Dl catgirl -h ascii.town -j '&catgirl'
+.Dl catgirl -h ascii.town -j '&town'
 .
 .Sh STANDARDS
 .Rs

@@ -14,49 +14,68 @@ use over anonymous SSH.
 .
 .Pp
 It requires LibreSSL
+.Pq Fl ltls
 and targets
 .Fx ,
-.Nx
-and Darwin.
+Darwin,
+.Nx .
+.
+.Ss Build
+On platforms other than
+.Fx ,
+copy the appropriate file to
+.Pa config.mk
+and modify as needed.
+The default install
+.Ev PREFIX
+is
+.Pa ~/.local .
+.
+.Pp
+.Bd -literal -offset indent
+cp $(uname).mk config.mk
+make
+make install
+.Ed
 .
 .Sh FILES
 .Bl -tag -width sandman.m -compact
 .It Pa chat.h
-Shared state and function prototypes
+shared state and function prototypes
 .It Pa chat.c
-Command line parsing
+command line parsing
 .It Pa event.c
-Event loop and process spawning
+event loop and process spawning
 .It Pa tag.c
-Tag (channel, query) ID assignment
+tag (channel, query) ID assignment
 .It Pa handle.c
-Incoming command handling
+incoming command handling
 .It Pa input.c
-Input command handling
+input command handling
 .It Pa irc.c
 TLS client connection
 .It Pa format.c
 IRC formatting
 .It Pa ui.c
-Curses UI
+cursed UI
 .It Pa term.c
-Terminal features unsupported by curses
+terminal features unsupported by curses
 .It Pa edit.c
-Line editing
+line editing
 .It Pa tab.c
-Tab-complete
+tab-complete
 .It Pa url.c
 URL detection
 .It Pa pls.c
-Functions which should not have to be written
+functions which should not have to be written
 .It Pa sandman.m
-Utility for Darwin to signal sleep
+utility for Darwin to signal sleep
 .El
 .
 .Pp
 .Bl -tag -width sshd_config -compact
 .It Pa sshd_config
-Anonymous SSH configuration
+anonymous SSH configuration
 .It Pa man.sh
 .Xr man 1
 implementation for chroot
@@ -65,3 +84,8 @@ implementation for chroot
 .Sh SEE ALSO
 .Xr catgirl 1 ,
 .Xr sandman 1
+.
+.Sh BUGS
+The UI is currently broken with
+.Nx Ap s
+curses implementation.

@@ -1,6 +1,6 @@
-.Dd November 30, 2018
+.Dd December 2, 2018
 .Dt SANDMAN 1
-.Os "Causal Agency"
+.Os
 .
 .Sh NAME
 .Nm sandman
@@ -13,16 +13,15 @@
 .Sh DESCRIPTION
 .Nm
 is a utility for Darwin systems.
-.Nm
-runs the
+It runs the
 .Ar command
-in a child process
+as a child process
 and sends it
 .Dv SIGTSTP
 and
 .Dv SIGCONT
 signals
-when the computer goes to sleep
+when the system goes to sleep
 and wakes from sleep,
 respectively.
 .
