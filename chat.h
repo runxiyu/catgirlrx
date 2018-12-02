@@ -44,6 +44,7 @@ void selfJoin(const char *join);
 
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
+void eventQuit(void);
 noreturn void eventLoop(void);
 
 struct Tag {
@@ -103,14 +104,14 @@ void inputTab(void);
 
 void ircInit(char *host, char *port, char *pass, char *webPass);
 int ircConnect(void);
-void ircDisconnect(const char *quit);
-void ircRead(void);
+bool ircRead(void);
 void ircWrite(const char *ptr, size_t len);
 void ircFmt(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 void uiInit(void);
+void uiShow(void);
 void uiHide(void);
-void uiExit(void);
+noreturn void uiExit(void);
 void uiDraw(void);
 void uiRead(void);
 void uiPrompt(void);

@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 #include <string.h>
 #include <sysexits.h>
 #include <wchar.h>
@@ -81,9 +82,10 @@ static struct {
 	struct View *view;
 } ui;
 
-static void uiShow(void) {
+void uiShow(void) {
 	ui.hide = false;
 	termMode(TermFocus, true);
+	uiDraw();
 }
 
 void uiHide(void) {
@@ -109,12 +111,13 @@ void uiInit(void) {
 	uiViewTag(TagStatus);
 }
 
-void uiExit(void) {
+noreturn void uiExit(void) {
 	uiHide();
 	printf(
 		"This program is AGPLv3 Free Software!\n"
 		"The source is available at <" SOURCE_URL ">.\n"
 	);
+	exit(EX_OK);
 }
 
 static int lastLine(void) {
@@ -557,7 +560,6 @@ void uiPrompt(void) {
 }
 
 void uiRead(void) {
-	uiShow();
 	int ret;
 	wint_t ch;
 	while (ERR != (ret = wget_wch(ui.input, &ch))) {

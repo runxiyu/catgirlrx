@@ -110,6 +110,7 @@ static void inputQuit(struct Tag tag, char *params) {
 	} else {
 		ircFmt("QUIT :Goodbye\r\n");
 	}
+	eventQuit();
 }
 
 static void inputURL(struct Tag tag, char *params) {

@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
@@ -30,10 +31,19 @@
 #include "chat.h"
 
 static struct {
+	bool quit;
 	bool wait;
-	bool pipe;
-	int fd;
-} spawn;
+	bool susp;
+	int irc;
+	int pipe;
+} event = {
+	.irc = -1,
+	.pipe = -1,
+};
+
+void eventQuit(void) {
+	event.quit = true;
+}
 
 void eventWait(const char *argv[static 2]) {
 	uiHide();
@@ -43,11 +53,27 @@ void eventWait(const char *argv[static 2]) {
 		execvp(argv[0], (char *const *)argv);
 		err(EX_CONFIG, "%s", argv[0]);
 	}
-	spawn.wait = true;
+	event.wait = true;
+}
+
+static void childWait(void) {
+	uiShow();
+	int status;
+	pid_t pid = wait(&status);
+	if (pid < 0) err(EX_OSERR, "wait");
+	if (WIFEXITED(status) && WEXITSTATUS(status)) {
+		uiFmt(TagStatus, UIHot, "event: exit %d", WEXITSTATUS(status));
+	} else if (WIFSIGNALED(status)) {
+		uiFmt(
+			TagStatus, UIHot,
+			"event: signal %s", strsignal(WTERMSIG(status))
+		);
+	}
+	event.wait = false;
 }
 
 void eventPipe(const char *argv[static 2]) {
-	if (spawn.pipe) {
+	if (event.pipe > 0) {
 		uiLog(TagStatus, UIHot, L"event: existing pipe");
 		return;
 	}
@@ -70,40 +96,21 @@ void eventPipe(const char *argv[static 2]) {
 	}
 
 	close(rw[1]);
-	spawn.fd = rw[0];
-	spawn.pipe = true;
+	event.pipe = rw[0];
 }
 
 static void pipeRead(void) {
 	char buf[256];
-	ssize_t len = read(spawn.fd, buf, sizeof(buf) - 1);
+	ssize_t len = read(event.pipe, buf, sizeof(buf) - 1);
 	if (len < 0) err(EX_IOERR, "read");
 	if (len) {
 		buf[len] = '\0';
-		len = strcspn(buf, "\n");
-		uiFmt(TagStatus, UIHot, "event: %.*s", (int)len, buf);
+		buf[strcspn(buf, "\n")] = '\0';
+		uiFmt(TagStatus, UIHot, "event: %s", buf);
 	} else {
-		close(spawn.fd);
-		spawn.pipe = false;
+		close(event.pipe);
+		event.pipe = -1;
 	}
-}
-
-static void handleChild(void) {
-	int status;
-	pid_t pid = wait(&status);
-	if (pid < 0) err(EX_OSERR, "wait");
-	if (WIFEXITED(status) && WEXITSTATUS(status)) {
-		uiFmt(TagStatus, UIHot, "event: exit %d", WEXITSTATUS(status));
-	} else if (WIFSIGNALED(status)) {
-		uiFmt(TagStatus, UIHot, "event: signal %d", WTERMSIG(status));
-	}
-	spawn.wait = false;
-}
-
-static void handleInterrupt(void) {
-	input(TagStatus, "/quit");
-	uiExit();
-	exit(EX_OK);
 }
 
 static sig_atomic_t sig[NSIG];
@@ -114,43 +121,47 @@ static void handler(int n) {
 noreturn void eventLoop(void) {
 	sigset_t mask;
 	sigemptyset(&mask);
-	struct sigaction sa = {
+	struct sigaction action = {
 		.sa_handler = handler,
 		.sa_mask = mask,
-		.sa_flags = SA_RESTART,
+		.sa_flags = SA_RESTART | SA_NOCLDSTOP,
 	};
-	sigaction(SIGCHLD, &sa, NULL);
-	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGCHLD, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGTSTP, &action, NULL);
 
 	struct sigaction curses;
-	sigaction(SIGWINCH, &sa, &curses);
+	sigaction(SIGWINCH, &action, &curses);
 	assert(!(curses.sa_flags & SA_SIGINFO));
 
-	int irc = ircConnect();
-
-	struct pollfd fds[3] = {
-		{ irc, POLLIN, 0 },
-		{ STDIN_FILENO, POLLIN, 0 },
-		{ -1, POLLIN, 0 },
-	};
+	event.irc = ircConnect();
 	for (;;) {
-		if (sig[SIGCHLD]) handleChild();
-		if (sig[SIGINT]) handleInterrupt();
+		if (sig[SIGCHLD]) childWait();
+		if (sig[SIGINT]) {
+			signal(SIGINT, SIG_DFL);
+			ircFmt("QUIT :Goodbye\r\n");
+			event.quit = true;
+		}
+		if (sig[SIGTSTP]) {
+			signal(SIGTSTP, SIG_DFL);
+			ircFmt("QUIT :zzz\r\n");
+			event.susp = true;
+		}
 		if (sig[SIGWINCH]) {
 			curses.sa_handler(SIGWINCH);
 			uiRead();
-			uiDraw();
 		}
-		sig[SIGCHLD] = 0;
-		sig[SIGINT] = 0;
-		sig[SIGWINCH] = 0;
+		sig[SIGCHLD] = sig[SIGINT] = sig[SIGTSTP] = sig[SIGWINCH] = 0;
 
-		nfds_t nfds = 2;
-		if (spawn.wait) nfds = 1;
-		if (spawn.pipe) {
-			fds[2].fd = spawn.fd;
-			nfds = 3;
-		}
+		nfds_t nfds = 0;
+		struct pollfd fds[3] = {
+			{ .events = POLLIN },
+			{ .events = POLLIN },
+			{ .events = POLLIN },
+		};
+		if (!event.wait) fds[nfds++].fd = STDIN_FILENO;
+		if (event.irc > 0) fds[nfds++].fd = event.irc;
+		if (event.pipe > 0) fds[nfds++].fd = event.pipe;
 
 		int ready = poll(fds, nfds, -1);
 		if (ready < 0) {
@@ -158,10 +169,25 @@ noreturn void eventLoop(void) {
 			err(EX_IOERR, "poll");
 		}
 
-		if (fds[0].revents) ircRead();
-		if (nfds > 1 && fds[1].revents) uiRead();
-		if (nfds > 2 && fds[2].revents) pipeRead();
-
-		if (nfds > 1) uiDraw();
+		for (nfds_t i = 0; i < nfds; ++i) {
+			if (!fds[i].revents) continue;
+			if (fds[i].fd == STDIN_FILENO) uiRead();
+			if (fds[i].fd == event.pipe) pipeRead();
+			if (fds[i].fd == event.irc) {
+				if (ircRead()) continue;
+				event.irc = -1;
+				// TODO: Handle unintended disconnects.
+				if (event.quit) uiExit();
+				if (event.susp) {
+					uiHide();
+					raise(SIGTSTP);
+					sigaction(SIGTSTP, &action, NULL);
+					uiShow();
+					event.irc = ircConnect();
+					event.susp = false;
+				}
+			}
+		}
+		uiDraw();
 	}
 }

@@ -19,6 +19,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -103,25 +104,14 @@ int ircConnect(void) {
 		);
 	}
 
+	/// FIXME
+	if (self.user[0] == '~') selfUser(&self.user[1]);
+
 	if (irc.pass) ircFmt("PASS :%s\r\n", irc.pass);
-	ircFmt(
-		"NICK %s\r\n"
-		"USER %s 0 * :%s\r\n",
-		self.nick, self.user, self.nick
-	);
+	ircFmt("NICK %s\r\n", self.nick);
+	ircFmt("USER %s 0 * :%s\r\n", self.user, self.nick);
 
 	return irc.sock;
-}
-
-void ircDisconnect(const char *quit) {
-	// TODO: Wait for response, send quit to UI.
-	ircFmt("QUIT :%s\r\n", quit);
-
-	int error = tls_close(irc.client);
-	if (error) errx(EX_IOERR, "tls_close: %s", tls_error(irc.client));
-
-	error = close(irc.sock);
-	if (error) err(EX_IOERR, "close");
 }
 
 void ircWrite(const char *ptr, size_t len) {
@@ -151,15 +141,23 @@ void ircFmt(const char *format, ...) {
 	free(buf);
 }
 
-void ircRead(void) {
+static void disconnect(void) {
+	int error = tls_close(irc.client);
+	if (error) errx(EX_IOERR, "tls_close: %s", tls_error(irc.client));
+	error = close(irc.sock);
+	if (error) err(EX_IOERR, "close");
+}
+
+bool ircRead(void) {
 	static char buf[4096];
 	static size_t len;
 
 	ssize_t read = tls_read(irc.client, &buf[len], sizeof(buf) - len);
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(irc.client));
 	if (!read) {
-		uiExit();
-		exit(EX_OK);
+		disconnect();
+		len = 0;
+		return false;
 	}
 	len += read;
 
@@ -178,4 +176,5 @@ void ircRead(void) {
 
 	len -= line - buf;
 	memmove(buf, line, len);
+	return true;
 }
