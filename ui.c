@@ -560,6 +560,7 @@ void uiPrompt(void) {
 }
 
 void uiRead(void) {
+	if (ui.hide) uiShow();
 	int ret;
 	wint_t ch;
 	while (ERR != (ret = wget_wch(ui.input, &ch))) {
