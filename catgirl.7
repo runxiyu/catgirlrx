@@ -1,4 +1,4 @@
-.Dd November 28, 2018
+.Dd December 2, 2018
 .Dt CATGIRL 7
 .Os "Causal Agency"
 .
@@ -20,7 +20,7 @@ and targets
 and Darwin.
 .
 .Sh FILES
-.Bl -tag -width format.c -compact
+.Bl -tag -width sandman.m -compact
 .It Pa chat.h
 Shared state and function prototypes
 .It Pa chat.c
@@ -49,6 +49,8 @@ Tab-complete
 URL detection
 .It Pa pls.c
 Functions which should not have to be written
+.It Pa sandman.m
+Utility for Darwin to signal sleep
 .El
 .
 .Pp
@@ -61,4 +63,5 @@ implementation for chroot
 .El
 .
 .Sh SEE ALSO
-.Xr catgirl 1
+.Xr catgirl 1 ,
+.Xr sandman 1
