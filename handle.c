@@ -118,7 +118,7 @@ static void handleReplyWelcome(char *prefix, char *params) {
 	if (self.join) ircFmt("JOIN %s\r\n", self.join);
 	tabTouch(TagStatus, self.nick);
 
-	uiLog(TagStatus, UIWarm, L"You have arrived");
+	uiLog(TagStatus, UICold, L"You have arrived");
 }
 
 static void handleReplyMOTD(char *prefix, char *params) {

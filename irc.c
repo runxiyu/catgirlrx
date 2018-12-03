@@ -63,7 +63,7 @@ int ircConnect(void) {
 	error = tls_configure(irc.client, irc.config);
 	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(irc.client));
 
-	uiFmt(TagStatus, UIWarm, "Traveling to %s", irc.host);
+	uiFmt(TagStatus, UICold, "Traveling to %s", irc.host);
 
 	struct addrinfo *head;
 	struct addrinfo hints = {
