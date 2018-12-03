@@ -109,6 +109,7 @@ void uiInit(void) {
 	nodelay(ui.input, true);
 
 	uiViewTag(TagStatus);
+	uiShow();
 }
 
 noreturn void uiExit(void) {

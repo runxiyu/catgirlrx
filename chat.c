@@ -75,7 +75,6 @@ int main(int argc, char *argv[]) {
 
 	inputTab();
 	uiInit();
-	uiDraw();
 	ircInit();
 	eventLoop();
 }
