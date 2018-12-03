@@ -66,11 +66,6 @@ static void parse(
 	va_end(ap);
 }
 
-static bool isSelf(const char *user) {
-	if (!user) return false;
-	return !strcmp(user, self.user);
-}
-
 static bool isPing(const char *mesg) {
 	size_t len = strlen(self.nick);
 	const char *match = mesg;
@@ -193,7 +188,7 @@ static void handleJoin(char *prefix, char *params) {
 	parse(prefix, &nick, &user, NULL, params, 1, 0, &chan);
 	struct Tag tag = tagFor(chan);
 
-	if (isSelf(user)) {
+	if (!strcmp(nick, self.nick)) {
 		tabTouch(TagNone, chan);
 		uiViewTag(tag);
 		logReplay(tag);
@@ -213,7 +208,7 @@ static void handlePart(char *prefix, char *params) {
 	parse(prefix, &nick, &user, NULL, params, 1, 1, &chan, &mesg);
 	struct Tag tag = tagFor(chan);
 
-	if (isSelf(user)) {
+	if (!strcmp(nick, self.nick)) {
 		tabClear(tag);
 	} else {
 		tabRemove(tag, nick);
@@ -317,7 +312,7 @@ static void handleTopic(char *prefix, char *params) {
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &topic);
 	struct Tag tag = tagFor(chan);
 
-	if (!isSelf(user)) tabTouch(tag, nick);
+	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 
 	urlScan(tag, topic);
 	uiFmt(
@@ -376,7 +371,7 @@ static void handleNick(char *prefix, char *params) {
 	char *prev, *user, *next;
 	parse(prefix, &prev, &user, NULL, params, 1, 0, &next);
 
-	if (isSelf(user)) {
+	if (!strcmp(prev, self.nick)) {
 		free(self.nick);
 		self.nick = strdup(next);
 		if (!self.nick) err(EX_OSERR, "strdup");
@@ -402,10 +397,10 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 	char *params = strsep(&mesg, "\1");
 	if (strcmp(ctcp, "ACTION")) return;
 
-	if (!isSelf(user)) tabTouch(tag, nick);
+	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 
 	urlScan(tag, params);
-	bool ping = !isSelf(user) && isPing(params);
+	bool ping = strcmp(nick, self.nick) && isPing(params);
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d* %s\17 %s",
@@ -424,16 +419,16 @@ static void handlePrivmsg(char *prefix, char *params) {
 		return;
 	}
 
-	bool self = isSelf(user);
-	if (!self) tabTouch(tag, nick);
+	bool me = !strcmp(nick, self.nick);
+	if (!me) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
-	bool hot = !self && (direct || isPing(mesg));
-	bool ping = !self && isPing(mesg);
+	bool hot = !me && (direct || isPing(mesg));
+	bool ping = !me && isPing(mesg);
 	uiFmt(
 		tag, (hot ? UIHot : UIWarm),
 		"%c\3%d%c%s%c\17 %s",
-		ping["\17\26"], formatColor(user), self["<("], nick, self[">)"], mesg
+		ping["\17\26"], formatColor(user), me["<("], nick, me[">)"], mesg
 	);
 	logFmt(tag, NULL, "<%s> %s", nick, mesg);
 }
@@ -444,10 +439,10 @@ static void handleNotice(char *prefix, char *params) {
 	struct Tag tag = TagStatus;
 	if (user) tag = (strcmp(chan, self.nick) ? tagFor(chan) : tagFor(nick));
 
-	if (!isSelf(user)) tabTouch(tag, nick);
+	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
-	bool ping = !isSelf(user) && isPing(mesg);
+	bool ping = strcmp(nick, self.nick) && isPing(mesg);
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d-%s-\17 %s",
