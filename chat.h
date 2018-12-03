@@ -31,7 +31,10 @@
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
 struct {
+	char *host;
 	char *port;
+	char *pass;
+	char *webp;
 	char *nick;
 	char *user;
 	char *real;
@@ -103,7 +106,7 @@ void handle(char *line);
 void input(struct Tag tag, char *line);
 void inputTab(void);
 
-void ircInit(char *host, char *port, char *pass, char *webPass);
+void ircInit(void);
 int ircConnect(void);
 bool ircRead(void);
 void ircWrite(const char *ptr, size_t len);

@@ -31,23 +31,14 @@
 #include "chat.h"
 
 static struct {
-	char *host;
-	char *port;
-	char *pass;
-	char *webirc;
-	int sock;
 	struct tls_config *config;
 	struct tls *client;
+	int sock;
 } irc = {
 	.sock = -1,
 };
 
-void ircInit(char *host, char *port, char *pass, char *webirc) {
-	irc.host = host;
-	irc.port = port;
-	irc.pass = pass;
-	irc.webirc = webirc;
-
+void ircInit(void) {
 	irc.config = tls_config_new();
 	int error = tls_config_set_ciphers(irc.config, "compat");
 	if (error) errx(EX_SOFTWARE, "tls_config");
@@ -63,7 +54,7 @@ int ircConnect(void) {
 	error = tls_configure(irc.client, irc.config);
 	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(irc.client));
 
-	uiFmt(TagStatus, UICold, "Traveling to %s", irc.host);
+	uiFmt(TagStatus, UICold, "Traveling to %s", self.host);
 
 	struct addrinfo *head;
 	struct addrinfo hints = {
@@ -71,7 +62,7 @@ int ircConnect(void) {
 		.ai_socktype = SOCK_STREAM,
 		.ai_protocol = IPPROTO_TCP,
 	};
-	error = getaddrinfo(irc.host, irc.port, &hints, &head);
+	error = getaddrinfo(self.host, self.port, &hints, &head);
 	if (error) errx(EX_NOHOST, "getaddrinfo: %s", gai_strerror(error));
 
 	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
@@ -90,24 +81,24 @@ int ircConnect(void) {
 	error = fcntl(irc.sock, F_SETFD, FD_CLOEXEC);
 	if (error) err(EX_IOERR, "fcntl");
 
-	error = tls_connect_socket(irc.client, irc.sock, irc.host);
+	error = tls_connect_socket(irc.client, irc.sock, self.host);
 	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(irc.client));
 
 	const char *ssh = getenv("SSH_CLIENT");
-	if (irc.webirc && ssh) {
+	if (self.webp && ssh) {
 		int len = strlen(ssh);
 		const char *sp = strchr(ssh, ' ');
 		if (sp) len = sp - ssh;
 		ircFmt(
 			"WEBIRC %s %s %.*s %.*s\r\n",
-			irc.webirc, self.user, len, ssh, len, ssh
+			self.webp, self.user, len, ssh, len, ssh
 		);
 	}
 
 	/// FIXME
 	if (self.user[0] == '~') selfUser(&self.user[1]);
 
-	if (irc.pass) ircFmt("PASS :%s\r\n", irc.pass);
+	if (self.pass) ircFmt("PASS :%s\r\n", self.pass);
 	ircFmt("NICK %s\r\n", self.nick);
 	ircFmt("USER %s 0 * :%s\r\n", self.user, self.real);
 

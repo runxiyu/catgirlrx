@@ -56,38 +56,33 @@ static char *prompt(const char *prompt) {
 }
 
 int main(int argc, char *argv[]) {
-	char *host = NULL;
-	char *port = "6697";
-	char *pass = NULL;
-	char *webirc = NULL;
-
 	int opt;
 	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
-			break; case 'W': webirc = strdup(optarg);
-			break; case 'h': host = strdup(optarg);
+			break; case 'W': freedup(&self.webp, optarg);
+			break; case 'h': freedup(&self.host, optarg);
 			break; case 'j': freedup(&self.join, optarg);
 			break; case 'l': logOpen(optarg);
-			break; case 'n': selfNick(optarg);
-			break; case 'p': port = strdup(optarg);
+			break; case 'n': freedup(&self.nick, optarg);
+			break; case 'p': freedup(&self.port, optarg);
 			break; case 'r': freedup(&self.real, optarg);
-			break; case 'u': selfUser(optarg);
+			break; case 'u': freedup(&self.user, optarg);
 			break; case 'v': self.verbose = true;
-			break; case 'w': pass = strdup(optarg);
+			break; case 'w': freedup(&self.pass, optarg);
 			break; default:  return EX_USAGE;
 		}
 	}
-	if (!port) err(EX_OSERR, "strdup");
 
-	if (!host) host = prompt("Host: ");
+	if (!self.host) self.host = prompt("Host: ");
+	if (!self.port) freedup(&self.port, "6697");
 	if (!self.nick) self.nick = prompt("Name: ");
-	if (!self.user) selfUser(self.nick);
+	if (!self.user) freedup(&self.user, self.nick);
 	if (!self.real) freedup(&self.real, self.nick);
 
 	inputTab();
 	uiInit();
 	uiDraw();
-	ircInit(host, port, pass, webirc);
+	ircInit();
 	eventLoop();
 }
