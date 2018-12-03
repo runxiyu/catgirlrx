@@ -31,8 +31,10 @@
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
 struct {
+	char *port;
 	char *nick;
 	char *user;
+	char *real;
 	char *join;
 	bool verbose;
 	bool notify;
@@ -40,7 +42,6 @@ struct {
 
 void selfNick(const char *nick);
 void selfUser(const char *user);
-void selfJoin(const char *join);
 
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);

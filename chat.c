@@ -25,20 +25,17 @@
 
 #include "chat.h"
 
+static void freedup(char **field, const char *str) {
+	free(*field);
+	*field = strdup(str);
+	if (!*field) err(EX_OSERR, "strdup");
+}
+
 void selfNick(const char *nick) {
-	free(self.nick);
-	self.nick = strdup(nick);
-	if (!self.nick) err(EX_OSERR, "strdup");
+	freedup(&self.nick, nick);
 }
 void selfUser(const char *user) {
-	free(self.user);
-	self.user = strdup(user);
-	if (!self.user) err(EX_OSERR, "strdup");
-}
-void selfJoin(const char *join) {
-	free(self.join);
-	self.join = strdup(join);
-	if (!self.join) err(EX_OSERR, "strdup");
+	freedup(&self.user, user);
 }
 
 static char *prompt(const char *prompt) {
@@ -65,15 +62,16 @@ int main(int argc, char *argv[]) {
 	char *webirc = NULL;
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:u:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
 			break; case 'W': webirc = strdup(optarg);
 			break; case 'h': host = strdup(optarg);
-			break; case 'j': selfJoin(optarg);
+			break; case 'j': freedup(&self.join, optarg);
 			break; case 'l': logOpen(optarg);
 			break; case 'n': selfNick(optarg);
 			break; case 'p': port = strdup(optarg);
+			break; case 'r': freedup(&self.real, optarg);
 			break; case 'u': selfUser(optarg);
 			break; case 'v': self.verbose = true;
 			break; case 'w': pass = strdup(optarg);
@@ -85,6 +83,7 @@ int main(int argc, char *argv[]) {
 	if (!host) host = prompt("Host: ");
 	if (!self.nick) self.nick = prompt("Name: ");
 	if (!self.user) selfUser(self.nick);
+	if (!self.real) freedup(&self.real, self.nick);
 
 	inputTab();
 	uiInit();

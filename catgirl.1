@@ -15,6 +15,7 @@
 .Op Fl l Ar path
 .Op Fl n Ar nick
 .Op Fl p Ar port
+.Op Fl r Ar real
 .Op Fl u Ar user
 .Op Fl w Ar pass
 .
@@ -63,6 +64,12 @@ Set nickname to
 Connect to
 .Ar port .
 The default port is 6697.
+.
+.It Fl r Ar real
+Set realname to
+.Ar real .
+The default realname is
+the same as the nickname.
 .
 .It Fl u Ar user
 Set username to

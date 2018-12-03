@@ -109,7 +109,7 @@ int ircConnect(void) {
 
 	if (irc.pass) ircFmt("PASS :%s\r\n", irc.pass);
 	ircFmt("NICK %s\r\n", self.nick);
-	ircFmt("USER %s 0 * :%s\r\n", self.user, self.nick);
+	ircFmt("USER %s 0 * :%s\r\n", self.user, self.real);
 
 	return irc.sock;
 }
