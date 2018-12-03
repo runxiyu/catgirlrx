@@ -95,9 +95,6 @@ int ircConnect(void) {
 		);
 	}
 
-	/// FIXME
-	if (self.user[0] == '~') selfUser(&self.user[1]);
-
 	if (self.pass) ircFmt("PASS :%s\r\n", self.pass);
 	ircFmt("NICK %s\r\n", self.nick);
 	ircFmt("USER %s 0 * :%s\r\n", self.user, self.real);

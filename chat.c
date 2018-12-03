@@ -25,17 +25,10 @@
 
 #include "chat.h"
 
-static void freedup(char **field, const char *str) {
-	free(*field);
-	*field = strdup(str);
-	if (!*field) err(EX_OSERR, "strdup");
-}
-
-void selfNick(const char *nick) {
-	freedup(&self.nick, nick);
-}
-void selfUser(const char *user) {
-	freedup(&self.user, user);
+static char *dupe(const char *str) {
+	char *dup = strdup(str);
+	if (!dup) err(EX_OSERR, "strdup");
+	return dup;
 }
 
 static char *prompt(const char *prompt) {
@@ -60,25 +53,25 @@ int main(int argc, char *argv[]) {
 	while (0 < (opt = getopt(argc, argv, "NW:h:j:l:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
-			break; case 'W': freedup(&self.webp, optarg);
-			break; case 'h': freedup(&self.host, optarg);
-			break; case 'j': freedup(&self.join, optarg);
+			break; case 'W': self.webp = dupe(optarg);
+			break; case 'h': self.host = dupe(optarg);
+			break; case 'j': self.join = dupe(optarg);
 			break; case 'l': logOpen(optarg);
-			break; case 'n': freedup(&self.nick, optarg);
-			break; case 'p': freedup(&self.port, optarg);
-			break; case 'r': freedup(&self.real, optarg);
-			break; case 'u': freedup(&self.user, optarg);
+			break; case 'n': self.nick = dupe(optarg);
+			break; case 'p': self.port = dupe(optarg);
+			break; case 'r': self.real = dupe(optarg);
+			break; case 'u': self.user = dupe(optarg);
 			break; case 'v': self.verbose = true;
-			break; case 'w': freedup(&self.pass, optarg);
+			break; case 'w': self.pass = dupe(optarg);
 			break; default:  return EX_USAGE;
 		}
 	}
 
 	if (!self.host) self.host = prompt("Host: ");
-	if (!self.port) freedup(&self.port, "6697");
+	if (!self.port) self.port = dupe("6697");
 	if (!self.nick) self.nick = prompt("Name: ");
-	if (!self.user) freedup(&self.user, self.nick);
-	if (!self.real) freedup(&self.real, self.nick);
+	if (!self.user) self.user = dupe(self.nick);
+	if (!self.real) self.real = dupe(self.nick);
 
 	inputTab();
 	uiInit();

@@ -34,7 +34,7 @@ static char *paramField(char **params) {
 	return strsep(params, " ");
 }
 
-static void shift(
+static void parse(
 	char *prefix, char **nick, char **user, char **host,
 	char *params, size_t req, size_t opt, /* (char **) */ ...
 ) {
@@ -43,7 +43,7 @@ static void shift(
 		field = strsep(&prefix, "!");
 		if (nick) *nick = field;
 		field = strsep(&prefix, "@");
-		if (user) *user = field;
+		if (user) *user = (field && field[0] == '~' ? &field[1] : field);
 		if (host) *host = prefix;
 	}
 
@@ -66,13 +66,9 @@ static void shift(
 	va_end(ap);
 }
 
-static bool isSelf(const char *nick, const char *user) {
+static bool isSelf(const char *user) {
 	if (!user) return false;
-	if (!strcmp(nick, self.nick)) {
-		if (strcmp(user, self.user)) selfUser(user);
-		return true;
-	}
-	return false;
+	return !strcmp(user, self.user);
 }
 
 static bool isPing(const char *mesg) {
@@ -105,16 +101,20 @@ static void handlePing(char *prefix, char *params) {
 
 static void handleErrorErroneousNickname(char *prefix, char *params) {
 	char *mesg;
-	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
 	uiFmt(TagStatus, UIHot, "You can't use that name here: \"%s\"", mesg);
 	uiLog(TagStatus, UICold, L"Type /nick <name> to choose a new one");
 }
 
 static void handleReplyWelcome(char *prefix, char *params) {
 	char *nick;
-	shift(prefix, NULL, NULL, NULL, params, 1, 0, &nick);
+	parse(prefix, NULL, NULL, NULL, params, 1, 0, &nick);
 
-	if (strcmp(nick, self.nick)) selfNick(nick);
+	if (strcmp(nick, self.nick)) {
+		free(self.nick);
+		self.nick = strdup(nick);
+		if (!self.nick) err(EX_OSERR, "strdup");
+	}
 	if (self.join) ircFmt("JOIN %s\r\n", self.join);
 	tabTouch(TagStatus, self.nick);
 
@@ -123,7 +123,7 @@ static void handleReplyWelcome(char *prefix, char *params) {
 
 static void handleReplyMOTD(char *prefix, char *params) {
 	char *mesg;
-	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &mesg);
+	parse(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &mesg);
 	if (mesg[0] == '-' && mesg[1] == ' ') mesg = &mesg[2];
 
 	urlScan(TagStatus, mesg);
@@ -133,11 +133,11 @@ static void handleReplyMOTD(char *prefix, char *params) {
 static enum IRCColor whoisColor;
 static void handleReplyWhoisUser(char *prefix, char *params) {
 	char *nick, *user, *host, *real;
-	shift(
+	parse(
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &nick, &user, &host, NULL, &real
 	);
-	whoisColor = formatColor(user);
+	whoisColor = formatColor(user[0] == '~' ? &user[1] : user);
 	uiFmt(
 		TagStatus, UIWarm,
 		"\3%d%s\3 is %s@%s, \"%s\"",
@@ -147,7 +147,7 @@ static void handleReplyWhoisUser(char *prefix, char *params) {
 
 static void handleReplyWhoisServer(char *prefix, char *params) {
 	char *nick, *serv, *info;
-	shift(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &serv, &info);
+	parse(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &serv, &info);
 	uiFmt(
 		TagStatus, UIWarm,
 		"\3%d%s\3 is connected to %s, \"%s\"",
@@ -157,13 +157,13 @@ static void handleReplyWhoisServer(char *prefix, char *params) {
 
 static void handleReplyWhoisOperator(char *prefix, char *params) {
 	char *nick, *oper;
-	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &oper);
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &oper);
 	uiFmt(TagStatus, UIWarm, "\3%d%s\3 %s", whoisColor, nick, oper);
 }
 
 static void handleReplyWhoisIdle(char *prefix, char *params) {
 	char *nick, *idle, *sign;
-	shift(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &idle, &sign);
+	parse(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &nick, &idle, &sign);
 	time_t time = strtoul(sign, NULL, 10);
 	const char *at = ctime(&time);
 	unsigned long secs  = strtoul(idle, NULL, 10);
@@ -178,22 +178,22 @@ static void handleReplyWhoisIdle(char *prefix, char *params) {
 
 static void handleReplyWhoisChannels(char *prefix, char *params) {
 	char *nick, *chans;
-	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &chans);
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &chans);
 	uiFmt(TagStatus, UIWarm, "\3%d%s\3 is in %s", whoisColor, nick, chans);
 }
 
 static void handleErrorNoSuchNick(char *prefix, char *params) {
 	char *nick, *mesg;
-	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &mesg);
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &nick, &mesg);
 	uiFmt(TagStatus, UIWarm, "%s, \"%s\"", mesg, nick);
 }
 
 static void handleJoin(char *prefix, char *params) {
 	char *nick, *user, *chan;
-	shift(prefix, &nick, &user, NULL, params, 1, 0, &chan);
+	parse(prefix, &nick, &user, NULL, params, 1, 0, &chan);
 	struct Tag tag = tagFor(chan);
 
-	if (isSelf(nick, user)) {
+	if (isSelf(user)) {
 		tabTouch(TagNone, chan);
 		uiViewTag(tag);
 		logReplay(tag);
@@ -210,10 +210,10 @@ static void handleJoin(char *prefix, char *params) {
 
 static void handlePart(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
-	shift(prefix, &nick, &user, NULL, params, 1, 1, &chan, &mesg);
+	parse(prefix, &nick, &user, NULL, params, 1, 1, &chan, &mesg);
 	struct Tag tag = tagFor(chan);
 
-	if (isSelf(nick, user)) {
+	if (isSelf(user)) {
 		tabClear(tag);
 	} else {
 		tabRemove(tag, nick);
@@ -239,7 +239,7 @@ static void handlePart(char *prefix, char *params) {
 
 static void handleKick(char *prefix, char *params) {
 	char *nick, *user, *chan, *kick, *mesg;
-	shift(prefix, &nick, &user, NULL, params, 2, 1, &chan, &kick, &mesg);
+	parse(prefix, &nick, &user, NULL, params, 2, 1, &chan, &kick, &mesg);
 	struct Tag tag = tagFor(chan);
 	bool kicked = !strcmp(kick, self.nick);
 
@@ -277,7 +277,7 @@ static void handleKick(char *prefix, char *params) {
 
 static void handleQuit(char *prefix, char *params) {
 	char *nick, *user, *mesg;
-	shift(prefix, &nick, &user, NULL, params, 0, 1, &mesg);
+	parse(prefix, &nick, &user, NULL, params, 0, 1, &mesg);
 
 	struct Tag tag;
 	while (TagNone.id != (tag = tabTag(nick)).id) {
@@ -300,7 +300,7 @@ static void handleQuit(char *prefix, char *params) {
 
 static void handleReplyTopic(char *prefix, char *params) {
 	char *chan, *topic;
-	shift(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &chan, &topic);
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &chan, &topic);
 	struct Tag tag = tagFor(chan);
 
 	urlScan(tag, topic);
@@ -314,10 +314,10 @@ static void handleReplyTopic(char *prefix, char *params) {
 
 static void handleTopic(char *prefix, char *params) {
 	char *nick, *user, *chan, *topic;
-	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &topic);
+	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &topic);
 	struct Tag tag = tagFor(chan);
 
-	if (!isSelf(nick, user)) tabTouch(tag, nick);
+	if (!isSelf(user)) tabTouch(tag, nick);
 
 	urlScan(tag, topic);
 	uiFmt(
@@ -330,7 +330,7 @@ static void handleTopic(char *prefix, char *params) {
 
 static void handleReplyEndOfNames(char *prefix, char *params) {
 	char *chan;
-	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
+	parse(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
 	ircFmt("WHO %s\r\n", chan);
 }
 
@@ -341,10 +341,11 @@ static struct {
 
 static void handleReplyWho(char *prefix, char *params) {
 	char *chan, *user, *nick;
-	shift(
+	parse(
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &chan, &user, NULL, NULL, &nick
 	);
+	if (user[0] == '~') user = &user[1];
 	struct Tag tag = tagFor(chan);
 
 	tabAdd(tag, nick);
@@ -360,7 +361,7 @@ static void handleReplyWho(char *prefix, char *params) {
 
 static void handleReplyEndOfWho(char *prefix, char *params) {
 	char *chan;
-	shift(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
+	parse(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
 	struct Tag tag = tagFor(chan);
 
 	uiFmt(
@@ -373,10 +374,12 @@ static void handleReplyEndOfWho(char *prefix, char *params) {
 
 static void handleNick(char *prefix, char *params) {
 	char *prev, *user, *next;
-	shift(prefix, &prev, &user, NULL, params, 1, 0, &next);
+	parse(prefix, &prev, &user, NULL, params, 1, 0, &next);
 
-	if (isSelf(prev, user)) {
-		selfNick(next);
+	if (isSelf(user)) {
+		free(self.nick);
+		self.nick = strdup(next);
+		if (!self.nick) err(EX_OSERR, "strdup");
 		uiPrompt();
 	}
 
@@ -399,11 +402,10 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 	char *params = strsep(&mesg, "\1");
 	if (strcmp(ctcp, "ACTION")) return;
 
-	bool self = isSelf(nick, user);
-	if (!self) tabTouch(tag, nick);
+	if (!isSelf(user)) tabTouch(tag, nick);
 
 	urlScan(tag, params);
-	bool ping = !self && isPing(params);
+	bool ping = !isSelf(user) && isPing(params);
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d* %s\17 %s",
@@ -414,7 +416,7 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 
 static void handlePrivmsg(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
-	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
+	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	bool direct = !strcmp(chan, self.nick);
 	struct Tag tag = (direct ? tagFor(nick) : tagFor(chan));
 	if (mesg[0] == '\1') {
@@ -422,7 +424,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 		return;
 	}
 
-	bool self = isSelf(nick, user);
+	bool self = isSelf(user);
 	if (!self) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
@@ -438,15 +440,14 @@ static void handlePrivmsg(char *prefix, char *params) {
 
 static void handleNotice(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
-	shift(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
+	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	struct Tag tag = TagStatus;
 	if (user) tag = (strcmp(chan, self.nick) ? tagFor(chan) : tagFor(nick));
 
-	bool self = isSelf(nick, user);
-	if (!self) tabTouch(tag, nick);
+	if (!isSelf(user)) tabTouch(tag, nick);
 
 	urlScan(tag, mesg);
-	bool ping = !self && isPing(mesg);
+	bool ping = !isSelf(user) && isPing(mesg);
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d-%s-\17 %s",

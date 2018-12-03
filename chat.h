@@ -43,9 +43,6 @@ struct {
 	bool notify;
 } self;
 
-void selfNick(const char *nick);
-void selfUser(const char *user);
-
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
 void eventQuit(void);
