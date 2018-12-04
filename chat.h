@@ -44,6 +44,7 @@ struct {
 	char *join;
 	bool verbose;
 	bool notify;
+	bool quit;
 } self;
 
 void eventWait(const char *argv[static 2]);

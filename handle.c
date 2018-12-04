@@ -95,11 +95,14 @@ static void handlePing(char *prefix, char *params) {
 }
 
 static void handleError(char *prefix, char *params) {
-	(void)prefix;
-	(void)params;
-	// TODO: Show error if unintended disconnect.
-	uiExit();
-	exit(EX_OK);
+	char *mesg;
+	parse(prefix, NULL, NULL, NULL, params, 1, 0, &mesg);
+	if (self.quit) {
+		uiExit();
+		exit(EX_OK);
+	} else {
+		errx(EX_PROTOCOL, "%s", mesg);
+	}
 }
 
 static void handleErrorErroneousNickname(char *prefix, char *params) {

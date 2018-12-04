@@ -131,10 +131,14 @@ noreturn void eventLoop(void) {
 
 	for (;;) {
 		if (sig[SIGCHLD]) childWait();
-		if (sig[SIGHUP]) ircFmt("QUIT :zzz\r\n");
+		if (sig[SIGHUP]) {
+			ircFmt("QUIT :zzz\r\n");
+			self.quit = true;
+		}
 		if (sig[SIGINT]) {
 			signal(SIGINT, SIG_DFL);
 			ircFmt("QUIT :Goodbye\r\n");
+			self.quit = true;
 		}
 		if (sig[SIGWINCH]) {
 			curses.sa_handler(SIGWINCH);
