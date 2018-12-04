@@ -16,14 +16,10 @@ is a utility for Darwin systems.
 It runs the
 .Ar command
 as a child process
-and sends it
-.Dv SIGTSTP
-and
-.Dv SIGCONT
-signals
-when the system goes to sleep
-and wakes from sleep,
-respectively.
+and sends it the
+.Dv SIGHUP
+signal
+when the system goes to sleep.
 .
 .Sh EXIT STATUS
 .Nm

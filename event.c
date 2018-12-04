@@ -120,6 +120,7 @@ noreturn void eventLoop(void) {
 	};
 	sigaction(SIGCHLD, &action, NULL);
 	sigaction(SIGINT, &action, NULL);
+	sigaction(SIGHUP, &action, NULL);
 
 	struct sigaction curses;
 	sigaction(SIGWINCH, &action, &curses);
@@ -130,6 +131,7 @@ noreturn void eventLoop(void) {
 
 	for (;;) {
 		if (sig[SIGCHLD]) childWait();
+		if (sig[SIGHUP]) ircFmt("QUIT :zzz\r\n");
 		if (sig[SIGINT]) {
 			signal(SIGINT, SIG_DFL);
 			ircFmt("QUIT :Goodbye\r\n");
@@ -139,7 +141,7 @@ noreturn void eventLoop(void) {
 			uiRead();
 			uiDraw();
 		}
-		sig[SIGCHLD] = sig[SIGINT] = sig[SIGWINCH] = 0;
+		sig[SIGCHLD] = sig[SIGHUP] = sig[SIGINT] = sig[SIGWINCH] = 0;
 
 		struct pollfd fds[3] = {
 			{ .events = POLLIN, .fd = irc },

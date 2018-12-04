@@ -59,19 +59,7 @@ int main(int argc, char *argv[]) {
 		queue: nil
 		usingBlock: ^(NSNotification *note) {
 			(void)note;
-			int error = kill(pid, SIGTSTP);
-			if (error) err(EX_UNAVAILABLE, "kill %d", pid);
-		}
-	];
-	
-	[
-		[[NSWorkspace sharedWorkspace] notificationCenter]
-		addObserverForName: NSWorkspaceDidWakeNotification
-		object: nil
-		queue: nil
-		usingBlock: ^(NSNotification *note) {
-			(void)note;
-			int error = kill(pid, SIGCONT);
+			int error = kill(pid, SIGHUP);
 			if (error) err(EX_UNAVAILABLE, "kill %d", pid);
 		}
 	];
