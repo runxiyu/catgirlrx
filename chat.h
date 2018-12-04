@@ -48,7 +48,6 @@ struct {
 
 void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
-void eventQuit(void);
 noreturn void eventLoop(void);
 
 struct Tag {
@@ -106,16 +105,15 @@ void handle(char *line);
 void input(struct Tag tag, char *line);
 void inputTab(void);
 
-void ircInit(void);
 int ircConnect(void);
-bool ircRead(void);
+void ircRead(void);
 void ircWrite(const char *ptr, size_t len);
 void ircFmt(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 void uiInit(void);
 void uiShow(void);
 void uiHide(void);
-noreturn void uiExit(void);
+void uiExit(void);
 void uiDraw(void);
 void uiRead(void);
 void uiPrompt(void);

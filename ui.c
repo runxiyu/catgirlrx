@@ -22,7 +22,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
 #include <string.h>
 #include <sysexits.h>
 #include <wchar.h>
@@ -112,13 +111,12 @@ void uiInit(void) {
 	uiShow();
 }
 
-noreturn void uiExit(void) {
+void uiExit(void) {
 	uiHide();
 	printf(
 		"This program is AGPLv3 Free Software!\n"
 		"The source is available at <" SOURCE_URL ">.\n"
 	);
-	exit(EX_OK);
 }
 
 static int lastLine(void) {

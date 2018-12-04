@@ -94,6 +94,14 @@ static void handlePing(char *prefix, char *params) {
 	ircFmt("PONG %s\r\n", params);
 }
 
+static void handleError(char *prefix, char *params) {
+	(void)prefix;
+	(void)params;
+	// TODO: Show error if unintended disconnect.
+	uiExit();
+	exit(EX_OK);
+}
+
 static void handleErrorErroneousNickname(char *prefix, char *params) {
 	char *mesg;
 	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
@@ -470,6 +478,7 @@ static const struct {
 	{ "401", handleErrorNoSuchNick },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorErroneousNickname },
+	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "NICK", handleNick },
