@@ -35,6 +35,7 @@ typedef unsigned char byte;
 struct {
 	char *host;
 	char *port;
+	char *auth;
 	char *pass;
 	char *webp;
 	char *nick;

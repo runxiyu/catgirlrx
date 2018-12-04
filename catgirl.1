@@ -10,6 +10,7 @@
 .Nm
 .Op Fl Nv
 .Op Fl W Ar pass
+.Op Fl a Ar auth
 .Op Fl h Ar host
 .Op Fl j Ar chan
 .Op Fl l Ar path
@@ -39,6 +40,12 @@ command with
 See
 .Sx ENVIRONMENT
 for details.
+.
+.It Fl a Ar auth
+Authenticate with SASL PLAIN.
+.Ar auth
+is a colon-separated
+username and password pair.
 .
 .It Fl h Ar host
 Connect to
