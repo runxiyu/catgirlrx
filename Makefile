@@ -30,6 +30,7 @@ OBJS += ui.o
 OBJS += url.o
 
 TESTS += format.t
+TESTS += pls.t
 TESTS += term.t
 
 all: tags $(BINS) test

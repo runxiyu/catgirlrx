@@ -131,3 +131,63 @@ int aswprintf(wchar_t **ret, const wchar_t *format, ...) {
 	va_end(ap);
 	return n;
 }
+
+static const char Base64[64] =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+char *base64(const byte *src, size_t len) {
+	char *dst = malloc(1 + 4 * (len + 2) / 3);
+	if (!dst) return NULL;
+	size_t i = 0;
+	while (len > 2) {
+		dst[i++] = Base64[0x3F & (src[0] >> 2)];
+		dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
+		dst[i++] = Base64[0x3F & (src[1] << 2 | src[2] >> 6)];
+		dst[i++] = Base64[0x3F & src[2]];
+		src += 3;
+		len -= 3;
+	}
+	if (len) {
+		dst[i++] = Base64[0x3F & (src[0] >> 2)];
+		if (len > 1) {
+			dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
+			dst[i++] = Base64[0x3F & (src[1] << 2)];
+		} else {
+			dst[i++] = Base64[0x3F & (src[0] << 4)];
+			dst[i++] = '=';
+		}
+		dst[i++] = '=';
+	}
+	dst[i] = '\0';
+	return dst;
+}
+
+#ifdef TEST
+#include <assert.h>
+#include <string.h>
+
+int main() {
+	char *cat = base64((byte *)"cat", 3);
+	char *ca = base64((byte *)"ca", 2);
+	char *c = base64((byte *)"c", 1);
+	assert(cat);
+	assert(ca);
+	assert(c);
+	assert(!strcmp("Y2F0", cat));
+	assert(!strcmp("Y2E=", ca));
+	assert(!strcmp("Yw==", c));
+	free(cat);
+	free(ca);
+	free(c);
+
+	char *fzf = base64((byte []) { 0xFF, 0x00, 0xFF }, 3);
+	char *zfz = base64((byte []) { 0x00, 0xFF, 0x00 }, 3);
+	assert(fzf);
+	assert(zfz);
+	assert(!strcmp("/wD/", fzf));
+	assert(!strcmp("AP8A", zfz));
+	free(fzf);
+	free(zfz);
+}
+
+#endif

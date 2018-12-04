@@ -30,6 +30,8 @@
 #define err(...) do { uiHide(); err(__VA_ARGS__); } while (0)
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
+typedef unsigned char byte;
+
 struct {
 	char *host;
 	char *port;
@@ -193,6 +195,7 @@ char *awcstombs(const wchar_t *src);
 char *awcsntombs(const wchar_t *src, size_t nwc);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
 int aswprintf(wchar_t **ret, const wchar_t *format, ...);
+char *base64(const byte *src, size_t len);
 
 // HACK: clang won't check wchar_t *format strings.
 #ifdef NDEBUG
