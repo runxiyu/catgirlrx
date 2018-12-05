@@ -39,10 +39,11 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 	free(line);
 }
 
-static char *param(const char *command, char **params, const char *name) {
+static char *
+param(struct Tag tag, const char *command, char **params, const char *name) {
 	char *param = strsep(params, " ");
 	if (param) return param;
-	uiFmt(TagStatus, UIHot, "%s requires a %s", command, name);
+	uiFmt(tag, UIHot, "%s requires a %s", command, name);
 	return NULL;
 }
 
@@ -54,14 +55,14 @@ static void inputMe(struct Tag tag, char *params) {
 
 static void inputNick(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = param("/nick", &params, "name");
+	char *nick = param(tag, "/nick", &params, "name");
 	if (!nick) return;
 	ircFmt("NICK %s\r\n", nick);
 }
 
 static void inputJoin(struct Tag tag, char *params) {
 	(void)tag;
-	char *chan = param("/join", &params, "channel");
+	char *chan = param(tag, "/join", &params, "channel");
 	if (!chan) return;
 	ircFmt("JOIN %s\r\n", chan);
 }
@@ -76,7 +77,7 @@ static void inputPart(struct Tag tag, char *params) {
 
 static void inputQuery(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = param("/query", &params, "nick");
+	char *nick = param(tag, "/query", &params, "nick");
 	if (!nick) return;
 	tabTouch(TagNone, nick);
 	uiViewTag(tagFor(nick));
@@ -90,7 +91,7 @@ static void inputWho(struct Tag tag, char *params) {
 
 static void inputWhois(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = param("/whois", &params, "nick");
+	char *nick = param(tag, "/whois", &params, "nick");
 	if (!nick) return;
 	ircFmt("WHOIS %s\r\n", nick);
 }
@@ -125,7 +126,7 @@ static void inputOpen(struct Tag tag, char *params) {
 
 static void inputView(struct Tag tag, char *params) {
 	(void)tag;
-	char *view = param("/view", &params, "name or number");
+	char *view = param(tag, "/view", &params, "name or number");
 	if (!view) return;
 	int num = strtol(view, &view, 0);
 	if (!view[0]) {
@@ -135,7 +136,7 @@ static void inputView(struct Tag tag, char *params) {
 		if (tag.id != TagNone.id) {
 			uiViewTag(tag);
 		} else {
-			uiFmt(TagStatus, UIHot, "No view for %s", view);
+			uiFmt(tag, UIHot, "No view for %s", view);
 		}
 	}
 }
@@ -216,7 +217,7 @@ void input(struct Tag tag, char *input) {
 		Commands[i].handler(tag, input);
 		return;
 	}
-	uiFmt(TagStatus, UIHot, "%s isn't a recognized command", command);
+	uiFmt(tag, UICold, "%s isn't a recognized command", command);
 }
 
 void inputTab(void) {
