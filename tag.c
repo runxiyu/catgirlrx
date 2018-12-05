@@ -21,19 +21,19 @@
 
 #include "chat.h"
 
-#define NONE    ""
-#define STATUS  "~status"
-#define VERBOSE "~irc"
+#define NONE   "-none-"
+#define STATUS "-status-"
+#define RAW    "-raw-"
 
-const struct Tag TagNone    = { 0, NONE };
-const struct Tag TagStatus  = { 1, STATUS };
-const struct Tag TagVerbose = { 2, VERBOSE };
+const struct Tag TagNone   = { 0, NONE };
+const struct Tag TagStatus = { 1, STATUS };
+const struct Tag TagRaw    = { 2, RAW };
 
 static struct {
 	char *name[TagsLen];
 	size_t len;
 } tags = {
-	.name = { NONE, STATUS, VERBOSE },
+	.name = { NONE, STATUS, RAW },
 	.len = 3,
 };
 

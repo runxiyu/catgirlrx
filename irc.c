@@ -110,8 +110,8 @@ void ircFmt(const char *format, ...) {
 	int len =  vasprintf(&buf, format, ap);
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
-	if (self.verbose) {
-		uiFmt(TagVerbose, UICold, "\3%d<<<\3 %.*s", IRCWhite, len - 2, buf);
+	if (self.raw) {
+		uiFmt(TagRaw, UICold, "\3%d<<<\3 %.*s", IRCWhite, len - 2, buf);
 	}
 	ircWrite(buf, len);
 	free(buf);
@@ -133,8 +133,8 @@ retry:
 	char *line = buf;
 	while (NULL != (crlf = strnstr(line, "\r\n", &buf[len] - line))) {
 		crlf[0] = '\0';
-		if (self.verbose) {
-			uiFmt(TagVerbose, UICold, "\3%d>>>\3 %s", IRCGray, line);
+		if (self.raw) {
+			uiFmt(TagRaw, UICold, "\3%d>>>\3 %s", IRCGray, line);
 		}
 		handle(line);
 		line = &crlf[2];

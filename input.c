@@ -25,7 +25,7 @@
 #include "chat.h"
 
 static void privmsg(struct Tag tag, bool action, const char *mesg) {
-	if (tag.id == TagStatus.id || tag.id == TagVerbose.id) return;
+	if (tag.id == TagStatus.id || tag.id == TagRaw.id) return;
 	char *line;
 	int send;
 	asprintf(
@@ -184,7 +184,7 @@ void input(struct Tag tag, char *input) {
 	}
 
 	if (!slash) {
-		if (tag.id == TagVerbose.id) {
+		if (tag.id == TagRaw.id) {
 			ircFmt("%s\r\n", input);
 		} else {
 			privmsg(tag, false, input);

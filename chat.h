@@ -42,7 +42,7 @@ struct {
 	char *user;
 	char *real;
 	char *join;
-	bool verbose;
+	bool raw;
 	bool notify;
 	bool quit;
 } self;
@@ -59,7 +59,7 @@ struct Tag {
 enum { TagsLen = 256 };
 const struct Tag TagNone;
 const struct Tag TagStatus;
-const struct Tag TagVerbose;
+const struct Tag TagRaw;
 struct Tag tagFind(const char *name);
 struct Tag tagFor(const char *name);
 

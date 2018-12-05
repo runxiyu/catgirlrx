@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 			break; case 'p': self.port = dupe(optarg);
 			break; case 'r': self.real = dupe(optarg);
 			break; case 'u': self.user = dupe(optarg);
-			break; case 'v': self.verbose = true;
+			break; case 'v': self.raw = true;
 			break; case 'w': self.pass = dupe(optarg);
 			break; default:  return EX_USAGE;
 		}

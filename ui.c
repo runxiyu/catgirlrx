@@ -509,13 +509,13 @@ static void keyChar(wchar_t ch) {
 }
 
 static bool isAction(struct Tag tag, const wchar_t *input) {
-	if (tag.id == TagStatus.id || tag.id == TagVerbose.id) return false;
+	if (tag.id == TagStatus.id || tag.id == TagRaw.id) return false;
 	return !wcsncasecmp(input, L"/me ", 4);
 }
 
 // FIXME: This duplicates logic from input.c for wcs.
 static bool isCommand(struct Tag tag, const wchar_t *input) {
-	if (tag.id == TagStatus.id || tag.id == TagVerbose.id) return true;
+	if (tag.id == TagStatus.id || tag.id == TagRaw.id) return true;
 	if (input[0] != L'/') return false;
 	const wchar_t *space = wcschr(&input[1], L' ');
 	const wchar_t *extra = wcschr(&input[1], L'/');
