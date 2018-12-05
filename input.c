@@ -49,6 +49,18 @@ param(struct Tag tag, const char *command, char **params, const char *name) {
 
 typedef void (*Handler)(struct Tag tag, char *params);
 
+static void inputRaw(struct Tag tag, char *params) {
+	(void)tag;
+	if (!params || !self.raw) {
+		self.raw ^= true;
+		uiFmt(
+			TagRaw, UIWarm, "Raw view is %s",
+			self.raw ? "enabled" : "disabled"
+		);
+	}
+	if (params) ircFmt("%s\r\n", params);
+}
+
 static void inputMe(struct Tag tag, char *params) {
 	privmsg(tag, true, params ? params : "");
 }
@@ -168,6 +180,7 @@ static const struct {
 	{ "/part", inputPart },
 	{ "/query", inputQuery },
 	{ "/quit", inputQuit },
+	{ "/raw", inputRaw },
 	{ "/topic", inputTopic },
 	{ "/url", inputURL },
 	{ "/view", inputView },
