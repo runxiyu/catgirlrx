@@ -105,6 +105,24 @@ static void handleError(char *prefix, char *params) {
 	}
 }
 
+static void handleCap(char *prefix, char *params) {
+	char *subc, *list;
+	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &subc, &list);
+	if (!strcmp(subc, "ACK") && self.auth) {
+		size_t len = strlen(self.auth);
+		byte plain[1 + len];
+		plain[0] = 0;
+		for (size_t i = 0; i < len; ++i) {
+			plain[1 + i] = (self.auth[i] == ':' ? 0 : self.auth[i]);
+		}
+		char *b64 = base64(plain, sizeof(plain));
+		ircFmt("AUTHENTICATE PLAIN\r\n");
+		ircFmt("AUTHENTICATE %s\r\n", b64);
+		free(b64);
+	}
+	ircFmt("CAP END\r\n");
+}
+
 static void handleErrorErroneousNickname(char *prefix, char *params) {
 	char *mesg;
 	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, NULL, &mesg);
@@ -481,6 +499,7 @@ static const struct {
 	{ "401", handleErrorNoSuchNick },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorErroneousNickname },
+	{ "CAP", handleCap },
 	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
