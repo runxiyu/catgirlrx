@@ -30,6 +30,7 @@
 #define err(...) do { uiHide(); err(__VA_ARGS__); } while (0)
 #define errx(...) do { uiHide(); errx(__VA_ARGS__); } while (0)
 
+typedef unsigned uint;
 typedef unsigned char byte;
 
 struct {

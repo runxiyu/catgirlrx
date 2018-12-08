@@ -51,7 +51,7 @@ void termMode(enum TermMode mode, bool set) {
 enum { Esc = '\33' };
 
 enum TermEvent termEvent(char ch) {
-	static int state = 0;
+	static uint state = 0;
 	switch (T(state, ch)) {
 		case T(0, Esc): state = 1; return 0;
 		case T(1, '['): state = 2; return 0;

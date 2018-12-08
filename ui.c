@@ -68,8 +68,9 @@ static short pair8(short pair) {
 struct View {
 	struct Tag tag;
 	WINDOW *log;
-	int scroll, unread;
+	int scroll;
 	bool hot, mark;
+	uint unread;
 	struct View *prev;
 	struct View *next;
 };
@@ -227,7 +228,7 @@ static void uiTitle(const struct View *view) {
 	int unread;
 	char *str;
 	int len = asprintf(
-		&str, "%s%n (%d)", view->tag.name, &unread, view->unread
+		&str, "%s%n (%u)", view->tag.name, &unread, view->unread
 	);
 	if (len < 0) err(EX_OSERR, "asprintf");
 	if (!view->unread) str[unread] = '\0';
@@ -244,7 +245,7 @@ static void uiStatus(void) {
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
-			&str, L"%c %d %s %n(\3%02d%d\3) ",
+			&str, L"%c %d %s %n(\3%02d%u\3) ",
 			(view == ui.view ? IRCReverse : IRCReset),
 			num, view->tag.name,
 			&unread, (view->hot ? IRCYellow : IRCDefault), view->unread
@@ -274,7 +275,7 @@ static void viewRemove(struct View *view) {
 	views.tags[view->tag.id] = NULL;
 }
 
-static const int LogLines = 256;
+static const int LogLines = 512;
 
 static struct View *viewTag(struct Tag tag) {
 	struct View *view = views.tags[tag.id];
