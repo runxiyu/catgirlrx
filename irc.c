@@ -131,7 +131,11 @@ retry:
 	read = tls_read(client, &buf[len], sizeof(buf) - len);
 	if (read == TLS_WANT_POLLIN || read == TLS_WANT_POLLOUT) goto retry;
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
-	if (!read) errx(EX_PROTOCOL, "unexpected eof");
+	if (!read) {
+		if (!self.quit) errx(EX_PROTOCOL, "unexpected eof");
+		uiExit();
+		exit(EX_OK);
+	}
 	len += read;
 
 	char *crlf;
