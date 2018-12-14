@@ -111,6 +111,7 @@ int ircConnect(void);
 void ircRead(void);
 void ircWrite(const char *ptr, size_t len);
 void ircFmt(const char *format, ...) __attribute__((format(printf, 1, 2)));
+void ircQuit(const char *mesg);
 
 void uiInit(void);
 void uiShow(void);

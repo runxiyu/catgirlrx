@@ -118,8 +118,11 @@ static void inputTopic(struct Tag tag, char *params) {
 
 static void inputQuit(struct Tag tag, char *params) {
 	(void)tag;
-	ircFmt("QUIT :%s\r\n", params ? params : "Goodbye");
-	self.quit = true;
+	if (params) {
+		ircQuit(params);
+	} else {
+		ircQuit("Goodbye");
+	}
 }
 
 static void inputURL(struct Tag tag, char *params) {

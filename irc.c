@@ -117,6 +117,11 @@ void ircFmt(const char *format, ...) {
 	free(buf);
 }
 
+void ircQuit(const char *mesg) {
+	ircFmt("QUIT :%s\r\n", mesg);
+	self.quit = true;
+}
+
 void ircRead(void) {
 	static char buf[4096];
 	static size_t len;
