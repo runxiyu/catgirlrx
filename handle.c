@@ -456,8 +456,9 @@ static void handlePrivmsg(char *prefix, char *params) {
 	bool ping = !me && isPing(mesg);
 	uiFmt(
 		tag, (hot ? UIHot : UIWarm),
-		"%c\3%d%c%s%c\17 %s",
-		ping["\17\26"], formatColor(user), me["<("], nick, me[">)"], mesg
+		"%c%c\3%d<%s>%c %s",
+		(me ? IRCUnderline : IRCColor), (ping ? IRCReverse : IRCColor),
+		formatColor(user), nick, IRCReset, mesg
 	);
 	logFmt(tag, NULL, "<%s> %s", nick, mesg);
 }

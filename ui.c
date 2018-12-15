@@ -537,7 +537,7 @@ void uiPrompt(void) {
 		);
 	} else if (!isCommand(ui.view->tag, input)) {
 		len = aswprintf(
-			&prompt, L"\3%d(%s)\3 ",
+			&prompt, L"\3%d<%s>\3 ",
 			formatColor(self.user), self.nick
 		);
 	}
