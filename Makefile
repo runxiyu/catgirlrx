@@ -23,6 +23,7 @@ OBJS += input.o
 OBJS += irc.o
 OBJS += log.o
 OBJS += pls.o
+OBJS += string.o
 OBJS += tab.o
 OBJS += tag.o
 OBJS += term.o
@@ -30,7 +31,7 @@ OBJS += ui.o
 OBJS += url.o
 
 TESTS += format.t
-TESTS += pls.t
+TESTS += string.t
 TESTS += term.t
 
 all: tags $(BINS) test

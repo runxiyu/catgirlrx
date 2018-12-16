@@ -115,10 +115,10 @@ static void handleCap(char *prefix, char *params) {
 		for (size_t i = 0; i < len; ++i) {
 			plain[1 + i] = (self.auth[i] == ':' ? 0 : self.auth[i]);
 		}
-		char *b64 = base64(plain, sizeof(plain));
+		char b64[base64Size(sizeof(plain))];
+		base64(b64, plain, sizeof(plain));
 		ircFmt("AUTHENTICATE PLAIN\r\n");
 		ircFmt("AUTHENTICATE %s\r\n", b64);
-		free(b64);
 	}
 	ircFmt("CAP END\r\n");
 }

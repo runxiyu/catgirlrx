@@ -190,6 +190,9 @@ void logFmt(
 ) __attribute__((format(printf, 3, 4)));
 void logReplay(struct Tag tag);
 
+size_t base64Size(size_t len);
+void base64(char *dst, const byte *src, size_t len);
+
 wchar_t *wcsnchr(const wchar_t *wcs, size_t len, wchar_t chr);
 wchar_t *wcsnrchr(const wchar_t *wcs, size_t len, wchar_t chr);
 wchar_t *ambstowcs(const char *src);
@@ -197,7 +200,6 @@ char *awcstombs(const wchar_t *src);
 char *awcsntombs(const wchar_t *src, size_t nwc);
 int vaswprintf(wchar_t **ret, const wchar_t *format, va_list ap);
 int aswprintf(wchar_t **ret, const wchar_t *format, ...);
-char *base64(const byte *src, size_t len);
 
 // HACK: clang won't check wchar_t *format strings.
 #ifdef NDEBUG
