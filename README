@@ -31,7 +31,6 @@ FILES
      edit.c     line editing
      tab.c      tab-complete
      url.c      URL detection
-     string.c   base64 and rot13
      pls.c      functions which should not have to be written
      sandman.m  utility for Darwin to signal sleep
 
