@@ -47,7 +47,7 @@ param(struct Tag tag, const char *command, char **params, const char *name) {
 	return NULL;
 }
 
-typedef void (*Handler)(struct Tag tag, char *params);
+typedef void Handler(struct Tag tag, char *params);
 
 static void inputRaw(struct Tag tag, char *params) {
 	(void)tag;
@@ -170,7 +170,7 @@ static void inputMan(struct Tag tag, char *params) {
 
 static const struct {
 	const char *command;
-	Handler handler;
+	Handler *handler;
 } Commands[] = {
 	{ "/close", inputClose },
 	{ "/help", inputMan },

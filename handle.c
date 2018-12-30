@@ -87,7 +87,7 @@ static char *dequote(char *mesg) {
 	return mesg;
 }
 
-typedef void (*Handler)(char *prefix, char *params);
+typedef void Handler(char *prefix, char *params);
 
 static void handlePing(char *prefix, char *params) {
 	(void)prefix;
@@ -483,7 +483,7 @@ static void handleNotice(char *prefix, char *params) {
 
 static const struct {
 	const char *command;
-	Handler handler;
+	Handler *handler;
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
 	{ "311", handleReplyWhoisUser },
