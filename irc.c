@@ -140,7 +140,7 @@ retry:
 
 	char *crlf;
 	char *line = buf;
-	while (NULL != (crlf = strnstr(line, "\r\n", &buf[len] - line))) {
+	while (NULL != (crlf = memmem(line, &buf[len] - line, "\r\n", 2))) {
 		crlf[0] = '\0';
 		if (self.raw) {
 			uiFmt(TagRaw, UICold, "\3%d>>>\3 %s", IRCGray, line);
