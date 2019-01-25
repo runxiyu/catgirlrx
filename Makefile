@@ -1,5 +1,5 @@
 PREFIX = ~/.local
-MANDIR = $(PREFIX)/share/man/man
+MANDIR = $(PREFIX)/share/man
 CHROOT_USER = chat
 CHROOT_GROUP = $(CHROOT_USER)
 LIBRESSL_PREFIX = /usr/local
@@ -10,7 +10,7 @@ LDFLAGS += -L$(LIBRESSL_PREFIX)/lib
 LDLIBS = -lcursesw -ltls
 
 BINS = catgirl
-MANS = catgirl.1
+MAN1 = catgirl.1
 
 -include config.mk
 
@@ -35,30 +35,30 @@ TESTS += term.t
 
 all: tags $(BINS) test
 
-$(OBJS): chat.h
-
 catgirl: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
+
+$(OBJS): chat.h
+
+test: $(TESTS)
+	set -e; $(TESTS:%=./%;)
 
 .SUFFIXES: .t
 
 .c.t:
 	$(CC) $(CFLAGS) -DTEST $(LDFLAGS) $< $(LDLIBS) -o $@
 
-test: $(TESTS)
-	set -e; $(TESTS:%=./%;)
+tags: *.c *.h
+	ctags -w *.c *.h
 
-tags: *.h *.c
-	ctags -w *.h *.c
-
-install: $(BINS) $(MANS)
-	install -d $(PREFIX)/bin $(MANDIR)1
+install: $(BINS) $(MAN1)
+	install -d $(PREFIX)/bin $(MANDIR)/man1
 	install $(BINS) $(PREFIX)/bin
-	install -m 644 $(MANS) $(MANDIR)1
+	install -m 644 $(MAN1) $(MANDIR)/man1
 
 uninstall:
 	rm -f $(BINS:%=$(PREFIX)/bin/%)
-	rm -f $(MAN:%=%(MANDIR)1/%)
+	rm -f $(MAN1:%=$(MANDIR)/man1/%)
 
 chroot.tar: catgirl catgirl.1 man.sh
 	install -d -o root -g wheel \
@@ -93,10 +93,10 @@ chroot.tar: catgirl catgirl.1 man.sh
 	tar -cf chroot.tar -C root bin etc home lib libexec usr
 
 install-chroot: chroot.tar
-	tar -xf chroot.tar -C /home/$(CHROOT_USER)
+	tar -x -f chroot.tar -C /home/$(CHROOT_USER)
 
 clean:
-	rm -fr $(OBJS) $(BINS) $(TESTS) tags root chroot.tar
+	rm -fr $(BINS) $(OBJS) $(TESTS) tags root chroot.tar
 
 README: catgirl.7
 	mandoc catgirl.7 | col -bx > README
