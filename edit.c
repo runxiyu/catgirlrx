@@ -97,7 +97,7 @@ static void killForeWord(void) {
 
 static void rot13(void) {
 	for (wchar_t *ch = line.buf; ch != line.end; ++ch) {
-		if (!iswascii(*ch)) continue;
+		if (*ch > L'z') continue;
 		if (iswupper(*ch)) *ch = L'A' + (*ch - L'A' + 13) % 26;
 		if (iswlower(*ch)) *ch = L'a' + (*ch - L'a' + 13) % 26;
 	}
