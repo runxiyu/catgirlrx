@@ -90,7 +90,7 @@ chroot.tar: catgirl catgirl.1 man.sh
 	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
 	$(MAKE) install PREFIX=root/usr
 	install man.sh root/usr/bin/man
-	tar -cf chroot.tar -C root bin etc home lib libexec usr
+	tar -c -f chroot.tar -C root bin etc home lib libexec usr
 
 install-chroot: chroot.tar
 	tar -x -f chroot.tar -C /home/$(CHROOT_USER)
