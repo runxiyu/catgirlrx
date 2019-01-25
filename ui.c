@@ -130,6 +130,8 @@ static int logHeight(void) {
 	return LINES - 2;
 }
 
+static int _;
+
 void uiDraw(void) {
 	if (ui.hide) return;
 	wnoutrefresh(ui.status);
@@ -139,7 +141,7 @@ void uiDraw(void) {
 		1, 0,
 		lastLine() - 1, lastCol()
 	);
-	int _, x;
+	int x;
 	getyx(ui.input, _, x);
 	pnoutrefresh(
 		ui.input,
@@ -201,7 +203,7 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 		size_t word = 1 + wcscspn(&format.str[1], L" ");
 		if (word < format.len) format.len = word;
 
-		int _, x, xMax;
+		int x, xMax;
 		getyx(win, _, x);
 		getmaxyx(win, _, xMax);
 		if (xMax - x - 1 < printWidth(format.str, word)) {
@@ -548,7 +550,7 @@ void uiPrompt(void) {
 	if (prompt) addWrap(ui.input, prompt);
 	free(prompt);
 
-	int _, x = 0;
+	int x = 0;
 	struct Format format = { .str = input };
 	formatReset(&format);
 	while (formatParse(&format, editTail())) {
