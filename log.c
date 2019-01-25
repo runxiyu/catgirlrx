@@ -132,12 +132,14 @@ void logReplay(struct Tag tag) {
 	FILE *file = logFile(tag, time);
 	rewind(file);
 
-	size_t len;
-	char *line;
-	while (NULL != (line = fgetln(file, &len))) {
+	char *line = NULL;
+	size_t cap = 0;
+	ssize_t len;
+	while (0 < (len = getline(&line, &cap, file))) {
+		if (len < 1 + StampLen + 2 + 1) continue;
 		line[len - 1] = '\0';
-		if (len > 1 + StampLen + 2) line = &line[1 + StampLen + 2];
-		uiFmt(tag, UICold, "\3%d%s", IRCGray, line);
+		uiFmt(tag, UICold, "\3%d%s", IRCGray, &line[1 + StampLen + 2]);
 	}
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
+	free(line);
 }
