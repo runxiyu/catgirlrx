@@ -1,4 +1,4 @@
-.Dd December 2, 2018
+.Dd January 25, 2019
 .Dt CATGIRL 7
 .Os "Causal Agency"
 .
@@ -18,16 +18,18 @@ It requires LibreSSL
 and targets
 .Fx ,
 Darwin,
-.Nx .
+.Nx
+and
+GNU/Linux.
 .
-.Ss Build
+.Sh INSTALL
 On platforms other than
 .Fx ,
 copy the appropriate file to
 .Pa config.mk
 and modify as needed.
 The default install
-.Ev PREFIX
+.Va PREFIX
 is
 .Pa ~/.local .
 .
@@ -37,6 +39,27 @@ cp $(uname).mk config.mk
 make
 make install
 .Ed
+.
+.Ss Darwin
+LibreSSL is assumed to be installed with
+.Xr brew 1 .
+The
+.Xr sandman 1
+wrapper is also installed.
+.
+.Ss NetBSD
+LibreSSL is assumed to be installed with
+.Xr pkgsrc 7 .
+Due to bugs in
+.Nx Ap s
+.Xr curses 3
+implementation,
+some of the UI is currently broken.
+.
+.Ss GNU/Linux
+LibreSSL is assumed to be manually installed in
+.Pa /usr/local
+and is statically linked.
 .
 .Sh FILES
 .Bl -tag -width sandman.m -compact
@@ -84,8 +107,3 @@ implementation for chroot
 .Sh SEE ALSO
 .Xr catgirl 1 ,
 .Xr sandman 1
-.
-.Sh BUGS
-The UI is currently broken with
-.Nx Ap s
-curses implementation.
