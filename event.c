@@ -127,6 +127,7 @@ noreturn void eventLoop(void) {
 	assert(!(curses.sa_flags & SA_SIGINFO));
 
 	uiFmt(TagStatus, UICold, "Traveling to %s...", self.host);
+	uiDraw();
 	int irc = ircConnect();
 
 	for (;;) {
