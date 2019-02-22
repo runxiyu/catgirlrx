@@ -1,4 +1,4 @@
-/* Copyright (C) 2018  Curtis McEnroe <june@causal.agency>
+/* Copyright (C) 2018  C. McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,7 +25,6 @@
 #include "chat.h"
 
 static void privmsg(struct Tag tag, bool action, const char *mesg) {
-	if (tag.id == TagStatus.id || tag.id == TagRaw.id) return;
 	char *line;
 	int send;
 	asprintf(
@@ -39,26 +38,10 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 	free(line);
 }
 
-static char *
-param(struct Tag tag, const char *command, char **params, const char *name) {
-	char *param = strsep(params, " ");
-	if (param) return param;
-	uiFmt(tag, UIHot, "%s requires a %s", command, name);
-	return NULL;
-}
-
 typedef void Handler(struct Tag tag, char *params);
 
-static void inputRaw(struct Tag tag, char *params) {
-	(void)tag;
-	if (!params || !self.raw) {
-		self.raw ^= true;
-		uiFmt(
-			TagRaw, UIWarm, "Raw window is %s",
-			self.raw ? "enabled" : "disabled"
-		);
-	}
-	if (params) ircFmt("%s\r\n", params);
+static void inputJoin(struct Tag tag, char *params) {
+	ircFmt("JOIN :%s\r\n", params ? params : tag.name);
 }
 
 static void inputMe(struct Tag tag, char *params) {
@@ -66,17 +49,11 @@ static void inputMe(struct Tag tag, char *params) {
 }
 
 static void inputNick(struct Tag tag, char *params) {
-	(void)tag;
-	char *nick = param(tag, "/nick", &params, "name");
-	if (!nick) return;
-	ircFmt("NICK %s\r\n", nick);
-}
-
-static void inputJoin(struct Tag tag, char *params) {
-	(void)tag;
-	char *chan = param(tag, "/join", &params, "channel");
-	if (!chan) return;
-	ircFmt("JOIN %s\r\n", chan);
+	if (params) {
+		ircFmt("NICK :%s\r\n", params);
+	} else {
+		uiLog(tag, UIHot, L"/nick requires a nickname");
+	}
 }
 
 static void inputPart(struct Tag tag, char *params) {
@@ -84,24 +61,19 @@ static void inputPart(struct Tag tag, char *params) {
 }
 
 static void inputQuery(struct Tag tag, char *params) {
-	(void)tag;
-	char *nick = param(tag, "/query", &params, "nick");
-	if (!nick) return;
-	tabTouch(TagNone, nick);
-	uiShowTag(tagFor(nick));
-	logReplay(tagFor(nick));
+	char *nick = strsep(&params, " ");
+	if (nick) {
+		tabTouch(TagNone, nick);
+		uiShowTag(tagFor(nick));
+		logReplay(tagFor(nick));
+	} else {
+		uiLog(tag, UIHot, L"/query requires a nickname");
+	}
 }
 
-static void inputWho(struct Tag tag, char *params) {
-	(void)params;
-	ircFmt("WHO %s\r\n", tag.name);
-}
-
-static void inputWhois(struct Tag tag, char *params) {
+static void inputQuit(struct Tag tag, char *params) {
 	(void)tag;
-	char *nick = param(tag, "/whois", &params, "nick");
-	if (!nick) return;
-	ircFmt("WHOIS %s\r\n", nick);
+	ircQuit(params ? params : "Goodbye");
 }
 
 static void inputTopic(struct Tag tag, char *params) {
@@ -112,39 +84,16 @@ static void inputTopic(struct Tag tag, char *params) {
 	}
 }
 
-static void inputQuit(struct Tag tag, char *params) {
-	(void)tag;
-	ircQuit(params ? params : "Goodbye");
-}
-
-static void inputURL(struct Tag tag, char *params) {
+static void inputWho(struct Tag tag, char *params) {
 	(void)params;
-	urlList(tag);
-}
-static void inputOpen(struct Tag tag, char *params) {
-	if (params && !isdigit(params[0])) {
-		urlOpenMatch(tag, params);
-	} else {
-		size_t at = (params ? strtoul(strsep(&params, "-,"), NULL, 0) : 1);
-		size_t to = (params ? strtoul(params, NULL, 0) : at);
-		urlOpenRange(tag, at - 1, to);
-	}
+	ircFmt("WHO :%s\r\n", tag.name);
 }
 
-static void inputWindow(struct Tag tag, char *params) {
-	(void)tag;
-	char *name = param(tag, "/window", &params, "name or number");
-	if (!name) return;
-	int num = strtol(name, &name, 0);
-	if (!name[0]) {
-		uiShowNum(num);
+static void inputWhois(struct Tag tag, char *params) {
+	if (params) {
+		ircFmt("WHOIS :%s\r\n", params);
 	} else {
-		struct Tag tag = tagFind(name);
-		if (tag.id != TagNone.id) {
-			uiShowTag(tag);
-		} else {
-			uiFmt(tag, UIHot, "No window for %s", name);
-		}
+		uiLog(tag, UIHot, L"/whois requires a nick");
 	}
 }
 
@@ -158,6 +107,51 @@ static void inputMan(struct Tag tag, char *params) {
 	(void)tag;
 	(void)params;
 	eventWait((const char *[]) { "man", "1", "catgirl", NULL });
+}
+
+static void inputOpen(struct Tag tag, char *params) {
+	if (params && !isdigit(params[0])) {
+		urlOpenMatch(tag, params);
+	} else {
+		size_t at = (params ? strtoul(strsep(&params, "-,"), NULL, 0) : 1);
+		size_t to = (params ? strtoul(params, NULL, 0) : at);
+		urlOpenRange(tag, at - 1, to);
+	}
+}
+
+static void inputRaw(struct Tag tag, char *params) {
+	(void)tag;
+	if (!self.raw || !params) {
+		self.raw ^= true;
+		uiFmt(
+			TagRaw, UIWarm, "%s window is %s",
+			TagRaw.name, (self.raw ? "enabled" : "disabled")
+		);
+	}
+	if (params) ircFmt("%s\r\n", params);
+}
+
+static void inputURL(struct Tag tag, char *params) {
+	(void)params;
+	urlList(tag);
+}
+
+static void inputWindow(struct Tag tag, char *params) {
+	if (!params) {
+		uiLog(tag, UIHot, L"/window requires a name or number");
+		return;
+	}
+	int num = strtol(params, &params, 0);
+	if (!params[0]) {
+		uiShowNum(num);
+	} else {
+		struct Tag name = tagFind(params);
+		if (name.id != TagNone.id) {
+			uiShowTag(name);
+		} else {
+			uiFmt(tag, UIHot, "No window for %s", params);
+		}
+	}
 }
 
 static const struct {
@@ -184,6 +178,12 @@ static const struct {
 };
 static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 
+void inputTab(void) {
+	for (size_t i = 0; i < CommandsLen; ++i) {
+		tabTouch(TagNone, Commands[i].command);
+	}
+}
+
 void input(struct Tag tag, char *input) {
 	bool slash = (input[0] == '/');
 	if (slash) {
@@ -195,7 +195,7 @@ void input(struct Tag tag, char *input) {
 	if (!slash) {
 		if (tag.id == TagRaw.id) {
 			ircFmt("%s\r\n", input);
-		} else {
+		} else if (tag.id != TagStatus.id) {
 			privmsg(tag, false, input);
 		}
 		return;
@@ -213,7 +213,7 @@ void input(struct Tag tag, char *input) {
 
 	const char *command = word;
 	const char *uniq = tabNext(TagNone, command);
-	if (uniq && uniq == tabNext(TagNone, command)) {
+	if (uniq && tabNext(TagNone, command) == uniq) {
 		command = uniq;
 		tabAccept();
 	} else {
@@ -225,11 +225,5 @@ void input(struct Tag tag, char *input) {
 		Commands[i].handler(tag, input);
 		return;
 	}
-	uiFmt(tag, UICold, "%s isn't a recognized command", command);
-}
-
-void inputTab(void) {
-	for (size_t i = 0; i < CommandsLen; ++i) {
-		tabTouch(TagNone, Commands[i].command);
-	}
+	uiFmt(tag, UIHot, "%s isn't a recognized command", command);
 }
