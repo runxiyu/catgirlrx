@@ -441,7 +441,9 @@ static void keyCode(wchar_t code) {
 		break; case KEY_DC:        edit(win->tag, EditDelete, 0);
 		break; case KEY_BACKSPACE: edit(win->tag, EditBackspace, 0);
 		break; case KEY_ENTER:     edit(win->tag, EditEnter, 0);
+		break; default: return;
 	}
+	uiStatus();
 }
 
 static void keyChar(wchar_t ch) {
@@ -453,7 +455,10 @@ static void keyChar(wchar_t ch) {
 			break; case TermFocusOut: if (win) windowMark(win);
 			break; default: {}
 		}
-		if (event) return;
+		if (event) {
+			uiStatus();
+			return;
+		}
 	}
 	if (ch == Del) ch = L'\b';
 
