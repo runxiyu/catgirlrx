@@ -95,14 +95,6 @@ static void killForeWord(void) {
 	line.ptr = from;
 }
 
-static void rot13(void) {
-	for (wchar_t *ch = line.buf; ch != line.end; ++ch) {
-		if (*ch > L'z') continue;
-		if (iswupper(*ch)) *ch = L'A' + (*ch - L'A' + 13) % 26;
-		if (iswlower(*ch)) *ch = L'a' + (*ch - L'a' + 13) % 26;
-	}
-}
-
 static char *prefix;
 static void complete(struct Tag tag) {
 	if (!line.tab) {
@@ -183,8 +175,6 @@ void edit(struct Tag tag, enum Edit op, wchar_t ch) {
 		break; case EditKillBackWord: reject(); killBackWord();
 		break; case EditKillForeWord: reject(); killForeWord();
 		break; case EditKillLine:     reject(); line.end = line.ptr;
-
-		break; case EditROT13: accept(); rot13();
 
 		break; case EditComplete: complete(tag);
 

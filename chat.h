@@ -162,7 +162,6 @@ enum Edit {
 	EditKillBackWord,
 	EditKillForeWord,
 	EditKillLine,
-	EditROT13,
 	EditComplete,
 	EditEnter,
 };

@@ -474,7 +474,6 @@ static void keyChar(wchar_t ch) {
 			break; case L'f':  edit(ui.view->tag, EditForeWord, 0);
 			break; case L'\b': edit(ui.view->tag, EditKillBackWord, 0);
 			break; case L'd':  edit(ui.view->tag, EditKillForeWord, 0);
-			break; case L'?':  edit(ui.view->tag, EditROT13, 0);
 			break; case L'm':  uiLog(ui.view->tag, UICold, L"");
 			break; default: {
 				if (ch >= L'0' && ch <= L'9') uiViewNum(ch - L'0');
