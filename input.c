@@ -97,6 +97,11 @@ static void inputWhois(struct Tag tag, char *params) {
 	}
 }
 
+static void inputZNC(struct Tag tag, char *params) {
+	(void)tag;
+	ircFmt("ZNC %s\r\n", params ? params : "");
+}
+
 static void inputClose(struct Tag tag, char *params) {
 	(void)params;
 	uiCloseTag(tag);
@@ -175,6 +180,7 @@ static const struct {
 	{ "/who", inputWho },
 	{ "/whois", inputWhois },
 	{ "/window", inputWindow },
+	{ "/znc", inputZNC },
 };
 static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 
