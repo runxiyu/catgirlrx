@@ -219,7 +219,7 @@ static void handleJoin(char *prefix, char *params) {
 
 	if (!strcmp(nick, self.nick)) {
 		tabTouch(TagNone, chan);
-		uiViewTag(tag);
+		uiWindowTag(tag);
 		logReplay(tag);
 	}
 	tabTouch(tag, nick);

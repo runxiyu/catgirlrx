@@ -65,21 +65,21 @@ static short pair8(short pair) {
 	return (pair & 0x70) >> 1 | (pair & 0x07);
 }
 
-struct View {
+struct Window {
 	struct Tag tag;
 	WINDOW *log;
 	int scroll;
 	bool hot, mark;
 	uint unread;
-	struct View *prev;
-	struct View *next;
+	struct Window *prev;
+	struct Window *next;
 };
 
 static struct {
 	bool hide;
 	WINDOW *status;
 	WINDOW *input;
-	struct View *view;
+	struct Window *window;
 } ui;
 
 void uiShow(void) {
@@ -108,7 +108,7 @@ void uiInit(void) {
 	keypad(ui.input, true);
 	nodelay(ui.input, true);
 
-	uiViewTag(TagStatus);
+	uiWindowTag(TagStatus);
 	uiShow();
 }
 
@@ -136,8 +136,8 @@ void uiDraw(void) {
 	if (ui.hide) return;
 	wnoutrefresh(ui.status);
 	pnoutrefresh(
-		ui.view->log,
-		ui.view->scroll - logHeight(), 0,
+		ui.window->log,
+		ui.window->scroll - logHeight(), 0,
 		1, 0,
 		lastLine() - 1, lastCol()
 	);
@@ -221,19 +221,19 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 }
 
 static struct {
-	struct View *head;
-	struct View *tail;
-	struct View *tags[TagsLen];
-} views;
+	struct Window *head;
+	struct Window *tail;
+	struct Window *tag[TagsLen];
+} windows;
 
-static void uiTitle(const struct View *view) {
+static void uiTitle(const struct Window *win) {
 	int unread;
 	char *str;
 	int len = asprintf(
-		&str, "%s%n (%u)", view->tag.name, &unread, view->unread
+		&str, "%s%n (%u)", win->tag.name, &unread, win->unread
 	);
 	if (len < 0) err(EX_OSERR, "asprintf");
-	if (!view->unread) str[unread] = '\0';
+	if (!win->unread) str[unread] = '\0';
 	termTitle(str);
 	free(str);
 }
@@ -241,127 +241,126 @@ static void uiTitle(const struct View *view) {
 static void uiStatus(void) {
 	wmove(ui.status, 0, 0);
 	int num = 0;
-	for (const struct View *view = views.head; view; view = view->next, ++num) {
-		if (!view->unread && view != ui.view) continue;
-		if (view == ui.view) uiTitle(view);
+	for (const struct Window *win = windows.head; win; win = win->next, ++num) {
+		if (!win->unread && ui.window != win) continue;
+		if (ui.window == win) uiTitle(win);
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
 			&str, L"%c %d %s %n(\3%02d%u\3) ",
-			(view == ui.view ? IRCReverse : IRCReset),
-			num, view->tag.name,
-			&unread, (view->hot ? IRCYellow : IRCDefault), view->unread
+			(ui.window == win ? IRCReverse : IRCReset),
+			num, win->tag.name,
+			&unread, (win->hot ? IRCYellow : IRCDefault), win->unread
 		);
 		if (len < 0) err(EX_OSERR, "aswprintf");
-		if (!view->unread) str[unread] = L'\0';
+		if (!win->unread) str[unread] = L'\0';
 		addWrap(ui.status, str);
 		free(str);
 	}
+	// TODO: Put window's topic in the rest of the status area.
 	wclrtoeol(ui.status);
 }
 
-static void viewAppend(struct View *view) {
-	if (views.tail) views.tail->next = view;
-	view->prev = views.tail;
-	view->next = NULL;
-	views.tail = view;
-	if (!views.head) views.head = view;
-	views.tags[view->tag.id] = view;
+static void windowAppend(struct Window *win) {
+	if (windows.tail) windows.tail->next = win;
+	win->prev = windows.tail;
+	win->next = NULL;
+	windows.tail = win;
+	if (!windows.head) windows.head = win;
+	windows.tag[win->tag.id] = win;
 }
 
-static void viewRemove(struct View *view) {
-	if (view->prev) view->prev->next = view->next;
-	if (view->next) view->next->prev = view->prev;
-	if (views.head == view) views.head = view->next;
-	if (views.tail == view) views.tail = view->prev;
-	views.tags[view->tag.id] = NULL;
+static void windowRemove(struct Window *win) {
+	if (win->prev) win->prev->next = win->next;
+	if (win->next) win->next->prev = win->prev;
+	if (windows.head == win) windows.head = win->next;
+	if (windows.tail == win) windows.tail = win->prev;
+	windows.tag[win->tag.id] = NULL;
 }
 
 static const int LogLines = 512;
 
-static struct View *viewTag(struct Tag tag) {
-	struct View *view = views.tags[tag.id];
-	if (view) return view;
+static struct Window *windowTag(struct Tag tag) {
+	struct Window *win = windows.tag[tag.id];
+	if (win) return win;
 
-	view = calloc(1, sizeof(*view));
-	if (!view) err(EX_OSERR, "calloc");
+	win = calloc(1, sizeof(*win));
+	if (!win) err(EX_OSERR, "calloc");
 
-	view->tag = tag;
+	win->tag = tag;
+	win->mark = true;
+	win->scroll = LogLines;
+	win->log = newpad(LogLines, COLS);
+	wsetscrreg(win->log, 0, LogLines - 1);
+	scrollok(win->log, true);
+	wmove(win->log, LogLines - 1, 0);
 
-	view->log = newpad(LogLines, COLS);
-	wsetscrreg(view->log, 0, LogLines - 1);
-	scrollok(view->log, true);
-	wmove(view->log, LogLines - 1, 0);
-
-	view->scroll = LogLines;
-	view->mark = true;
-
-	viewAppend(view);
-	return view;
+	windowAppend(win);
+	return win;
 }
 
-static void viewClose(struct View *view) {
-	viewRemove(view);
-	delwin(view->log);
-	free(view);
+static void windowClose(struct Window *win) {
+	windowRemove(win);
+	delwin(win->log);
+	free(win);
 }
 
 static void uiResize(void) {
 	wresize(ui.status, 1, COLS);
-	for (struct View *view = views.head; view; view = view->next) {
-		wresize(view->log, LogLines, COLS);
-		wmove(view->log, LogLines - 1, lastCol());
+	for (struct Window *win = windows.head; win; win = win->next) {
+		wresize(win->log, LogLines, COLS);
+		wmove(win->log, LogLines - 1, lastCol());
 	}
 }
 
-static void viewUnmark(struct View *view) {
-	view->mark = false;
-	view->unread = 0;
-	view->hot = false;
+static void windowUnmark(struct Window *win) {
+	win->mark = false;
+	win->unread = 0;
+	win->hot = false;
 	uiStatus();
 }
 
-static void uiView(struct View *view) {
-	touchwin(view->log);
-	if (ui.view) ui.view->mark = true;
-	viewUnmark(view);
-	ui.view = view;
+static void uiWindow(struct Window *win) {
+	touchwin(win->log);
+	if (ui.window) ui.window->mark = true;
+	windowUnmark(win);
+	ui.window = win;
 	uiStatus();
 	uiPrompt();
 }
 
-void uiViewTag(struct Tag tag) {
-	uiView(viewTag(tag));
+void uiWindowTag(struct Tag tag) {
+	uiWindow(windowTag(tag));
 }
 
-void uiViewNum(int num) {
+void uiWindowNum(int num) {
 	if (num < 0) {
-		for (struct View *view = views.tail; view; view = view->prev) {
+		for (struct Window *win = windows.tail; win; win = win->prev) {
 			if (++num) continue;
-			uiView(view);
+			uiWindow(win);
 			break;
 		}
 	} else {
-		for (struct View *view = views.head; view; view = view->next) {
+		for (struct Window *win = windows.head; win; win = win->next) {
 			if (num--) continue;
-			uiView(view);
+			uiWindow(win);
 			break;
 		}
 	}
 }
 
 void uiCloseTag(struct Tag tag) {
-	struct View *view = viewTag(tag);
-	if (ui.view == view) {
-		if (view->next) {
-			uiView(view->next);
-		} else if (view->prev) {
-			uiView(view->prev);
+	struct Window *win = windowTag(tag);
+	if (ui.window == win) {
+		if (win->next) {
+			uiWindow(win->next);
+		} else if (win->prev) {
+			uiWindow(win->prev);
 		} else {
 			return;
 		}
 	}
-	viewClose(view);
+	windowClose(win);
 }
 
 static void notify(struct Tag tag, const wchar_t *line) {
@@ -387,24 +386,24 @@ static void notify(struct Tag tag, const wchar_t *line) {
 }
 
 void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
-	struct View *view = viewTag(tag);
+	struct Window *win = windowTag(tag);
 	int lines = 1;
-	waddch(view->log, '\n');
+	waddch(win->log, '\n');
 
-	if (view->mark && heat > UICold) {
-		if (!view->unread++) {
+	if (win->mark && heat > UICold) {
+		if (!win->unread++) {
 			lines++;
-			waddch(view->log, '\n');
+			waddch(win->log, '\n');
 		}
 		if (heat > UIWarm) {
-			view->hot = true;
+			win->hot = true;
 			notify(tag, line);
 		}
 		uiStatus();
 	}
 
-	lines += addWrap(view->log, line);
-	if (view->scroll != LogLines) view->scroll -= lines;
+	lines += addWrap(win->log, line);
+	if (win->scroll != LogLines) win->scroll -= lines;
 }
 
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
@@ -419,14 +418,14 @@ void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
 }
 
 static void scrollUp(int lines) {
-	if (ui.view->scroll == logHeight()) return;
-	if (ui.view->scroll == LogLines) ui.view->mark = true;
-	ui.view->scroll = MAX(ui.view->scroll - lines, logHeight());
+	if (ui.window->scroll == logHeight()) return;
+	if (ui.window->scroll == LogLines) ui.window->mark = true;
+	ui.window->scroll = MAX(ui.window->scroll - lines, logHeight());
 }
 static void scrollDown(int lines) {
-	if (ui.view->scroll == LogLines) return;
-	ui.view->scroll = MIN(ui.view->scroll + lines, LogLines);
-	if (ui.view->scroll == LogLines) viewUnmark(ui.view);
+	if (ui.window->scroll == LogLines) return;
+	ui.window->scroll = MIN(ui.window->scroll + lines, LogLines);
+	if (ui.window->scroll == LogLines) windowUnmark(ui.window);
 }
 
 static void keyCode(wchar_t ch) {
@@ -436,13 +435,13 @@ static void keyCode(wchar_t ch) {
 		break; case KEY_SRIGHT:    scrollDown(1);
 		break; case KEY_PPAGE:     scrollUp(logHeight() / 2);
 		break; case KEY_NPAGE:     scrollDown(logHeight() / 2);
-		break; case KEY_LEFT:      edit(ui.view->tag, EditLeft, 0);
-		break; case KEY_RIGHT:     edit(ui.view->tag, EditRight, 0);
-		break; case KEY_HOME:      edit(ui.view->tag, EditHome, 0);
-		break; case KEY_END:       edit(ui.view->tag, EditEnd, 0);
-		break; case KEY_DC:        edit(ui.view->tag, EditDelete, 0);
-		break; case KEY_BACKSPACE: edit(ui.view->tag, EditBackspace, 0);
-		break; case KEY_ENTER:     edit(ui.view->tag, EditEnter, 0);
+		break; case KEY_LEFT:      edit(ui.window->tag, EditLeft, 0);
+		break; case KEY_RIGHT:     edit(ui.window->tag, EditRight, 0);
+		break; case KEY_HOME:      edit(ui.window->tag, EditHome, 0);
+		break; case KEY_END:       edit(ui.window->tag, EditEnd, 0);
+		break; case KEY_DC:        edit(ui.window->tag, EditDelete, 0);
+		break; case KEY_BACKSPACE: edit(ui.window->tag, EditBackspace, 0);
+		break; case KEY_ENTER:     edit(ui.window->tag, EditEnter, 0);
 	}
 }
 
@@ -452,8 +451,8 @@ static void keyChar(wchar_t ch) {
 	if (ch < 0200) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
-			break; case TermFocusIn:  viewUnmark(ui.view);
-			break; case TermFocusOut: ui.view->mark = true;
+			break; case TermFocusIn:  windowUnmark(ui.window);
+			break; case TermFocusOut: ui.window->mark = true;
 			break; default: {}
 		}
 		if (event) return;
@@ -470,13 +469,13 @@ static void keyChar(wchar_t ch) {
 	if (meta) {
 		meta = false;
 		switch (ch) {
-			break; case L'b':  edit(ui.view->tag, EditBackWord, 0);
-			break; case L'f':  edit(ui.view->tag, EditForeWord, 0);
-			break; case L'\b': edit(ui.view->tag, EditKillBackWord, 0);
-			break; case L'd':  edit(ui.view->tag, EditKillForeWord, 0);
-			break; case L'm':  uiLog(ui.view->tag, UICold, L"");
+			break; case L'b':  edit(ui.window->tag, EditBackWord, 0);
+			break; case L'f':  edit(ui.window->tag, EditForeWord, 0);
+			break; case L'\b': edit(ui.window->tag, EditKillBackWord, 0);
+			break; case L'd':  edit(ui.window->tag, EditKillForeWord, 0);
+			break; case L'm':  uiLog(ui.window->tag, UICold, L"");
 			break; default: {
-				if (ch >= L'0' && ch <= L'9') uiViewNum(ch - L'0');
+				if (ch >= L'0' && ch <= L'9') uiWindowNum(ch - L'0');
 			}
 		}
 		return;
@@ -485,28 +484,28 @@ static void keyChar(wchar_t ch) {
 	switch (ch) {
 		break; case CTRL(L'L'): clearok(curscr, true);
 
-		break; case CTRL(L'A'): edit(ui.view->tag, EditHome, 0);
-		break; case CTRL(L'B'): edit(ui.view->tag, EditLeft, 0);
-		break; case CTRL(L'D'): edit(ui.view->tag, EditDelete, 0);
-		break; case CTRL(L'E'): edit(ui.view->tag, EditEnd, 0);
-		break; case CTRL(L'F'): edit(ui.view->tag, EditRight, 0);
-		break; case CTRL(L'K'): edit(ui.view->tag, EditKillLine, 0);
-		break; case CTRL(L'W'): edit(ui.view->tag, EditKillBackWord, 0);
+		break; case CTRL(L'A'): edit(ui.window->tag, EditHome, 0);
+		break; case CTRL(L'B'): edit(ui.window->tag, EditLeft, 0);
+		break; case CTRL(L'D'): edit(ui.window->tag, EditDelete, 0);
+		break; case CTRL(L'E'): edit(ui.window->tag, EditEnd, 0);
+		break; case CTRL(L'F'): edit(ui.window->tag, EditRight, 0);
+		break; case CTRL(L'K'): edit(ui.window->tag, EditKillLine, 0);
+		break; case CTRL(L'W'): edit(ui.window->tag, EditKillBackWord, 0);
 
-		break; case CTRL(L'C'): edit(ui.view->tag, EditInsert, IRCColor);
-		break; case CTRL(L'N'): edit(ui.view->tag, EditInsert, IRCReset);
-		break; case CTRL(L'O'): edit(ui.view->tag, EditInsert, IRCBold);
-		break; case CTRL(L'R'): edit(ui.view->tag, EditInsert, IRCColor);
-		break; case CTRL(L'T'): edit(ui.view->tag, EditInsert, IRCItalic);
-		break; case CTRL(L'U'): edit(ui.view->tag, EditInsert, IRCUnderline);
-		break; case CTRL(L'V'): edit(ui.view->tag, EditInsert, IRCReverse);
+		break; case CTRL(L'C'): edit(ui.window->tag, EditInsert, IRCColor);
+		break; case CTRL(L'N'): edit(ui.window->tag, EditInsert, IRCReset);
+		break; case CTRL(L'O'): edit(ui.window->tag, EditInsert, IRCBold);
+		break; case CTRL(L'R'): edit(ui.window->tag, EditInsert, IRCColor);
+		break; case CTRL(L'T'): edit(ui.window->tag, EditInsert, IRCItalic);
+		break; case CTRL(L'U'): edit(ui.window->tag, EditInsert, IRCUnderline);
+		break; case CTRL(L'V'): edit(ui.window->tag, EditInsert, IRCReverse);
 
-		break; case L'\b': edit(ui.view->tag, EditBackspace, 0);
-		break; case L'\t': edit(ui.view->tag, EditComplete, 0);
-		break; case L'\n': edit(ui.view->tag, EditEnter, 0);
+		break; case L'\b': edit(ui.window->tag, EditBackspace, 0);
+		break; case L'\t': edit(ui.window->tag, EditComplete, 0);
+		break; case L'\n': edit(ui.window->tag, EditEnter, 0);
 
 		break; default: {
-			if (iswprint(ch)) edit(ui.view->tag, EditInsert, ch);
+			if (iswprint(ch)) edit(ui.window->tag, EditInsert, ch);
 		}
 	}
 }
@@ -531,13 +530,13 @@ void uiPrompt(void) {
 	// TODO: Avoid reformatting these on every read.
 	wchar_t *prompt = NULL;
 	int len = 0;
-	if (isAction(ui.view->tag, input) && editTail() >= &input[4]) {
+	if (isAction(ui.window->tag, input) && editTail() >= &input[4]) {
 		input = &input[4];
 		len = aswprintf(
 			&prompt, L"\3%d* %s\3 ",
 			formatColor(self.user), self.nick
 		);
-	} else if (!isCommand(ui.view->tag, input)) {
+	} else if (!isCommand(ui.window->tag, input)) {
 		len = aswprintf(
 			&prompt, L"\3%d<%s>\3 ",
 			formatColor(self.user), self.nick

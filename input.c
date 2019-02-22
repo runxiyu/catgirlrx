@@ -54,7 +54,7 @@ static void inputRaw(struct Tag tag, char *params) {
 	if (!params || !self.raw) {
 		self.raw ^= true;
 		uiFmt(
-			TagRaw, UIWarm, "Raw view is %s",
+			TagRaw, UIWarm, "Raw window is %s",
 			self.raw ? "enabled" : "disabled"
 		);
 	}
@@ -92,7 +92,7 @@ static void inputQuery(struct Tag tag, char *params) {
 	char *nick = param(tag, "/query", &params, "nick");
 	if (!nick) return;
 	tabTouch(TagNone, nick);
-	uiViewTag(tagFor(nick));
+	uiWindowTag(tagFor(nick));
 	logReplay(tagFor(nick));
 }
 
@@ -139,19 +139,19 @@ static void inputOpen(struct Tag tag, char *params) {
 	}
 }
 
-static void inputView(struct Tag tag, char *params) {
+static void inputWindow(struct Tag tag, char *params) {
 	(void)tag;
-	char *view = param(tag, "/view", &params, "name or number");
-	if (!view) return;
-	int num = strtol(view, &view, 0);
-	if (!view[0]) {
-		uiViewNum(num);
+	char *name = param(tag, "/window", &params, "name or number");
+	if (!name) return;
+	int num = strtol(name, &name, 0);
+	if (!name[0]) {
+		uiWindowNum(num);
 	} else {
-		struct Tag tag = tagFind(view);
+		struct Tag tag = tagFind(name);
 		if (tag.id != TagNone.id) {
-			uiViewTag(tag);
+			uiWindowTag(tag);
 		} else {
-			uiFmt(tag, UIHot, "No view for %s", view);
+			uiFmt(tag, UIHot, "No window for %s", name);
 		}
 	}
 }
@@ -186,9 +186,9 @@ static const struct {
 	{ "/raw", inputRaw },
 	{ "/topic", inputTopic },
 	{ "/url", inputURL },
-	{ "/view", inputView },
 	{ "/who", inputWho },
 	{ "/whois", inputWhois },
+	{ "/window", inputWindow },
 };
 static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 
@@ -215,7 +215,7 @@ void input(struct Tag tag, char *input) {
 	char *trail;
 	strtol(&word[1], &trail, 0);
 	if (!trail[0]) {
-		inputView(tag, &word[1]);
+		inputWindow(tag, &word[1]);
 		return;
 	}
 

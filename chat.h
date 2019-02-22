@@ -121,8 +121,8 @@ void uiDraw(void);
 void uiRead(void);
 void uiPrompt(void);
 
-void uiViewTag(struct Tag tag);
-void uiViewNum(int num);
+void uiWindowTag(struct Tag tag);
+void uiWindowNum(int num);
 void uiCloseTag(struct Tag tag);
 
 enum UIHeat {
