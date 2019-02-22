@@ -98,8 +98,7 @@ static void handleError(char *prefix, char *params) {
 	char *mesg;
 	parse(prefix, NULL, NULL, NULL, params, 1, 0, &mesg);
 	if (self.quit) {
-		uiExit();
-		exit(EX_OK);
+		uiExit(EX_OK);
 	} else {
 		errx(EX_PROTOCOL, "%s", mesg);
 	}
@@ -219,7 +218,7 @@ static void handleJoin(char *prefix, char *params) {
 
 	if (!strcmp(nick, self.nick)) {
 		tabTouch(TagNone, chan);
-		uiWindowTag(tag);
+		uiShowTag(tag);
 		logReplay(tag);
 	}
 	tabTouch(tag, nick);
@@ -404,7 +403,7 @@ static void handleNick(char *prefix, char *params) {
 		free(self.nick);
 		self.nick = strdup(next);
 		if (!self.nick) err(EX_OSERR, "strdup");
-		uiPrompt();
+		uiPrompt(true);
 	}
 
 	struct Tag tag;

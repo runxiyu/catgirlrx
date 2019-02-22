@@ -133,8 +133,7 @@ retry:
 	if (read < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
 	if (!read) {
 		if (!self.quit) errx(EX_PROTOCOL, "unexpected eof");
-		uiExit();
-		exit(EX_OK);
+		uiExit(EX_OK);
 	}
 	len += read;
 

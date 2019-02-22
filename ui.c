@@ -1,4 +1,4 @@
-/* Copyright (C) 2018  Curtis McEnroe <june@causal.agency>
+/* Copyright (C) 2018, 2019  C. McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 
 #include <curses.h>
 #include <err.h>
-#include <locale.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -28,97 +27,16 @@
 #include <wctype.h>
 
 #ifndef A_ITALIC
-#define A_ITALIC A_NORMAL
+#define A_ITALIC A_UNDERLINE
 #endif
 
 #include "chat.h"
 #undef uiFmt
 
-static void colorInit(void) {
-	start_color();
-	use_default_colors();
-	if (COLORS >= 16) {
-		for (short pair = 0; pair < 0x100; ++pair) {
-			if (pair < 0x10) {
-				init_pair(1 + pair, pair, -1);
-			} else {
-				init_pair(1 + pair, pair & 0x0F, (pair & 0xF0) >> 4);
-			}
-		}
-	} else {
-		for (short pair = 0; pair < 0100; ++pair) {
-			if (pair < 010) {
-				init_pair(1 + pair, pair, -1);
-			} else {
-				init_pair(1 + pair, pair & 007, (pair & 070) >> 3);
-			}
-		}
-	}
-}
+#define CTRL(ch) ((ch) & 037)
+enum { Esc = L'\33', Del = L'\177' };
 
-static attr_t attr8(short pair) {
-	if (COLORS >= 16 || pair < 0) return A_NORMAL;
-	return (pair & 0x08) ? A_BOLD : A_NORMAL;
-}
-static short pair8(short pair) {
-	if (COLORS >= 16 || pair < 0) return pair;
-	return (pair & 0x70) >> 1 | (pair & 0x07);
-}
-
-struct Window {
-	struct Tag tag;
-	WINDOW *log;
-	int scroll;
-	bool hot, mark;
-	uint unread;
-	struct Window *prev;
-	struct Window *next;
-};
-
-static struct {
-	bool hide;
-	WINDOW *status;
-	WINDOW *input;
-	struct Window *window;
-} ui;
-
-void uiShow(void) {
-	ui.hide = false;
-	termMode(TermFocus, true);
-	uiDraw();
-}
-
-void uiHide(void) {
-	ui.hide = true;
-	termMode(TermFocus, false);
-	endwin();
-}
-
-void uiInit(void) {
-	setlocale(LC_CTYPE, "");
-	initscr();
-	cbreak();
-	noecho();
-
-	colorInit();
-	termInit();
-
-	ui.status = newwin(1, COLS, 0, 0);
-	ui.input = newpad(1, 512);
-	keypad(ui.input, true);
-	nodelay(ui.input, true);
-
-	uiWindowTag(TagStatus);
-	uiShow();
-}
-
-void uiExit(void) {
-	uiHide();
-	printf(
-		"This program is AGPLv3 Free Software!\n"
-		"The source is available at <" SOURCE_URL ">.\n"
-	);
-}
+static const int LogLines = 512;
 
 static int lastLine(void) {
 	return LINES - 1;
@@ -130,17 +48,194 @@ static int logHeight(void) {
 	return LINES - 2;
 }
 
-static int _;
+struct Window {
+	struct Tag tag;
+	WINDOW *log;
+	bool hot;
+	bool mark;
+	int scroll;
+	uint unread;
+	struct Window *prev;
+	struct Window *next;
+};
 
+static struct {
+	struct Window *active;
+	struct Window *head;
+	struct Window *tail;
+	struct Window *tag[TagsLen];
+} windows;
+
+static void windowAppend(struct Window *win) {
+	if (windows.tail) windows.tail->next = win;
+	win->prev = windows.tail;
+	win->next = NULL;
+	windows.tail = win;
+	if (!windows.head) windows.head = win;
+	windows.tag[win->tag.id] = win;
+}
+
+static void windowRemove(struct Window *win) {
+	windows.tag[win->tag.id] = NULL;
+	if (win->prev) win->prev->next = win->next;
+	if (win->next) win->next->prev = win->prev;
+	if (windows.head == win) windows.head = win->next;
+	if (windows.tail == win) windows.tail = win->prev;
+}
+
+static struct Window *windowFor(struct Tag tag) {
+	struct Window *win = windows.tag[tag.id];
+	if (win) return win;
+
+	win = calloc(1, sizeof(*win));
+	if (!win) err(EX_OSERR, "calloc");
+
+	win->tag = tag;
+	win->mark = true;
+	win->scroll = LogLines;
+
+	win->log = newpad(LogLines, COLS);
+	wsetscrreg(win->log, 0, LogLines - 1);
+	scrollok(win->log, true);
+	wmove(win->log, LogLines - 1, 0);
+
+	windowAppend(win);
+	return win;
+}
+
+static void windowResize(struct Window *win) {
+	wresize(win->log, LogLines, COLS);
+	wmove(win->log, LogLines - 1, lastCol());
+}
+
+static void windowMark(struct Window *win) {
+	win->mark = true;
+}
+static void windowUnmark(struct Window *win) {
+	win->mark = false;
+	win->unread = 0;
+	win->hot = false;
+}
+
+static void windowShow(struct Window *win) {
+	if (windows.active) windowMark(windows.active);
+	if (win) {
+		touchwin(win->log);
+		windowUnmark(win);
+	}
+	windows.active = win;
+}
+
+static void windowClose(struct Window *win) {
+	if (windows.active == win) windowShow(win->next ? win->next : win->prev);
+	windowRemove(win);
+	delwin(win->log);
+	free(win);
+}
+
+static void windowScroll(struct Window *win, int lines) {
+	if (lines < 0) {
+		if (win->scroll == logHeight()) return;
+		if (win->scroll == LogLines) windowMark(win);
+		win->scroll = MAX(win->scroll + lines, logHeight());
+	} else {
+		if (win->scroll == LogLines) return;
+		win->scroll = MIN(win->scroll + lines, LogLines);
+		if (win->scroll == LogLines) windowUnmark(win);
+	}
+}
+
+static void colorInit(void) {
+	start_color();
+	use_default_colors();
+	if (COLORS < 16) {
+		for (short pair = 0; pair < 0100; ++pair) {
+			if (pair < 010) {
+				init_pair(1 + pair, pair, -1);
+			} else {
+				init_pair(1 + pair, pair & 007, (pair & 070) >> 3);
+			}
+		}
+	} else {
+		for (short pair = 0; pair < 0x100; ++pair) {
+			if (pair < 0x10) {
+				init_pair(1 + pair, pair, -1);
+			} else {
+				init_pair(1 + pair, pair & 0x0F, (pair & 0xF0) >> 4);
+			}
+		}
+	}
+}
+
+static attr_t colorAttr(short color) {
+	if (color < 0) return A_NORMAL;
+	if (COLORS < 16 && (color & 0x08)) return A_BOLD;
+	return A_NORMAL;
+}
+static short colorPair(short color) {
+	if (color < 0) return 0;
+	if (COLORS < 16) return 1 + ((color & 0x70) >> 1 | (color & 0x07));
+	return 1 + color;
+}
+
+static struct {
+	bool hide;
+	WINDOW *status;
+	WINDOW *input;
+} ui;
+
+void uiInit(void) {
+	initscr();
+	cbreak();
+	noecho();
+	termInit();
+	colorInit();
+	ui.status = newwin(1, COLS, 0, 0);
+	ui.input = newpad(1, 512);
+	keypad(ui.input, true);
+	nodelay(ui.input, true);
+	uiShow();
+}
+
+static void uiResize(void) {
+	wresize(ui.status, 1, COLS);
+	for (struct Window *win = windows.head; win; win = win->next) {
+		windowResize(win);
+	}
+}
+
+void uiShow(void) {
+	ui.hide = false;
+	termMode(TermFocus, true);
+	uiDraw();
+}
+void uiHide(void) {
+	ui.hide = true;
+	termMode(TermFocus, false);
+	endwin();
+}
+
+void uiExit(int status) {
+	uiHide();
+	printf(
+		"This program is AGPLv3 Free Software!\n"
+		"Code is available from <" SOURCE_URL ">.\n"
+	);
+	exit(status);
+}
+
+static int _;
 void uiDraw(void) {
 	if (ui.hide) return;
 	wnoutrefresh(ui.status);
-	pnoutrefresh(
-		ui.window->log,
-		ui.window->scroll - logHeight(), 0,
-		1, 0,
-		lastLine() - 1, lastCol()
-	);
+	if (windows.active) {
+		pnoutrefresh(
+			windows.active->log,
+			windows.active->scroll - logHeight(), 0,
+			1, 0,
+			lastLine() - 1, lastCol()
+		);
+	}
 	int x;
 	getyx(ui.input, _, x);
 	pnoutrefresh(
@@ -178,11 +273,11 @@ static void addFormat(WINDOW *win, const struct Format *format) {
 	if (format->underline) attr |= A_UNDERLINE;
 	if (format->reverse)   attr |= A_REVERSE;
 
-	short pair = -1;
-	if (format->fg != IRCDefault) pair = Colors[format->fg];
-	if (format->bg != IRCDefault) pair |= Colors[format->bg] << 4;
+	short color = -1;
+	if (format->fg != IRCDefault) color = Colors[format->fg];
+	if (format->bg != IRCDefault) color |= Colors[format->bg] << 4;
 
-	wattr_set(win, attr | attr8(pair), 1 + pair8(pair), NULL);
+	wattr_set(win, attr | colorAttr(color), colorPair(color), NULL);
 	waddnwstr(win, format->str, format->len);
 }
 
@@ -196,9 +291,9 @@ static int printWidth(const wchar_t *str, size_t len) {
 
 static int addWrap(WINDOW *win, const wchar_t *str) {
 	int lines = 0;
-
 	struct Format format = { .str = str };
 	formatReset(&format);
+
 	while (formatParse(&format, NULL)) {
 		size_t word = 1 + wcscspn(&format.str[1], L" ");
 		if (word < format.len) format.len = word;
@@ -214,24 +309,15 @@ static int addWrap(WINDOW *win, const wchar_t *str) {
 			waddch(win, '\n');
 			lines++;
 		}
-
 		addFormat(win, &format);
 	}
 	return lines;
 }
 
-static struct {
-	struct Window *head;
-	struct Window *tail;
-	struct Window *tag[TagsLen];
-} windows;
-
-static void uiTitle(const struct Window *win) {
+static void title(const struct Window *win) {
 	int unread;
 	char *str;
-	int len = asprintf(
-		&str, "%s%n (%u)", win->tag.name, &unread, win->unread
-	);
+	int len = asprintf(&str, "%s%n (%u)", win->tag.name, &unread, win->unread);
 	if (len < 0) err(EX_OSERR, "asprintf");
 	if (!win->unread) str[unread] = '\0';
 	termTitle(str);
@@ -242,13 +328,13 @@ static void uiStatus(void) {
 	wmove(ui.status, 0, 0);
 	int num = 0;
 	for (const struct Window *win = windows.head; win; win = win->next, ++num) {
-		if (!win->unread && ui.window != win) continue;
-		if (ui.window == win) uiTitle(win);
+		if (!win->unread && windows.active != win) continue;
+		if (windows.active == win) title(win);
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
 			&str, L"%c %d %s %n(\3%02d%u\3) ",
-			(ui.window == win ? IRCReverse : IRCReset),
+			(windows.active == win ? IRCReverse : IRCReset),
 			num, win->tag.name,
 			&unread, (win->hot ? IRCYellow : IRCDefault), win->unread
 		);
@@ -257,139 +343,62 @@ static void uiStatus(void) {
 		addWrap(ui.status, str);
 		free(str);
 	}
-	// TODO: Put window's topic in the rest of the status area.
+	// TODO: Put active window's topic in the rest of the status area.
 	wclrtoeol(ui.status);
 }
 
-static void windowAppend(struct Window *win) {
-	if (windows.tail) windows.tail->next = win;
-	win->prev = windows.tail;
-	win->next = NULL;
-	windows.tail = win;
-	if (!windows.head) windows.head = win;
-	windows.tag[win->tag.id] = win;
-}
-
-static void windowRemove(struct Window *win) {
-	if (win->prev) win->prev->next = win->next;
-	if (win->next) win->next->prev = win->prev;
-	if (windows.head == win) windows.head = win->next;
-	if (windows.tail == win) windows.tail = win->prev;
-	windows.tag[win->tag.id] = NULL;
-}
-
-static const int LogLines = 512;
-
-static struct Window *windowTag(struct Tag tag) {
-	struct Window *win = windows.tag[tag.id];
-	if (win) return win;
-
-	win = calloc(1, sizeof(*win));
-	if (!win) err(EX_OSERR, "calloc");
-
-	win->tag = tag;
-	win->mark = true;
-	win->scroll = LogLines;
-	win->log = newpad(LogLines, COLS);
-	wsetscrreg(win->log, 0, LogLines - 1);
-	scrollok(win->log, true);
-	wmove(win->log, LogLines - 1, 0);
-
-	windowAppend(win);
-	return win;
-}
-
-static void windowClose(struct Window *win) {
-	windowRemove(win);
-	delwin(win->log);
-	free(win);
-}
-
-static void uiResize(void) {
-	wresize(ui.status, 1, COLS);
-	for (struct Window *win = windows.head; win; win = win->next) {
-		wresize(win->log, LogLines, COLS);
-		wmove(win->log, LogLines - 1, lastCol());
-	}
-}
-
-static void windowUnmark(struct Window *win) {
-	win->mark = false;
-	win->unread = 0;
-	win->hot = false;
+void uiShowTag(struct Tag tag) {
+	windowShow(windowFor(tag));
 	uiStatus();
+	uiPrompt(false);
 }
 
-static void uiWindow(struct Window *win) {
-	touchwin(win->log);
-	if (ui.window) ui.window->mark = true;
-	windowUnmark(win);
-	ui.window = win;
-	uiStatus();
-	uiPrompt();
-}
-
-void uiWindowTag(struct Tag tag) {
-	uiWindow(windowTag(tag));
-}
-
-void uiWindowNum(int num) {
+void uiShowNum(int num) {
+	struct Window *win = NULL;
 	if (num < 0) {
-		for (struct Window *win = windows.tail; win; win = win->prev) {
-			if (++num) continue;
-			uiWindow(win);
-			break;
+		for (win = windows.tail; win; win = win->prev) {
+			if (!++num) break;
 		}
 	} else {
-		for (struct Window *win = windows.head; win; win = win->next) {
-			if (num--) continue;
-			uiWindow(win);
-			break;
+		for (win = windows.head; win; win = win->next) {
+			if (!num--) break;
 		}
 	}
+	if (win) windowShow(win);
+	uiStatus();
+	uiPrompt(false);
 }
 
 void uiCloseTag(struct Tag tag) {
-	struct Window *win = windowTag(tag);
-	if (ui.window == win) {
-		if (win->next) {
-			uiWindow(win->next);
-		} else if (win->prev) {
-			uiWindow(win->prev);
-		} else {
-			return;
-		}
-	}
-	windowClose(win);
+	windowClose(windowFor(tag));
+	uiStatus();
+	uiPrompt(false);
 }
 
-static void notify(struct Tag tag, const wchar_t *line) {
+static void notify(struct Tag tag, const wchar_t *str) {
 	beep();
 	if (!self.notify) return;
 
+	size_t len = 0;
 	char buf[256];
-	size_t cap = sizeof(buf);
-
-	struct Format format = { .str = line };
+	struct Format format = { .str = str };
 	formatReset(&format);
 	while (formatParse(&format, NULL)) {
-		int len = snprintf(
-			&buf[sizeof(buf) - cap], cap,
+		int n = snprintf(
+			&buf[len], sizeof(buf) - len,
 			"%.*ls", (int)format.len, format.str
 		);
-		if (len < 0) err(EX_OSERR, "snprintf");
-		if ((size_t)len >= cap) break;
-		cap -= len;
+		if (n < 0) err(EX_OSERR, "snprintf");
+		len += n;
+		if (len >= sizeof(buf)) break;
 	}
-
 	eventPipe((const char *[]) { "notify-send", tag.name, buf, NULL });
 }
 
-void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
-	struct Window *win = windowTag(tag);
+void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *str) {
+	struct Window *win = windowFor(tag);
 	int lines = 1;
 	waddch(win->log, '\n');
-
 	if (win->mark && heat > UICold) {
 		if (!win->unread++) {
 			lines++;
@@ -397,12 +406,11 @@ void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line) {
 		}
 		if (heat > UIWarm) {
 			win->hot = true;
-			notify(tag, line);
+			notify(tag, str);
 		}
 		uiStatus();
 	}
-
-	lines += addWrap(win->log, line);
+	lines += addWrap(win->log, str);
 	if (win->scroll != LogLines) win->scroll -= lines;
 }
 
@@ -417,97 +425,92 @@ void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...) {
 	free(str);
 }
 
-static void scrollUp(int lines) {
-	if (ui.window->scroll == logHeight()) return;
-	if (ui.window->scroll == LogLines) ui.window->mark = true;
-	ui.window->scroll = MAX(ui.window->scroll - lines, logHeight());
-}
-static void scrollDown(int lines) {
-	if (ui.window->scroll == LogLines) return;
-	ui.window->scroll = MIN(ui.window->scroll + lines, LogLines);
-	if (ui.window->scroll == LogLines) windowUnmark(ui.window);
-}
-
-static void keyCode(wchar_t ch) {
-	switch (ch) {
-		break; case KEY_RESIZE:    uiResize();
-		break; case KEY_SLEFT:     scrollUp(1);
-		break; case KEY_SRIGHT:    scrollDown(1);
-		break; case KEY_PPAGE:     scrollUp(logHeight() / 2);
-		break; case KEY_NPAGE:     scrollDown(logHeight() / 2);
-		break; case KEY_LEFT:      edit(ui.window->tag, EditLeft, 0);
-		break; case KEY_RIGHT:     edit(ui.window->tag, EditRight, 0);
-		break; case KEY_HOME:      edit(ui.window->tag, EditHome, 0);
-		break; case KEY_END:       edit(ui.window->tag, EditEnd, 0);
-		break; case KEY_DC:        edit(ui.window->tag, EditDelete, 0);
-		break; case KEY_BACKSPACE: edit(ui.window->tag, EditBackspace, 0);
-		break; case KEY_ENTER:     edit(ui.window->tag, EditEnter, 0);
+static void keyCode(wchar_t code) {
+	if (code == KEY_RESIZE) uiResize();
+	struct Window *win = windows.active;
+	if (!win) return;
+	switch (code) {
+		break; case KEY_SLEFT:     windowScroll(win, -1);
+		break; case KEY_SRIGHT:    windowScroll(win, +1);
+		break; case KEY_PPAGE:     windowScroll(win, -logHeight() / 2);
+		break; case KEY_NPAGE:     windowScroll(win, +logHeight() / 2);
+		break; case KEY_LEFT:      edit(win->tag, EditLeft, 0);
+		break; case KEY_RIGHT:     edit(win->tag, EditRight, 0);
+		break; case KEY_HOME:      edit(win->tag, EditHome, 0);
+		break; case KEY_END:       edit(win->tag, EditEnd, 0);
+		break; case KEY_DC:        edit(win->tag, EditDelete, 0);
+		break; case KEY_BACKSPACE: edit(win->tag, EditBackspace, 0);
+		break; case KEY_ENTER:     edit(win->tag, EditEnter, 0);
 	}
 }
 
-#define CTRL(ch) ((ch) ^ 0100)
-
 static void keyChar(wchar_t ch) {
+	struct Window *win = windows.active;
 	if (ch < 0200) {
 		enum TermEvent event = termEvent((char)ch);
 		switch (event) {
-			break; case TermFocusIn:  windowUnmark(ui.window);
-			break; case TermFocusOut: ui.window->mark = true;
+			break; case TermFocusIn:  if (win) windowUnmark(win);
+			break; case TermFocusOut: if (win) windowMark(win);
 			break; default: {}
 		}
 		if (event) return;
 	}
+	if (ch == Del) ch = L'\b';
 
 	static bool meta;
-	if (ch == L'\33') {
+	if (ch == Esc) {
 		meta = true;
 		return;
 	}
-
-	if (ch == L'\177') ch = L'\b';
-
 	if (meta) {
 		meta = false;
+		if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0');
+		if (!win) return;
 		switch (ch) {
-			break; case L'b':  edit(ui.window->tag, EditBackWord, 0);
-			break; case L'f':  edit(ui.window->tag, EditForeWord, 0);
-			break; case L'\b': edit(ui.window->tag, EditKillBackWord, 0);
-			break; case L'd':  edit(ui.window->tag, EditKillForeWord, 0);
-			break; case L'm':  uiLog(ui.window->tag, UICold, L"");
-			break; default: {
-				if (ch >= L'0' && ch <= L'9') uiWindowNum(ch - L'0');
-			}
+			break; case L'b':  edit(win->tag, EditBackWord, 0);
+			break; case L'f':  edit(win->tag, EditForeWord, 0);
+			break; case L'\b': edit(win->tag, EditKillBackWord, 0);
+			break; case L'd':  edit(win->tag, EditKillForeWord, 0);
+			break; case L'm':  uiLog(win->tag, UICold, L"");
 		}
 		return;
 	}
 
+	if (ch == CTRL(L'L')) clearok(curscr, true);
+	if (!win) return;
 	switch (ch) {
-		break; case CTRL(L'L'): clearok(curscr, true);
+		break; case CTRL(L'A'): edit(win->tag, EditHome, 0);
+		break; case CTRL(L'B'): edit(win->tag, EditLeft, 0);
+		break; case CTRL(L'D'): edit(win->tag, EditDelete, 0);
+		break; case CTRL(L'E'): edit(win->tag, EditEnd, 0);
+		break; case CTRL(L'F'): edit(win->tag, EditRight, 0);
+		break; case CTRL(L'K'): edit(win->tag, EditKillLine, 0);
+		break; case CTRL(L'W'): edit(win->tag, EditKillBackWord, 0);
 
-		break; case CTRL(L'A'): edit(ui.window->tag, EditHome, 0);
-		break; case CTRL(L'B'): edit(ui.window->tag, EditLeft, 0);
-		break; case CTRL(L'D'): edit(ui.window->tag, EditDelete, 0);
-		break; case CTRL(L'E'): edit(ui.window->tag, EditEnd, 0);
-		break; case CTRL(L'F'): edit(ui.window->tag, EditRight, 0);
-		break; case CTRL(L'K'): edit(ui.window->tag, EditKillLine, 0);
-		break; case CTRL(L'W'): edit(ui.window->tag, EditKillBackWord, 0);
+		break; case CTRL(L'C'): edit(win->tag, EditInsert, IRCColor);
+		break; case CTRL(L'N'): edit(win->tag, EditInsert, IRCReset);
+		break; case CTRL(L'O'): edit(win->tag, EditInsert, IRCBold);
+		break; case CTRL(L'R'): edit(win->tag, EditInsert, IRCColor);
+		break; case CTRL(L'T'): edit(win->tag, EditInsert, IRCItalic);
+		break; case CTRL(L'U'): edit(win->tag, EditInsert, IRCUnderline);
+		break; case CTRL(L'V'): edit(win->tag, EditInsert, IRCReverse);
 
-		break; case CTRL(L'C'): edit(ui.window->tag, EditInsert, IRCColor);
-		break; case CTRL(L'N'): edit(ui.window->tag, EditInsert, IRCReset);
-		break; case CTRL(L'O'): edit(ui.window->tag, EditInsert, IRCBold);
-		break; case CTRL(L'R'): edit(ui.window->tag, EditInsert, IRCColor);
-		break; case CTRL(L'T'): edit(ui.window->tag, EditInsert, IRCItalic);
-		break; case CTRL(L'U'): edit(ui.window->tag, EditInsert, IRCUnderline);
-		break; case CTRL(L'V'): edit(ui.window->tag, EditInsert, IRCReverse);
+		break; case L'\b': edit(win->tag, EditBackspace, 0);
+		break; case L'\t': edit(win->tag, EditComplete, 0);
+		break; case L'\n': edit(win->tag, EditEnter, 0);
 
-		break; case L'\b': edit(ui.window->tag, EditBackspace, 0);
-		break; case L'\t': edit(ui.window->tag, EditComplete, 0);
-		break; case L'\n': edit(ui.window->tag, EditEnter, 0);
-
-		break; default: {
-			if (iswprint(ch)) edit(ui.window->tag, EditInsert, ch);
-		}
+		break; default: if (iswprint(ch)) edit(win->tag, EditInsert, ch);
 	}
+}
+
+void uiRead(void) {
+	if (ui.hide) uiShow();
+	int ret;
+	wint_t ch;
+	while (ERR != (ret = wget_wch(ui.input, &ch))) {
+		(ret == KEY_CODE_YES ? keyCode(ch) : keyChar(ch));
+	}
+	uiPrompt(false);
 }
 
 static bool isAction(struct Tag tag, const wchar_t *input) {
@@ -515,7 +518,6 @@ static bool isAction(struct Tag tag, const wchar_t *input) {
 	return !wcsncasecmp(input, L"/me ", 4);
 }
 
-// FIXME: This duplicates logic from input.c for wcs.
 static bool isCommand(struct Tag tag, const wchar_t *input) {
 	if (tag.id == TagStatus.id || tag.id == TagRaw.id) return true;
 	if (input[0] != L'/') return false;
@@ -524,29 +526,30 @@ static bool isCommand(struct Tag tag, const wchar_t *input) {
 	return !extra || (space && extra > space);
 }
 
-void uiPrompt(void) {
+void uiPrompt(bool nickChanged) {
+	static wchar_t *promptMesg;
+	static wchar_t *promptAction;
+	if (nickChanged || !promptMesg || !promptAction) {
+		free(promptMesg);
+		free(promptAction);
+		enum IRCColor color = formatColor(self.user);
+		int len = aswprintf(&promptMesg, L"\3%d<%s>\3 ", color, self.nick);
+		if (len < 0) err(EX_OSERR, "aswprintf");
+		len = aswprintf(&promptAction, L"\3%d* %s\3 ", color, self.nick);
+		if (len < 0) err(EX_OSERR, "aswprintf");
+	}
+
 	const wchar_t *input = editHead();
 
-	// TODO: Avoid reformatting these on every read.
-	wchar_t *prompt = NULL;
-	int len = 0;
-	if (isAction(ui.window->tag, input) && editTail() >= &input[4]) {
-		input = &input[4];
-		len = aswprintf(
-			&prompt, L"\3%d* %s\3 ",
-			formatColor(self.user), self.nick
-		);
-	} else if (!isCommand(ui.window->tag, input)) {
-		len = aswprintf(
-			&prompt, L"\3%d<%s>\3 ",
-			formatColor(self.user), self.nick
-		);
-	}
-	if (len < 0) err(EX_OSERR, "aswprintf");
-
 	wmove(ui.input, 0, 0);
-	if (prompt) addWrap(ui.input, prompt);
-	free(prompt);
+	if (windows.active) {
+		if (isAction(windows.active->tag, input) && editTail() >= &input[4]) {
+			input = &input[4];
+			addWrap(ui.input, promptAction);
+		} else if (!isCommand(windows.active->tag, input)) {
+			addWrap(ui.input, promptMesg);
+		}
+	}
 
 	int x = 0;
 	struct Format format = { .str = input };
@@ -555,21 +558,6 @@ void uiPrompt(void) {
 		if (format.split) getyx(ui.input, _, x);
 		addFormat(ui.input, &format);
 	}
-
 	wclrtoeol(ui.input);
 	wmove(ui.input, 0, x);
-}
-
-void uiRead(void) {
-	if (ui.hide) uiShow();
-	int ret;
-	wint_t ch;
-	while (ERR != (ret = wget_wch(ui.input, &ch))) {
-		if (ret == KEY_CODE_YES) {
-			keyCode(ch);
-		} else {
-			keyChar(ch);
-		}
-	}
-	uiPrompt();
 }

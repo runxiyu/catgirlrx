@@ -116,13 +116,13 @@ void ircQuit(const char *mesg);
 void uiInit(void);
 void uiShow(void);
 void uiHide(void);
-void uiExit(void);
 void uiDraw(void);
 void uiRead(void);
-void uiPrompt(void);
+void uiExit(int status);
 
-void uiWindowTag(struct Tag tag);
-void uiWindowNum(int num);
+void uiPrompt(bool nickChanged);
+void uiShowTag(struct Tag tag);
+void uiShowNum(int num);
 void uiCloseTag(struct Tag tag);
 
 enum UIHeat {
@@ -130,7 +130,7 @@ enum UIHeat {
 	UIWarm,
 	UIHot,
 };
-void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *line);
+void uiLog(struct Tag tag, enum UIHeat heat, const wchar_t *str);
 void uiFmt(struct Tag tag, enum UIHeat heat, const wchar_t *format, ...);
 
 enum TermMode {

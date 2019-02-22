@@ -80,11 +80,7 @@ static void inputJoin(struct Tag tag, char *params) {
 }
 
 static void inputPart(struct Tag tag, char *params) {
-	if (params) {
-		ircFmt("PART %s :%s\r\n", tag.name, params);
-	} else {
-		ircFmt("PART %s :Goodbye\r\n", tag.name);
-	}
+	ircFmt("PART %s :%s\r\n", tag.name, params ? params : "Goodbye");
 }
 
 static void inputQuery(struct Tag tag, char *params) {
@@ -92,7 +88,7 @@ static void inputQuery(struct Tag tag, char *params) {
 	char *nick = param(tag, "/query", &params, "nick");
 	if (!nick) return;
 	tabTouch(TagNone, nick);
-	uiWindowTag(tagFor(nick));
+	uiShowTag(tagFor(nick));
 	logReplay(tagFor(nick));
 }
 
@@ -118,11 +114,7 @@ static void inputTopic(struct Tag tag, char *params) {
 
 static void inputQuit(struct Tag tag, char *params) {
 	(void)tag;
-	if (params) {
-		ircQuit(params);
-	} else {
-		ircQuit("Goodbye");
-	}
+	ircQuit(params ? params : "Goodbye");
 }
 
 static void inputURL(struct Tag tag, char *params) {
@@ -145,11 +137,11 @@ static void inputWindow(struct Tag tag, char *params) {
 	if (!name) return;
 	int num = strtol(name, &name, 0);
 	if (!name[0]) {
-		uiWindowNum(num);
+		uiShowNum(num);
 	} else {
 		struct Tag tag = tagFind(name);
 		if (tag.id != TagNone.id) {
-			uiWindowTag(tag);
+			uiShowTag(tag);
 		} else {
 			uiFmt(tag, UIHot, "No window for %s", name);
 		}

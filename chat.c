@@ -17,6 +17,7 @@
 #define _WITH_GETLINE
 
 #include <err.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +50,8 @@ static char *prompt(const char *prompt) {
 }
 
 int main(int argc, char *argv[]) {
+	setlocale(LC_CTYPE, "");
+
 	int opt;
 	while (0 < (opt = getopt(argc, argv, "NW:a:h:j:l:n:p:r:u:vw:"))) {
 		switch (opt) {
