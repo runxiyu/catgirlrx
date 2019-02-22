@@ -343,7 +343,6 @@ static void uiStatus(void) {
 		addWrap(ui.status, str);
 		free(str);
 	}
-	// TODO: Put active window's topic in the rest of the status area.
 	wclrtoeol(ui.status);
 }
 
