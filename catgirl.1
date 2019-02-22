@@ -1,4 +1,4 @@
-.Dd December 2, 2018
+.Dd February 21, 2019
 .Dt CATGIRL 1
 .Os
 .
@@ -34,7 +34,7 @@ Send notifications with
 .
 .It Fl W Ar pass
 Send
-.Ql WEBIRC
+.Cm WEBIRC
 command with
 .Ar pass .
 See
@@ -59,9 +59,11 @@ after connecting.
 may be a comma-separated list.
 .
 .It Fl l Ar path
-Log messages to subdirectories by target
-and files by date under
-.Ar path .
+Log messages to
+subdirectories of
+.Ar path
+named by channel or nick
+in files named by date.
 .
 .It Fl n Ar nick
 Set nickname to
@@ -86,8 +88,8 @@ the same as the nickname.
 .
 .It Fl v
 Show raw IRC protocol in the
-.Ql -raw-
-view.
+.Sy -raw-
+window.
 .
 .It Fl w Ar pass
 Log in with
@@ -96,285 +98,209 @@ Log in with
 .
 .Pp
 If
-.Fl h
+.Fl h Ar host
 or
-.Fl n
+.Fl n Ar nick
 are not provided,
 they will be prompted for.
 .
 .Sh COMMANDS
 Any unique prefix
 may be used to abbreviate a command.
-A slash followed immediately by a number
-is equivalent to
-.Ic /view .
 .
+.Ss Chat Commands
 .Bl -tag -width Ds
-.It Ic /close
-Close the current view.
-Later views are renumbered.
-.
-.It Ic /help
-Equivalent to
-.Ic /man .
-.
 .It Ic /join Ar chan
 Join a channel.
 .
-.It Ic /man
-View this manual.
+.It Ic /me Op Ar action
+Send an action message.
 .
-.It Ic /me Ar action
-Send a CTCP
-.Ql ACTION
-to the current target.
-.
-.It Ic /names
+.It Ic /names , /who
 List users in the current channel.
-Equivalent to
-.Ic /who .
 .
 .It Ic /nick Ar nick
 Change nicknames.
 .
-.It Ic /open Op Ar range
-.Xr open 1
-.Ar range
-most recent URLs
-appearing in the current view.
-.Ar range
-may be a hypen- or comma-separated range
-from the most recent URL,
-starting at 1.
-The default
-.Ar range
-is 1.
-.
-.It Ic /open Ar substring
-.Xr open 1
-the most recent URL
-appearing in the current view
-matching
-.Ar substring .
-.
-.It Ic /part
+.It Ic /part Op Ar message
 Leave the current channel.
 .
 .It Ic /query Ar nick
-Open a private message view with
-.Ar nick .
+Open a private message view.
 .
 .It Ic /quit Op Ar message
 Quit IRC.
-The default
-.Ar message
-is
-.Dq Goodbye .
 .
-.It Ic /raw Op Ar command
-Toggle the
-.Ql -raw-
-view
-and send the raw IRC
-.Ar command .
+.It Ic /raw Ar command
+Send a raw IRC command.
 .
 .It Ic /topic Op Ar topic
-Show the topic of the current channel
-or set it to
-.Ar topic .
-.
-.It Ic /url
-Hide the UI and
-list the most recent URLs
-which appeared in the current view.
-Press
-.Aq Enter
-to resume the UI.
-.
-.It Ic /view Ar num
-Switch to view number
-.Ar num .
-.
-.It Ic /view Ar name
-Switch to view for
-.Ar name .
-.
-.It Ic /who
-List users in the current channel.
+Show or set the topic of the current channel.
 .
 .It Ic /whois Ar nick
 Query information about a user.
 .El
 .
 .Pp
-Additionally,
-messages entered in the
-.Ql -raw-
-view
-will be sent as raw IRC commands.
+Any messages entered in the
+.Sy -raw-
+window will be sent as raw IRC commands.
+.
+.Ss UI Commands
+A slash followed immediately by a number
+is equivalent to the
+.Ic /window
+command.
+.
+.Bl -tag -width Ds
+.It Ic /close
+Close the current window.
+.
+.It Ic /help , /man
+View this manual.
+.
+.It Ic /open Op Ar range
+Open a
+.Ar range
+of recent URLs
+in the current window with
+.Xr open 1 .
+URLs are numbered
+from the most recent
+starting at 1.
+The
+.Ar range
+may be a single number,
+or a hyphen- or comma-separated range.
+.
+.It Ic /open Ar substring
+Open the most recent URL
+in the current window
+matching the
+.Ar substring .
+.
+.It Ic /raw
+Toggle the
+.Sy -raw-
+window.
+.
+.It Ic /url
+Hide the UI
+and list the most recent URLs
+in the current window.
+Press
+.Aq Enter
+to resume the UI.
+.
+.It Ic /window Ar number | name
+Switch to window by number or name.
+.El
 .
 .Sh KEY BINDINGS
 .Nm
-provides Emacs-like
-line editing keys,
-as well as keys for entering
-IRC formatting codes.
+provides
+.Xr emacs 1 Ns -like
+line editing keys
+as well as keys for applying IRC formatting.
 The prefixes
-.Sy C- ,
-.Sy M-
-and
-.Sy S-
-represent the control, meta and shift modifiers,
+.Ic C- , M- , S-
+represent the control, meta (alt) and shift modifiers,
 respectively.
-Special keys are enclosed in
-.Aq angle brackets .
-.
-.Ss View Keys
-.Bl -tag -width <PageDown>
-.It Sy C-l
-Redraw the UI.
-.
-.It Sy M-m
-Insert a blank line in the view.
-.
-.It Sy M-0 .. Sy M-9
-Switch to view by number.
-See
-.Ic /view .
-.
-.It Sy S- Ns Aq Sy Left
-Scroll view up by one line.
-.
-.It Sy S- Ns Aq Sy Right
-Scroll view down by one line.
-.
-.It Aq Sy PageUp
-Scroll view up by half a page.
-.
-.It Aq Sy PageDown
-Scroll view down by half a page.
-.El
+.Ic M- Ns Ar x
+sequences can also be typed as
+.Ic Esc
+followed by
+.Ar x .
 .
 .Ss Line Editing
-.Bl -tag -width "C-f, <Right>"
-.It Sy C-b , Aq Sy Left
-Move cursor left.
-.
-.It Sy C-f , Aq Sy Right
-Move cursor right.
-.
-.It Sy C-a , Aq Sy Home
+.Bl -tag -width Ds -compact
+.It Ic C-a
 Move cursor to beginning of line.
-.
-.It Sy C-e , Aq Sy End
-Move cursor to end of line.
-.
-.It Sy M-b
-Move cursor to beginning of word.
-.
-.It Sy M-f
-Move cursor to end of word.
-.
-.It Aq Sy Backspace
-Delete character before cursor.
-.
-.It Sy C-d , Aq Sy Delete
+.It Ic C-b
+Move cursor left.
+.It Ic C-d
 Delete character under cursor.
-.
-.It Sy C-w , Sy M- Ns Aq Sy Backspace
-Delete word before cursor.
-.
-.It Sy M-d
-Delete word after cursor.
-.
-.It Sy C-k
+.It Ic C-e
+Move cursor to end of line.
+.It Ic C-f
+Move cursor right.
+.It Ic C-k
 Delete line after cursor.
-.
-.It Aq Sy Tab
-Cycle through completions
-for commands, nicks and channels.
-.
-.It Sy M-?
-ROT13-encode line.
+.It Ic C-w
+Delete word before cursor.
+.It Ic M-b
+Move cursor to beginning of word.
+.It Ic M-d
+Delete word after cursor.
+.It Ic M-f
+Move cursor to end of word.
+.It Ic Tab
+Cycle through completions for
+commands, nicks and channels.
 .El
 .
 .Ss IRC Formatting
-.Bl -tag -width Ds
-.It Sy C-n
+.Bl -tag -width Ds -compact
+.It Ic C-n
 Reset formatting.
-.
-.It Sy C-o
+.It Ic C-o
 Toggle bold.
-Note: this may need to be typed as
-.Sy C-v C-o .
-.
-.It Sy C-t
-Toggle italic.
-.
-.It Sy C-u
-Toggle underline.
-.
-.It Sy C-v
-Toggle reverse video.
-Note: this must usually be typed as
-.Sy C-v C-v .
-.
-.It Sy C-r
+This may need to be typed as
+.Ic C-v C-o .
+.It Ic C-r
 Set or reset color.
+.It Ic C-t
+Toggle italics.
+.It Ic C-u
+Toggle underline.
+.It Ic C-v
+Toggle reverse video.
+This must usually be typed as
+.Ic C-v C-v .
 .El
 .
 .Pp
-To reset color,
-follow
-.Sy C-r
+To reset color, follow
+.Ic C-r
 by a non-digit.
-To set the foreground color,
-follow
-.Sy C-r
-by one or two digits.
-To set the foreground and background colors,
-follow
-.Sy C-r
-by one or two digits,
-a comma,
-and one or two digits.
+To set colors, follow
+.Ic C-r
+by one or two digits
+to set the foreground color,
+optionally followed by a comma
+and one or two digits
+to set the background color.
 .
 .Pp
-The colors are as follows:
+The color numbers are as follows:
 .Pp
-.Bl -tag -width Ds -compact
-.It 0
-white
-.It 1
-black
-.It 2
-blue
-.It 3
-green
-.It 4
-red
-.It 5
-brown (dark red)
-.It 6
-magenta
-.It 7
-orange (dark yellow)
-.It 8
-yellow
-.It 9
-light green
-.It 10
-cyan
-.It 11
-light cyan
-.It 12
-light blue
-.It 13
-pink (light magenta)
-.It 14
-gray
-.It 15
-light gray
+.Bl -column "7" "orange (dark yellow)" "15" "pink (light magenta)"
+.It 0 Ta white Ta \ 8 Ta yellow
+.It 1 Ta black Ta \ 9 Ta light green
+.It 2 Ta blue Ta 10 Ta cyan
+.It 3 Ta green Ta 11 Ta light cyan
+.It 4 Ta red Ta 12 Ta light blue
+.It 5 Ta brown (dark red) Ta 13 Ta pink (light magenta)
+.It 6 Ta magenta Ta 14 Ta gray
+.It 7 Ta orange (dark yellow) Ta 15 Ta light gray
+.El
+.
+.Ss Window Keys
+.Bl -tag -width "PageDown" -compact
+.It Ic C-l
+Redraw the UI.
+.It Ic M-m
+Insert a blank line in the window.
+.It Ic M- Ns Ar n
+Switch to window by number 0\(en9.
+.It Ic PageDown
+Scroll window down by half a page.
+.It Ic PageUp
+Scroll window up by half a page.
+.It Ic S-Left
+Scroll window up by one line.
+.It Ic S-Right
+Scroll window down by one line.
 .El
 .
 .Sh ENVIRONMENT
@@ -386,7 +312,7 @@ is passed and
 .Ev SSH_CLIENT
 is set,
 the
-.Ql WEBIRC
+.Cm WEBIRC
 command is used
 to set the hostname
 to the first word of
