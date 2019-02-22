@@ -1,4 +1,4 @@
-/* Copyright (C) 2018  Curtis McEnroe <june@causal.agency>
+/* Copyright (C) 2018  C. McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,20 +21,26 @@
 
 #include "chat.h"
 
-#define NONE   "-none-"
-#define STATUS "-status-"
-#define RAW    "-raw-"
+#define GLOBAL_TAGS \
+	X(TagNone,   0, "<none>") \
+	X(TagStatus, 1, "<status>") \
+	X(TagRaw,    2, "<raw>")
+enum { GlobalTagsLen = 3 };
 
-const struct Tag TagNone   = { 0, NONE };
-const struct Tag TagStatus = { 1, STATUS };
-const struct Tag TagRaw    = { 2, RAW };
+#define X(tag, id, name) const struct Tag tag = { id, name };
+GLOBAL_TAGS
+#undef X
 
 static struct {
 	char *name[TagsLen];
 	size_t len;
 } tags = {
-	.name = { NONE, STATUS, RAW },
-	.len = 3,
+	.name = {
+#define X(_, id, name) [id] = name,
+		GLOBAL_TAGS
+#undef X
+	},
+	.len = GlobalTagsLen,
 };
 
 struct Tag tagFind(const char *name) {
