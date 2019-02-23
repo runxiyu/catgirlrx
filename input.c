@@ -41,7 +41,8 @@ static void privmsg(struct Tag tag, bool action, const char *mesg) {
 typedef void Handler(struct Tag tag, char *params);
 
 static void inputJoin(struct Tag tag, char *params) {
-	ircFmt("JOIN :%s\r\n", params ? params : tag.name);
+	char *chan = strsep(&params, " ");
+	ircFmt("JOIN :%s\r\n", chan ? chan : tag.name);
 }
 
 static void inputMe(struct Tag tag, char *params) {
@@ -49,8 +50,9 @@ static void inputMe(struct Tag tag, char *params) {
 }
 
 static void inputNick(struct Tag tag, char *params) {
-	if (params) {
-		ircFmt("NICK :%s\r\n", params);
+	char *nick = strsep(&params, " ");
+	if (nick) {
+		ircFmt("NICK :%s\r\n", nick);
 	} else {
 		uiLog(tag, UIHot, L"/nick requires a nickname");
 	}
@@ -90,8 +92,9 @@ static void inputWho(struct Tag tag, char *params) {
 }
 
 static void inputWhois(struct Tag tag, char *params) {
-	if (params) {
-		ircFmt("WHOIS :%s\r\n", params);
+	char *nick = strsep(&params, " ");
+	if (nick) {
+		ircFmt("WHOIS :%s\r\n", nick);
 	} else {
 		uiLog(tag, UIHot, L"/whois requires a nick");
 	}
@@ -142,20 +145,22 @@ static void inputURL(struct Tag tag, char *params) {
 }
 
 static void inputWindow(struct Tag tag, char *params) {
-	if (!params) {
+	char *word = strsep(&params, " ");
+	if (!word) {
 		uiLog(tag, UIHot, L"/window requires a name or number");
 		return;
 	}
-	bool relative = (params[0] == '+' || params[0] == '-');
-	int num = strtol(params, &params, 0);
-	if (!params[0]) {
+	bool relative = (word[0] == '+' || word[0] == '-');
+	char *trail;
+	int num = strtol(word, &trail, 0);
+	if (!trail[0]) {
 		uiShowNum(num, relative);
 	} else {
-		struct Tag name = tagFind(params);
+		struct Tag name = tagFind(word);
 		if (name.id != TagNone.id) {
 			uiShowTag(name);
 		} else {
-			uiFmt(tag, UIHot, "No window for %s", params);
+			uiFmt(tag, UIHot, "No window for %s", word);
 		}
 	}
 }
