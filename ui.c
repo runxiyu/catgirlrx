@@ -493,9 +493,9 @@ static void keyChar(wchar_t ch) {
 		break; case CTRL(L'W'): edit(win->tag, EditKillBackWord, 0);
 
 		break; case CTRL(L'C'): edit(win->tag, EditInsert, IRCColor);
-		break; case CTRL(L'N'): edit(win->tag, EditInsert, IRCReset);
 		break; case CTRL(L'O'): edit(win->tag, EditInsert, IRCBold);
 		break; case CTRL(L'R'): edit(win->tag, EditInsert, IRCColor);
+		break; case CTRL(L'S'): edit(win->tag, EditInsert, IRCReset);
 		break; case CTRL(L'T'): edit(win->tag, EditInsert, IRCItalic);
 		break; case CTRL(L'U'): edit(win->tag, EditInsert, IRCUnderline);
 		break; case CTRL(L'V'): edit(win->tag, EditInsert, IRCReverse);
