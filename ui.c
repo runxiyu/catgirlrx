@@ -429,8 +429,8 @@ static void keyCode(wchar_t code) {
 	struct Window *win = windows.active;
 	if (!win) return;
 	switch (code) {
-		break; case KEY_SLEFT:     windowScroll(win, -1);
-		break; case KEY_SRIGHT:    windowScroll(win, +1);
+		break; case KEY_UP:        windowScroll(win, -1);
+		break; case KEY_DOWN:      windowScroll(win, +1);
 		break; case KEY_PPAGE:     windowScroll(win, -logHeight() / 2);
 		break; case KEY_NPAGE:     windowScroll(win, +logHeight() / 2);
 		break; case KEY_LEFT:      edit(win->tag, EditLeft, 0);
