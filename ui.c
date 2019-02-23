@@ -190,6 +190,7 @@ void uiInit(void) {
 	noecho();
 	termInit();
 	termNoFlow();
+	def_prog_mode();
 	colorInit();
 	ui.status = newwin(1, COLS, 0, 0);
 	ui.input = newpad(1, 512);
