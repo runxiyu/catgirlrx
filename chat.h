@@ -145,6 +145,7 @@ enum TermEvent {
 	TermPasteEnd,
 };
 void termInit(void);
+void termNoFlow(void);
 void termTitle(const char *title);
 void termMode(enum TermMode mode, bool set);
 enum TermEvent termEvent(char ch);
