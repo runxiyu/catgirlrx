@@ -152,11 +152,6 @@ Any messages entered in the
 window will be sent as raw IRC commands.
 .
 .Ss UI Commands
-A slash followed immediately by a number
-is equivalent to the
-.Ic /window
-command.
-.
 .Bl -tag -width Ds
 .It Ic /close
 Close the current window.
@@ -197,8 +192,18 @@ Press
 .Aq Enter
 to resume the UI.
 .
-.It Ic /window Ar number | name
-Switch to window by number or name.
+.It Ic /window Ar name
+Switch to window by name.
+.
+.It Ic /window Ar num , Ic / Ns Ar num
+Switch to window by number.
+If
+.Ar num
+starts with
+.Cm +
+or
+.Cm - ,
+the number is relative to the current window.
 .El
 .
 .Sh KEY BINDINGS
