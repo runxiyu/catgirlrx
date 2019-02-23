@@ -146,9 +146,10 @@ static void inputWindow(struct Tag tag, char *params) {
 		uiLog(tag, UIHot, L"/window requires a name or number");
 		return;
 	}
+	bool relative = (params[0] == '+' || params[0] == '-');
 	int num = strtol(params, &params, 0);
 	if (!params[0]) {
-		uiShowNum(num);
+		uiShowNum(num, relative);
 	} else {
 		struct Tag name = tagFind(params);
 		if (name.id != TagNone.id) {

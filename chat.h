@@ -122,7 +122,7 @@ void uiExit(int status);
 
 void uiPrompt(bool nickChanged);
 void uiShowTag(struct Tag tag);
-void uiShowNum(int num);
+void uiShowNum(int num, bool relative);
 void uiCloseTag(struct Tag tag);
 
 enum UIHeat {

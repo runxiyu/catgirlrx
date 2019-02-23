@@ -354,18 +354,15 @@ void uiShowTag(struct Tag tag) {
 	uiPrompt(false);
 }
 
-void uiShowNum(int num) {
-	struct Window *win = NULL;
+void uiShowNum(int num, bool relative) {
+	struct Window *win = (relative ? windows.active : windows.head);
 	if (num < 0) {
-		for (win = windows.tail; win; win = win->prev) {
-			if (!++num) break;
-		}
+		for (; win; win = win->prev) if (!num++) break;
 	} else {
-		for (win = windows.head; win; win = win->next) {
-			if (!num--) break;
-		}
+		for (; win; win = win->next) if (!num--) break;
 	}
-	if (win) windowShow(win);
+	if (!win) return;
+	windowShow(win);
 	uiStatus();
 	uiPrompt(false);
 }
@@ -470,7 +467,7 @@ static void keyChar(wchar_t ch) {
 	}
 	if (meta) {
 		meta = false;
-		if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0');
+		if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0', false);
 		if (!win) return;
 		switch (ch) {
 			break; case L'b':  edit(win->tag, EditBackWord, 0);
@@ -485,6 +482,9 @@ static void keyChar(wchar_t ch) {
 	if (ch == CTRL(L'L')) clearok(curscr, true);
 	if (!win) return;
 	switch (ch) {
+		break; case CTRL(L'N'): uiShowNum(+1, true);
+		break; case CTRL(L'P'): uiShowNum(-1, true);
+
 		break; case CTRL(L'A'): edit(win->tag, EditHome, 0);
 		break; case CTRL(L'B'): edit(win->tag, EditLeft, 0);
 		break; case CTRL(L'D'): edit(win->tag, EditDelete, 0);
