@@ -430,8 +430,8 @@ static void keyCode(wchar_t code) {
 	switch (code) {
 		break; case KEY_UP:        windowScroll(win, -1);
 		break; case KEY_DOWN:      windowScroll(win, +1);
-		break; case KEY_PPAGE:     windowScroll(win, -logHeight() / 2);
-		break; case KEY_NPAGE:     windowScroll(win, +logHeight() / 2);
+		break; case KEY_PPAGE:     windowScroll(win, -(logHeight() - 1));
+		break; case KEY_NPAGE:     windowScroll(win, +(logHeight() - 1));
 		break; case KEY_LEFT:      edit(win->tag, EditLeft, 0);
 		break; case KEY_RIGHT:     edit(win->tag, EditRight, 0);
 		break; case KEY_HOME:      edit(win->tag, EditHome, 0);
