@@ -45,11 +45,15 @@ struct Tag tagFind(const char *name) {
 
 struct Tag tagFor(const char *name, enum IRCColor color) {
 	struct Tag tag = tagFind(name);
-	if (tag.id != TagNone.id) return tag;
+	if (tag.id != TagNone.id) {
+		tag.color = tags.color[tag.id] = color;
+		return tag;
+	}
 	if (tags.len == TagsLen) return TagStatus;
+
 	size_t id = tags.len++;
 	tags.name[id] = strdup(name);
-	if (!tags.name[id]) err(EX_OSERR, "strdup");
 	tags.color[id] = color;
+	if (!tags.name[id]) err(EX_OSERR, "strdup");
 	return (struct Tag) { id, tags.name[id], color };
 }

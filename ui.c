@@ -85,7 +85,10 @@ static void windowRemove(struct Window *win) {
 
 static struct Window *windowFor(struct Tag tag) {
 	struct Window *win = windows.tag[tag.id];
-	if (win) return win;
+	if (win) {
+		win->tag = tag;
+		return win;
+	}
 
 	win = calloc(1, sizeof(*win));
 	if (!win) err(EX_OSERR, "calloc");
