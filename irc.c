@@ -111,6 +111,7 @@ void ircFmt(const char *format, ...) {
 	va_end(ap);
 	if (!buf) err(EX_OSERR, "vasprintf");
 	if (self.raw) {
+		if (!isatty(STDERR_FILENO)) fprintf(stderr, "<<< %.*s\n", len - 2, buf);
 		uiFmt(TagRaw, UICold, "\3%d<<<\3 %.*s", IRCWhite, len - 2, buf);
 	}
 	ircWrite(buf, len);
@@ -142,6 +143,7 @@ retry:
 	while (NULL != (crlf = memmem(line, &buf[len] - line, "\r\n", 2))) {
 		crlf[0] = '\0';
 		if (self.raw) {
+			if (!isatty(STDERR_FILENO)) fprintf(stderr, ">>> %s\n", line);
 			uiFmt(TagRaw, UICold, "\3%d>>>\3 %s", IRCGray, line);
 		}
 		handle(line);
