@@ -21,27 +21,17 @@
 
 #include "chat.h"
 
-#define GLOBAL_TAGS \
-	X(TagNone,   0, "<none>") \
-	X(TagStatus, 1, "<status>") \
-	X(TagRaw,    2, "<raw>")
-enum { GlobalTagsLen = 3 };
-
-#define X(tag, id, name) const struct Tag tag = { id, name };
-GLOBAL_TAGS
-#undef X
-
 static struct {
 	char *name[TagsLen];
 	size_t len;
 } tags = {
-	.name = {
-#define X(_, id, name) [id] = name,
-		GLOBAL_TAGS
-#undef X
-	},
-	.len = GlobalTagsLen,
+	.name = { "<none>", "<status>", "<raw>" },
+	.len = 3,
 };
+
+const struct Tag TagNone   = { 0, "<none>" };
+const struct Tag TagStatus = { 1, "<status>" };
+const struct Tag TagRaw    = { 2, "<raw>" };
 
 struct Tag tagFind(const char *name) {
 	for (size_t id = 0; id < tags.len; ++id) {
