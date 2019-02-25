@@ -367,6 +367,19 @@ void uiShowNum(int num, bool relative) {
 	uiPrompt(false);
 }
 
+static void uiShowAuto(void) {
+	struct Window *unread = NULL;
+	struct Window *hot;
+	for (hot = windows.head; hot; hot = hot->next) {
+		if (hot->hot) break;
+		if (!unread && hot->unread) unread = hot;
+	}
+	if (!hot && !unread) return;
+	windowShow(hot ? hot : unread);
+	uiStatus();
+	uiPrompt(false);
+}
+
 void uiCloseTag(struct Tag tag) {
 	windowClose(windowFor(tag));
 	uiStatus();
@@ -447,6 +460,7 @@ static void keyCode(wchar_t code) {
 static void keyMeta(wchar_t ch) {
 	struct Window *win = windows.active;
 	if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0', false);
+	if (ch == L'a') uiShowAuto();
 	if (!win) return;
 	switch (ch) {
 		break; case L'b':  edit(win->tag, EditBackWord, 0);
