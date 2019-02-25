@@ -66,8 +66,8 @@ static void inputQuery(struct Tag tag, char *params) {
 	char *nick = strsep(&params, " ");
 	if (nick) {
 		tabTouch(TagNone, nick);
-		uiShowTag(tagFor(nick));
-		logReplay(tagFor(nick));
+		uiShowTag(tagFor(nick, IRCDefault));
+		logReplay(tagFor(nick, IRCDefault));
 	} else {
 		uiLog(tag, UIHot, L"/query requires a nickname");
 	}

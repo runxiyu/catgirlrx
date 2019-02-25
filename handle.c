@@ -214,7 +214,7 @@ static void handleErrorNoSuchNick(char *prefix, char *params) {
 static void handleJoin(char *prefix, char *params) {
 	char *nick, *user, *chan;
 	parse(prefix, &nick, &user, NULL, params, 1, 0, &chan);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	if (!strcmp(nick, self.nick)) {
 		tabTouch(TagNone, chan);
@@ -234,7 +234,7 @@ static void handleJoin(char *prefix, char *params) {
 static void handlePart(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 1, 1, &chan, &mesg);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	if (!strcmp(nick, self.nick)) {
 		tabClear(tag);
@@ -263,7 +263,7 @@ static void handlePart(char *prefix, char *params) {
 static void handleKick(char *prefix, char *params) {
 	char *nick, *user, *chan, *kick, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 1, &chan, &kick, &mesg);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 	bool kicked = !strcmp(kick, self.nick);
 
 	if (kicked) {
@@ -324,7 +324,7 @@ static void handleQuit(char *prefix, char *params) {
 static void handleReplyTopic(char *prefix, char *params) {
 	char *chan, *topic;
 	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &chan, &topic);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	urlScan(tag, topic);
 	uiFmt(
@@ -338,7 +338,7 @@ static void handleReplyTopic(char *prefix, char *params) {
 static void handleTopic(char *prefix, char *params) {
 	char *nick, *user, *chan, *topic;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &topic);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 
@@ -369,7 +369,7 @@ static void handleReplyWho(char *prefix, char *params) {
 		params, 6, 0, NULL, &chan, &user, NULL, NULL, &nick
 	);
 	if (user[0] == '~') user = &user[1];
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	tabAdd(tag, nick);
 
@@ -385,7 +385,7 @@ static void handleReplyWho(char *prefix, char *params) {
 static void handleReplyEndOfWho(char *prefix, char *params) {
 	char *chan;
 	parse(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
-	struct Tag tag = tagFor(chan);
+	struct Tag tag = tagFor(chan, formatColor(chan));
 
 	uiFmt(
 		tag, UICold,
@@ -441,7 +441,9 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	bool direct = !strcmp(chan, self.nick);
-	struct Tag tag = (direct ? tagFor(nick) : tagFor(chan));
+	struct Tag tag = direct
+		? tagFor(nick, formatColor(user))
+		: tagFor(chan, formatColor(chan));
 	if (mesg[0] == '\1') {
 		handleCTCP(tag, nick, user, mesg);
 		return;
@@ -466,7 +468,11 @@ static void handleNotice(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	struct Tag tag = TagStatus;
-	if (user) tag = (strcmp(chan, self.nick) ? tagFor(chan) : tagFor(nick));
+	if (user) {
+		tag = strcmp(chan, self.nick)
+			? tagFor(chan, formatColor(chan))
+			: tagFor(nick, formatColor(user));
+	}
 
 	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 

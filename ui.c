@@ -335,10 +335,11 @@ static void uiStatus(void) {
 		int unread;
 		wchar_t *str;
 		int len = aswprintf(
-			&str, L"%c %d %s %n(\3%02d%u\3) ",
-			(windows.active == win ? IRCReverse : IRCReset),
+			&str, L"%c\3%d %d %s %n(\3%02d%u\3%d) ",
+			(windows.active == win ? IRCReverse : IRCReset), win->tag.color,
 			num, win->tag.name,
-			&unread, (win->hot ? IRCYellow : IRCDefault), win->unread
+			&unread, (win->hot ? IRCWhite : win->tag.color), win->unread,
+			win->tag.color
 		);
 		if (len < 0) err(EX_OSERR, "aswprintf");
 		if (!win->unread) str[unread] = L'\0';

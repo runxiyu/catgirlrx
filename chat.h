@@ -52,18 +52,6 @@ void eventWait(const char *argv[static 2]);
 void eventPipe(const char *argv[static 2]);
 noreturn void eventLoop(void);
 
-struct Tag {
-	size_t id;
-	const char *name;
-};
-
-enum { TagsLen = 256 };
-const struct Tag TagNone;
-const struct Tag TagStatus;
-const struct Tag TagRaw;
-struct Tag tagFind(const char *name);
-struct Tag tagFor(const char *name);
-
 enum IRCColor {
 	IRCWhite,
 	IRCBlack,
@@ -91,6 +79,19 @@ enum {
 	IRCItalic    = 035,
 	IRCUnderline = 037,
 };
+
+struct Tag {
+	size_t id;
+	const char *name;
+	enum IRCColor color;
+};
+
+enum { TagsLen = 256 };
+const struct Tag TagNone;
+const struct Tag TagStatus;
+const struct Tag TagRaw;
+struct Tag tagFind(const char *name);
+struct Tag tagFor(const char *name, enum IRCColor color);
 
 struct Format {
 	const wchar_t *str;
