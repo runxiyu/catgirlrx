@@ -444,41 +444,21 @@ static void keyCode(wchar_t code) {
 	uiStatus();
 }
 
+static void keyMeta(wchar_t ch) {
+	struct Window *win = windows.active;
+	if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0', false);
+	if (!win) return;
+	switch (ch) {
+		break; case L'b':  edit(win->tag, EditBackWord, 0);
+		break; case L'f':  edit(win->tag, EditForeWord, 0);
+		break; case L'\b': edit(win->tag, EditKillBackWord, 0);
+		break; case L'd':  edit(win->tag, EditKillForeWord, 0);
+		break; case L'm':  uiLog(win->tag, UICold, L"");
+	}
+}
+
 static void keyChar(wchar_t ch) {
 	struct Window *win = windows.active;
-	if (ch < 0200) {
-		enum TermEvent event = termEvent((char)ch);
-		switch (event) {
-			break; case TermFocusIn:  if (win) windowUnmark(win);
-			break; case TermFocusOut: if (win) windowMark(win);
-			break; default: {}
-		}
-		if (event) {
-			uiStatus();
-			return;
-		}
-	}
-	if (ch == Del) ch = L'\b';
-
-	static bool meta;
-	if (ch == Esc) {
-		meta = true;
-		return;
-	}
-	if (meta) {
-		meta = false;
-		if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0', false);
-		if (!win) return;
-		switch (ch) {
-			break; case L'b':  edit(win->tag, EditBackWord, 0);
-			break; case L'f':  edit(win->tag, EditForeWord, 0);
-			break; case L'\b': edit(win->tag, EditKillBackWord, 0);
-			break; case L'd':  edit(win->tag, EditKillForeWord, 0);
-			break; case L'm':  uiLog(win->tag, UICold, L"");
-		}
-		return;
-	}
-
 	if (ch == CTRL(L'L')) clearok(curscr, true);
 	if (!win) return;
 	switch (ch) {
@@ -511,10 +491,30 @@ static void keyChar(wchar_t ch) {
 
 void uiRead(void) {
 	if (ui.hide) uiShow();
+	static bool meta;
 	int ret;
 	wint_t ch;
+	enum TermEvent event;
 	while (ERR != (ret = wget_wch(ui.input, &ch))) {
-		(ret == KEY_CODE_YES ? keyCode(ch) : keyChar(ch));
+		if (ret == KEY_CODE_YES) {
+			keyCode(ch);
+		} else if (ch < 0200 && (event = termEvent((char)ch))) {
+			struct Window *win = windows.active;
+			switch (event) {
+				break; case TermFocusIn:  if (win) windowUnmark(win);
+				break; case TermFocusOut: if (win) windowMark(win);
+				break; default: {}
+			}
+			uiStatus();
+		} else if (ch == Esc) {
+			meta = true;
+			continue;
+		} else if (meta) {
+			keyMeta(ch == Del ? '\b' : ch);
+		} else {
+			keyChar(ch == Del ? '\b' : ch);
+		}
+		meta = false;
 	}
 	uiPrompt(false);
 }
