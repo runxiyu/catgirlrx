@@ -160,7 +160,7 @@ static void handleReplyWhoisUser(char *prefix, char *params) {
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &nick, &user, &host, NULL, &real
 	);
-	whoisColor = formatColor(user[0] == '~' ? &user[1] : user);
+	whoisColor = colorGen(user[0] == '~' ? &user[1] : user);
 	uiFmt(
 		TagStatus, UIWarm,
 		"\3%d%s\3 is %s@%s, \"%s\"",
@@ -214,7 +214,7 @@ static void handleErrorNoSuchNick(char *prefix, char *params) {
 static void handleJoin(char *prefix, char *params) {
 	char *nick, *user, *chan;
 	parse(prefix, &nick, &user, NULL, params, 1, 0, &chan);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	if (!strcmp(nick, self.nick)) {
 		tabTouch(TagNone, chan);
@@ -226,7 +226,7 @@ static void handleJoin(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"\3%d%s\3 arrives in \3%d%s\3",
-		formatColor(user), nick, formatColor(chan), chan
+		colorGen(user), nick, colorGen(chan), chan
 	);
 	logFmt(tag, NULL, "%s arrives in %s", nick, chan);
 }
@@ -234,7 +234,7 @@ static void handleJoin(char *prefix, char *params) {
 static void handlePart(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 1, 1, &chan, &mesg);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	if (!strcmp(nick, self.nick)) {
 		tabClear(tag);
@@ -247,14 +247,14 @@ static void handlePart(char *prefix, char *params) {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 leaves \3%d%s\3, \"%s\"",
-			formatColor(user), nick, formatColor(chan), chan, dequote(mesg)
+			colorGen(user), nick, colorGen(chan), chan, dequote(mesg)
 		);
 		logFmt(tag, NULL, "%s leaves %s, \"%s\"", nick, chan, dequote(mesg));
 	} else {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 leaves \3%d%s\3",
-			formatColor(user), nick, formatColor(chan), chan
+			colorGen(user), nick, colorGen(chan), chan
 		);
 		logFmt(tag, NULL, "%s leaves %s", nick, chan);
 	}
@@ -263,7 +263,7 @@ static void handlePart(char *prefix, char *params) {
 static void handleKick(char *prefix, char *params) {
 	char *nick, *user, *chan, *kick, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 1, &chan, &kick, &mesg);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 	bool kicked = !strcmp(kick, self.nick);
 
 	if (kicked) {
@@ -277,9 +277,9 @@ static void handleKick(char *prefix, char *params) {
 		uiFmt(
 			tag, (kicked ? UIHot : UICold),
 			"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3, \"%s\"",
-			formatColor(user), nick,
-			formatColor(kick), kick,
-			formatColor(chan), chan,
+			colorGen(user), nick,
+			colorGen(kick), kick,
+			colorGen(chan), chan,
 			dequote(mesg)
 		);
 		logFmt(
@@ -290,9 +290,9 @@ static void handleKick(char *prefix, char *params) {
 		uiFmt(
 			tag, (kicked ? UIHot : UICold),
 			"\3%d%s\3 kicks \3%d%s\3 out of \3%d%s\3",
-			formatColor(user), nick,
-			formatColor(kick), kick,
-			formatColor(chan), chan
+			colorGen(user), nick,
+			colorGen(kick), kick,
+			colorGen(chan), chan
 		);
 		logFmt(tag, NULL, "%s kicks %s out of %s", nick, kick, chan);
 	}
@@ -311,11 +311,11 @@ static void handleQuit(char *prefix, char *params) {
 			uiFmt(
 				tag, UICold,
 				"\3%d%s\3 leaves, \"%s\"",
-				formatColor(user), nick, dequote(mesg)
+				colorGen(user), nick, dequote(mesg)
 			);
 			logFmt(tag, NULL, "%s leaves, \"%s\"", nick, dequote(mesg));
 		} else {
-			uiFmt(tag, UICold, "\3%d%s\3 leaves", formatColor(user), nick);
+			uiFmt(tag, UICold, "\3%d%s\3 leaves", colorGen(user), nick);
 			logFmt(tag, NULL, "%s leaves", nick);
 		}
 	}
@@ -324,13 +324,13 @@ static void handleQuit(char *prefix, char *params) {
 static void handleReplyTopic(char *prefix, char *params) {
 	char *chan, *topic;
 	parse(prefix, NULL, NULL, NULL, params, 3, 0, NULL, &chan, &topic);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	urlScan(tag, topic);
 	uiFmt(
 		tag, UICold,
 		"The sign in \3%d%s\3 reads, \"%s\"",
-		formatColor(chan), chan, topic
+		colorGen(chan), chan, topic
 	);
 	logFmt(tag, NULL, "The sign in %s reads, \"%s\"", chan, topic);
 }
@@ -338,7 +338,7 @@ static void handleReplyTopic(char *prefix, char *params) {
 static void handleTopic(char *prefix, char *params) {
 	char *nick, *user, *chan, *topic;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &topic);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
 
@@ -346,7 +346,7 @@ static void handleTopic(char *prefix, char *params) {
 	uiFmt(
 		tag, UICold,
 		"\3%d%s\3 places a new sign in \3%d%s\3, \"%s\"",
-		formatColor(user), nick, formatColor(chan), chan, topic
+		colorGen(user), nick, colorGen(chan), chan, topic
 	);
 	logFmt(tag, NULL, "%s places a new sign in %s, \"%s\"", nick, chan, topic);
 }
@@ -369,7 +369,7 @@ static void handleReplyWho(char *prefix, char *params) {
 		params, 6, 0, NULL, &chan, &user, NULL, NULL, &nick
 	);
 	if (user[0] == '~') user = &user[1];
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	tabAdd(tag, nick);
 
@@ -377,7 +377,7 @@ static void handleReplyWho(char *prefix, char *params) {
 	int len = snprintf(
 		&who.buf[who.len], cap,
 		"%s\3%d%s\3",
-		(who.len ? ", " : ""), formatColor(user), nick
+		(who.len ? ", " : ""), colorGen(user), nick
 	);
 	if ((size_t)len < cap) who.len += len;
 }
@@ -385,12 +385,12 @@ static void handleReplyWho(char *prefix, char *params) {
 static void handleReplyEndOfWho(char *prefix, char *params) {
 	char *chan;
 	parse(prefix, NULL, NULL, NULL, params, 2, 0, NULL, &chan);
-	struct Tag tag = tagFor(chan, formatColor(chan));
+	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	uiFmt(
 		tag, UICold,
 		"In \3%d%s\3 are %s",
-		formatColor(chan), chan, who.buf
+		colorGen(chan), chan, who.buf
 	);
 	who.len = 0;
 }
@@ -413,7 +413,7 @@ static void handleNick(char *prefix, char *params) {
 		uiFmt(
 			tag, UICold,
 			"\3%d%s\3 is now known as \3%d%s\3",
-			formatColor(user), prev, formatColor(user), next
+			colorGen(user), prev, colorGen(user), next
 		);
 		logFmt(tag, NULL, "%s is now known as %s", prev, next);
 	}
@@ -432,7 +432,7 @@ static void handleCTCP(struct Tag tag, char *nick, char *user, char *mesg) {
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d* %s\17 %s",
-		ping["\17\26"], formatColor(user), nick, params
+		ping["\17\26"], colorGen(user), nick, params
 	);
 	logFmt(tag, NULL, "* %s %s", nick, params);
 }
@@ -441,9 +441,8 @@ static void handlePrivmsg(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
 	bool direct = !strcmp(chan, self.nick);
-	struct Tag tag = direct
-		? tagFor(nick, formatColor(user))
-		: tagFor(chan, formatColor(chan));
+	struct Tag tag = tagFor(direct ? nick : chan);
+	colorTag(tag, direct ? user : chan);
 	if (mesg[0] == '\1') {
 		handleCTCP(tag, nick, user, mesg);
 		return;
@@ -459,7 +458,7 @@ static void handlePrivmsg(char *prefix, char *params) {
 		tag, (hot ? UIHot : UIWarm),
 		"%c%c\3%d<%s>%c %s",
 		(me ? IRCUnderline : IRCColor), (ping ? IRCReverse : IRCColor),
-		formatColor(user), nick, IRCReset, mesg
+		colorGen(user), nick, IRCReset, mesg
 	);
 	logFmt(tag, NULL, "<%s> %s", nick, mesg);
 }
@@ -467,11 +466,11 @@ static void handlePrivmsg(char *prefix, char *params) {
 static void handleNotice(char *prefix, char *params) {
 	char *nick, *user, *chan, *mesg;
 	parse(prefix, &nick, &user, NULL, params, 2, 0, &chan, &mesg);
+	bool direct = !strcmp(chan, self.nick);
 	struct Tag tag = TagStatus;
 	if (user) {
-		tag = strcmp(chan, self.nick)
-			? tagFor(chan, formatColor(chan))
-			: tagFor(nick, formatColor(user));
+		tag = tagFor(direct ? nick : chan);
+		colorTag(tag, direct ? user : chan);
 	}
 
 	if (strcmp(nick, self.nick)) tabTouch(tag, nick);
@@ -481,7 +480,7 @@ static void handleNotice(char *prefix, char *params) {
 	uiFmt(
 		tag, (ping ? UIHot : UIWarm),
 		"%c\3%d-%s-\17 %s",
-		ping["\17\26"], formatColor(user), nick, mesg
+		ping["\17\26"], colorGen(user), nick, mesg
 	);
 	logFmt(tag, NULL, "-%s- %s", nick, mesg);
 }

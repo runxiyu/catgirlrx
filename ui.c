@@ -339,10 +339,10 @@ static void uiStatus(void) {
 		wchar_t *str;
 		int len = aswprintf(
 			&str, L"%c\3%d %d %s %n(\3%02d%u\3%d) ",
-			(windows.active == win ? IRCReverse : IRCReset), win->tag.color,
+			(windows.active == win ? IRCReverse : IRCReset), colorFor(win->tag),
 			num, win->tag.name,
-			&unread, (win->hot ? IRCWhite : win->tag.color), win->unread,
-			win->tag.color
+			&unread, (win->hot ? IRCWhite : colorFor(win->tag)), win->unread,
+			colorFor(win->tag)
 		);
 		if (len < 0) err(EX_OSERR, "aswprintf");
 		if (!win->unread) str[unread] = L'\0';
@@ -557,7 +557,7 @@ void uiPrompt(bool nickChanged) {
 	if (nickChanged || !promptMesg || !promptAction) {
 		free(promptMesg);
 		free(promptAction);
-		enum IRCColor color = formatColor(self.user);
+		enum IRCColor color = colorGen(self.user);
 		int len = aswprintf(&promptMesg, L"\3%d<%s>\3 ", color, self.nick);
 		if (len < 0) err(EX_OSERR, "aswprintf");
 		len = aswprintf(&promptAction, L"\3%d* %s\3 ", color, self.nick);

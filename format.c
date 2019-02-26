@@ -21,26 +21,6 @@
 
 #include "chat.h"
 
-// Adapted from <https://github.com/cbreeden/fxhash/blob/master/lib.rs>.
-static uint32_t hashChar(uint32_t hash, char ch) {
-	hash = (hash << 5) | (hash >> 27);
-	hash ^= ch;
-	hash *= 0x27220A95;
-	return hash;
-}
-
-enum IRCColor formatColor(const char *str) {
-	if (!str) return IRCDefault;
-	uint32_t hash = 0;
-	for (; str[0]; ++str) {
-		hash = hashChar(hash, str[0]);
-	}
-	while (IRCBlack == (hash & IRCLightGray)) {
-		hash = hashChar(hash, '\0');
-	}
-	return (hash & IRCLightGray);
-}
-
 void formatReset(struct Format *format) {
 	format->bold = false;
 	format->italic = false;

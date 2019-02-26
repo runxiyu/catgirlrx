@@ -15,6 +15,7 @@ MAN1 = catgirl.1
 -include config.mk
 
 OBJS += chat.o
+OBJS += color.o
 OBJS += edit.o
 OBJS += event.o
 OBJS += format.o

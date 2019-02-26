@@ -39,6 +39,7 @@ FILES
      input.c    input command handling
      irc.c      TLS client connection
      format.c   IRC formatting
+     color.c    nick and channel coloring
      ui.c       cursed UI
      term.c     terminal features unsupported by curses
      edit.c     line editing
@@ -53,4 +54,4 @@ FILES
 SEE ALSO
      catgirl(1), sandman(1)
 
-Causal Agency                  January 25, 2019                  Causal Agency
+Causal Agency                  February 25, 2019                 Causal Agency
