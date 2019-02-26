@@ -190,6 +190,7 @@ void logOpen(const char *path);
 void logFmt(
 	struct Tag tag, const time_t *ts, const char *format, ...
 ) __attribute__((format(printf, 3, 4)));
+void logList(struct Tag tag);
 void logReplay(struct Tag tag);
 
 wchar_t *wcsnchr(const wchar_t *wcs, size_t len, wchar_t chr);

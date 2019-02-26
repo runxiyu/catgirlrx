@@ -471,6 +471,7 @@ static void keyMeta(wchar_t ch) {
 		break; case L'f':  edit(win->tag, EditForeWord, 0);
 		break; case L'\b': edit(win->tag, EditKillBackWord, 0);
 		break; case L'd':  edit(win->tag, EditKillForeWord, 0);
+		break; case L'l':  uiHide(); logList(win->tag);
 		break; case L'm':  uiLog(win->tag, UICold, L"");
 	}
 }

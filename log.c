@@ -122,7 +122,7 @@ void logFmt(struct Tag tag, const time_t *ts, const char *format, ...) {
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
 }
 
-void logReplay(struct Tag tag) {
+static void logRead(struct Tag tag, bool replay) {
 	if (logRoot < 0) return;
 
 	time_t t = time(NULL);
@@ -136,10 +136,22 @@ void logReplay(struct Tag tag) {
 	size_t cap = 0;
 	ssize_t len;
 	while (0 < (len = getline(&line, &cap, file))) {
-		if (len < 1 + StampLen + 2 + 1) continue;
-		line[len - 1] = '\0';
-		uiFmt(tag, UICold, "\3%d%s", IRCGray, &line[1 + StampLen + 2]);
+		if (replay) {
+			if (len < 1 + StampLen + 2 + 1) continue;
+			line[len - 1] = '\0';
+			uiFmt(tag, UICold, "\3%d%s", IRCGray, &line[1 + StampLen + 2]);
+		} else {
+			printf("%s", line);
+		}
 	}
 	if (ferror(file)) err(EX_IOERR, "%s", tag.name);
 	free(line);
+}
+
+void logList(struct Tag tag) {
+	logRead(tag, false);
+}
+
+void logReplay(struct Tag tag) {
+	logRead(tag, true);
 }
