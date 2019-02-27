@@ -117,6 +117,15 @@ static void inputMan(struct Tag tag, char *params) {
 	eventWait((const char *[]) { "man", "1", "catgirl", NULL });
 }
 
+static void inputMove(struct Tag tag, char *params) {
+	char *num = strsep(&params, " ");
+	if (num) {
+		uiMoveTag(tag, strtol(num, NULL, 0), num[0] == '+' || num[0] == '-');
+	} else {
+		uiLog(tag, UIHot, L"/move requires a number");
+	}
+}
+
 static void inputOpen(struct Tag tag, char *params) {
 	if (params && !isdigit(params[0])) {
 		urlOpenMatch(tag, params);
@@ -174,6 +183,7 @@ static const struct {
 	{ "/join", inputJoin },
 	{ "/man", inputMan },
 	{ "/me", inputMe },
+	{ "/move", inputMove },
 	{ "/names", inputWho },
 	{ "/nick", inputNick },
 	{ "/open", inputOpen },

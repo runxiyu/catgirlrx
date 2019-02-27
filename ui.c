@@ -76,6 +76,15 @@ static void windowAppend(struct Window *win) {
 	windows.tag[win->tag.id] = win;
 }
 
+static void windowInsert(struct Window *win, struct Window *next) {
+	win->prev = next->prev;
+	win->next = next;
+	if (win->prev) win->prev->next = win;
+	win->next->prev = win;
+	if (!win->prev) windows.head = win;
+	windows.tag[win->tag.id] = win;
+}
+
 static void windowRemove(struct Window *win) {
 	windows.tag[win->tag.id] = NULL;
 	if (win->prev) win->prev->next = win->next;
@@ -365,6 +374,17 @@ void uiShowTag(struct Tag tag) {
 	uiShowWindow(windowFor(tag));
 }
 
+static void uiShowAuto(void) {
+	struct Window *unread = NULL;
+	struct Window *hot;
+	for (hot = windows.head; hot; hot = hot->next) {
+		if (hot->hot) break;
+		if (!unread && hot->unread) unread = hot;
+	}
+	if (!hot && !unread) return;
+	uiShowWindow(hot ? hot : unread);
+}
+
 void uiShowNum(int num, bool relative) {
 	struct Window *win = (relative ? windows.active : windows.head);
 	if (num < 0) {
@@ -375,15 +395,18 @@ void uiShowNum(int num, bool relative) {
 	if (win) uiShowWindow(win);
 }
 
-static void uiShowAuto(void) {
-	struct Window *unread = NULL;
-	struct Window *hot;
-	for (hot = windows.head; hot; hot = hot->next) {
-		if (hot->hot) break;
-		if (!unread && hot->unread) unread = hot;
+void uiMoveTag(struct Tag tag, int num, bool relative) {
+	struct Window *win = windowFor(tag);
+	windowRemove(win);
+	struct Window *ins = (relative ? win : windows.head);
+	if (num < 0) {
+		for (; ins; ins = ins->prev) if (!num++) break;
+	} else {
+		if (relative) ins = ins->next;
+		for (; ins; ins = ins->next) if (!num--) break;
 	}
-	if (!hot && !unread) return;
-	uiShowWindow(hot ? hot : unread);
+	ins ? windowInsert(win, ins) : windowAppend(win);
+	uiStatus();
 }
 
 void uiCloseTag(struct Tag tag) {
