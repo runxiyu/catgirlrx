@@ -61,6 +61,7 @@ struct Window {
 
 static struct {
 	struct Window *active;
+	struct Window *other;
 	struct Window *head;
 	struct Window *tail;
 	struct Window *tag[TagsLen];
@@ -126,11 +127,13 @@ static void windowShow(struct Window *win) {
 		touchwin(win->log);
 		windowUnmark(win);
 	}
+	windows.other = windows.active;
 	windows.active = win;
 }
 
 static void windowClose(struct Window *win) {
 	if (windows.active == win) windowShow(win->next ? win->next : win->prev);
+	if (windows.other == win) windows.other = NULL;
 	windowRemove(win);
 	delwin(win->log);
 	free(win);
@@ -352,10 +355,14 @@ static void uiStatus(void) {
 	wclrtoeol(ui.status);
 }
 
-void uiShowTag(struct Tag tag) {
-	windowShow(windowFor(tag));
+static void uiShowWindow(struct Window *win) {
+	windowShow(win);
 	uiStatus();
 	uiPrompt(false);
+}
+
+void uiShowTag(struct Tag tag) {
+	uiShowWindow(windowFor(tag));
 }
 
 void uiShowNum(int num, bool relative) {
@@ -365,10 +372,7 @@ void uiShowNum(int num, bool relative) {
 	} else {
 		for (; win; win = win->next) if (!num--) break;
 	}
-	if (!win) return;
-	windowShow(win);
-	uiStatus();
-	uiPrompt(false);
+	if (win) uiShowWindow(win);
 }
 
 static void uiShowAuto(void) {
@@ -379,9 +383,7 @@ static void uiShowAuto(void) {
 		if (!unread && hot->unread) unread = hot;
 	}
 	if (!hot && !unread) return;
-	windowShow(hot ? hot : unread);
-	uiStatus();
-	uiPrompt(false);
+	uiShowWindow(hot ? hot : unread);
 }
 
 void uiCloseTag(struct Tag tag) {
@@ -465,6 +467,7 @@ static void keyMeta(wchar_t ch) {
 	struct Window *win = windows.active;
 	if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0', false);
 	if (ch == L'a') uiShowAuto();
+	if (ch == L'/' && windows.other) uiShowWindow(windows.other);
 	if (!win) return;
 	switch (ch) {
 		break; case L'b':  edit(win->tag, EditBackWord, 0);
