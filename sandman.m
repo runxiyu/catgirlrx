@@ -1,4 +1,4 @@
-/* Copyright (C) 2018  Curtis McEnroe <june@causal.agency>
+/* Copyright (C) 2019  C. McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,36 +21,43 @@
 #import <sysexits.h>
 #import <unistd.h>
 
-void handler(int sig) {
+static volatile sig_atomic_t sleeping;
+
+static void sigchld(int sig) {
 	(void)sig;
 	int status;
 	pid_t pid = wait(&status);
 	if (pid < 0) _exit(EX_OSERR);
-	if (WIFSIGNALED(status)) {
+	if (WIFSIGNALED(status) && WTERMSIG(status) != SIGHUP) {
 		_exit(128 + WTERMSIG(status));
-	} else {
+	} else if (!sleeping) {
 		_exit(WEXITSTATUS(status));
 	}
 }
+
+static pid_t spawn(char *argv[]) {
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) return pid;
+	execvp(argv[0], argv);
+	err(EX_NOINPUT, "%s", argv[0]);
+}
+
+static pid_t pid;
 
 int main(int argc, char *argv[]) {
 	if (argc < 2) return EX_USAGE;
 
 	sigset_t mask;
 	sigemptyset(&mask);
-	struct sigaction sa = {
-		.sa_handler = handler,
+	struct sigaction action = {
+		.sa_handler = sigchld,
 		.sa_mask = mask,
 		.sa_flags = SA_NOCLDSTOP | SA_RESTART,
 	};
-	sigaction(SIGCHLD, &sa, NULL);
+	sigaction(SIGCHLD, &action, NULL);
 
-	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
-	if (!pid) {
-		execvp(argv[1], &argv[1]);
-		err(EX_NOINPUT, "%s", argv[1]);
-	}
+	pid = spawn(&argv[1]);
 
 	[
 		[[NSWorkspace sharedWorkspace] notificationCenter]
@@ -59,8 +66,21 @@ int main(int argc, char *argv[]) {
 		queue: nil
 		usingBlock: ^(NSNotification *note) {
 			(void)note;
+			sleeping = 1;
 			int error = kill(pid, SIGHUP);
 			if (error) err(EX_UNAVAILABLE, "kill %d", pid);
+		}
+	];
+
+	[
+		[[NSWorkspace sharedWorkspace] notificationCenter]
+		addObserverForName: NSWorkspaceDidWakeNotification
+		object: nil
+		queue: nil
+		usingBlock: ^(NSNotification *note) {
+			(void)note;
+			sleeping = 0;
+			pid = spawn(&argv[1]);
 		}
 	];
 

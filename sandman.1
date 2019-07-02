@@ -1,4 +1,4 @@
-.Dd December 2, 2018
+.Dd July 2, 2019
 .Dt SANDMAN 1
 .Os
 .
@@ -15,11 +15,12 @@
 is a utility for Darwin systems.
 It runs the
 .Ar command
-as a child process
-and sends it the
-.Dv SIGHUP
-signal
-when the system goes to sleep.
+as a child process.
+When the system goes to sleep,
+the process is sent
+.Dv SIGHUP .
+When the system wakes up,
+the process is restarted.
 .
 .Sh EXIT STATUS
 .Nm
