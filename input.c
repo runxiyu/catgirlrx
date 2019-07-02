@@ -83,6 +83,11 @@ static void inputQuit(struct Tag tag, char *params) {
 	ircQuit(params ? params : "Goodbye");
 }
 
+static void inputQuote(struct Tag tag, char *params) {
+	(void)tag;
+	if (params) ircFmt("%s\r\n", params);
+}
+
 static void inputTopic(struct Tag tag, char *params) {
 	if (params) {
 		ircFmt("TOPIC %s :%s\r\n", tag.name, params);
@@ -143,14 +148,12 @@ static void inputOpen(struct Tag tag, char *params) {
 
 static void inputRaw(struct Tag tag, char *params) {
 	(void)tag;
-	if (!self.raw || !params) {
-		self.raw ^= true;
-		uiFmt(
-			TagRaw, UIWarm, "%s window is %s",
-			TagRaw.name, (self.raw ? "enabled" : "disabled")
-		);
-	}
-	if (params) ircFmt("%s\r\n", params);
+	(void)params;
+	self.raw ^= true;
+	uiFmt(
+		TagRaw, UIWarm, "\3%d%s\3 %s raw mode!",
+		colorGen(self.user), self.nick, (self.raw ? "engages" : "disengages")
+	);
 }
 
 static void inputURL(struct Tag tag, char *params) {
@@ -195,6 +198,7 @@ static const struct {
 	{ "/part", inputPart },
 	{ "/query", inputQuery },
 	{ "/quit", inputQuit },
+	{ "/quote", inputQuote },
 	{ "/raw", inputRaw },
 	{ "/topic", inputTopic },
 	{ "/url", inputURL },
