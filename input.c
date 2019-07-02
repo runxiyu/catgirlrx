@@ -42,7 +42,12 @@ typedef void Handler(struct Tag tag, char *params);
 
 static void inputJoin(struct Tag tag, char *params) {
 	char *chan = strsep(&params, " ");
-	ircFmt("JOIN :%s\r\n", chan ? chan : tag.name);
+	char *key = strsep(&params, " ");
+	if (key) {
+		ircFmt("JOIN %s %s\r\n", chan, key);
+	} else {
+		ircFmt("JOIN %s\r\n", chan ? chan : tag.name);
+	}
 }
 
 static void inputMe(struct Tag tag, char *params) {
