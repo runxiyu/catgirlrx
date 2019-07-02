@@ -56,11 +56,11 @@ static void inputMe(struct Tag tag, char *params) {
 
 static void inputNick(struct Tag tag, char *params) {
 	char *nick = strsep(&params, " ");
-	if (nick) {
-		ircFmt("NICK :%s\r\n", nick);
-	} else {
-		uiLog(tag, UIHot, L"/nick requires a nickname");
+	if (!nick) {
+		uiLog(tag, UIHot, L"/nick requires a name");
+		return;
 	}
+	ircFmt("NICK %s\r\n", nick);
 }
 
 static void inputPart(struct Tag tag, char *params) {
@@ -69,13 +69,13 @@ static void inputPart(struct Tag tag, char *params) {
 
 static void inputQuery(struct Tag tag, char *params) {
 	char *nick = strsep(&params, " ");
-	if (nick) {
-		tabTouch(TagNone, nick);
-		uiShowTag(tagFor(nick));
-		logReplay(tagFor(nick));
-	} else {
-		uiLog(tag, UIHot, L"/query requires a nickname");
+	if (!nick) {
+		uiLog(tag, UIHot, L"/query requires a nick");
+		return;
 	}
+	tabTouch(TagNone, nick);
+	uiShowTag(tagFor(nick));
+	logReplay(tagFor(nick));
 }
 
 static void inputQuit(struct Tag tag, char *params) {
@@ -103,11 +103,11 @@ static void inputWho(struct Tag tag, char *params) {
 
 static void inputWhois(struct Tag tag, char *params) {
 	char *nick = strsep(&params, " ");
-	if (nick) {
-		ircFmt("WHOIS :%s\r\n", nick);
-	} else {
+	if (!nick) {
 		uiLog(tag, UIHot, L"/whois requires a nick");
+		return;
 	}
+	ircFmt("WHOIS %s\r\n", nick);
 }
 
 static void inputZNC(struct Tag tag, char *params) {
@@ -129,11 +129,11 @@ static void inputMan(struct Tag tag, char *params) {
 
 static void inputMove(struct Tag tag, char *params) {
 	char *num = strsep(&params, " ");
-	if (num) {
-		uiMoveTag(tag, strtol(num, NULL, 0), num[0] == '+' || num[0] == '-');
-	} else {
+	if (!num) {
 		uiLog(tag, UIHot, L"/move requires a number");
+		return;
 	}
+	uiMoveTag(tag, strtol(num, NULL, 0), num[0] == '+' || num[0] == '-');
 }
 
 static void inputOpen(struct Tag tag, char *params) {
