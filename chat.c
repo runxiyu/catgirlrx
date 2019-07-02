@@ -53,13 +53,14 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "NW:a:h:j:l:n:p:r:u:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "NW:a:h:j:k:l:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
 			break; case 'W': self.webp = dupe(optarg);
 			break; case 'a': self.auth = dupe(optarg);
 			break; case 'h': self.host = dupe(optarg);
 			break; case 'j': self.join = dupe(optarg);
+			break; case 'k': self.keys = dupe(optarg);
 			break; case 'l': logOpen(optarg);
 			break; case 'n': self.nick = dupe(optarg);
 			break; case 'p': self.port = dupe(optarg);

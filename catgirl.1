@@ -13,6 +13,7 @@
 .Op Fl a Ar auth
 .Op Fl h Ar host
 .Op Fl j Ar chan
+.Op Fl k Ar keys
 .Op Fl l Ar path
 .Op Fl n Ar nick
 .Op Fl p Ar port
@@ -56,6 +57,12 @@ Join
 .Ar chan
 after connecting.
 .Ar chan
+may be a comma-separated list.
+.
+.It Fl k Ar keys
+Set keys for channels in
+.Fl j .
+.Ar keys
 may be a comma-separated list.
 .
 .It Fl l Ar path

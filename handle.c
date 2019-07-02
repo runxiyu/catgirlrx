@@ -138,7 +138,11 @@ static void handleReplyWelcome(char *prefix, char *params) {
 		self.nick = strdup(nick);
 		if (!self.nick) err(EX_OSERR, "strdup");
 	}
-	if (self.join) ircFmt("JOIN %s\r\n", self.join);
+	if (self.join && self.keys) {
+		ircFmt("JOIN %s %s\r\n", self.join, self.keys);
+	} else if (self.join) {
+		ircFmt("JOIN %s\r\n", self.join);
+	}
 	tabTouch(TagStatus, self.nick);
 
 	uiLog(TagStatus, UICold, L"You have arrived");

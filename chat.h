@@ -43,6 +43,7 @@ struct {
 	char *user;
 	char *real;
 	char *join;
+	char *keys;
 	bool raw;
 	bool notify;
 	bool quit;
