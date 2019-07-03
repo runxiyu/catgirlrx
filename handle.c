@@ -43,7 +43,7 @@ static void parse(
 		field = strsep(&prefix, "!");
 		if (nick) *nick = field;
 		field = strsep(&prefix, "@");
-		if (user) *user = (field && field[0] == '~' ? &field[1] : field);
+		if (user) *user = field;
 		if (host) *host = prefix;
 	}
 
@@ -164,7 +164,7 @@ static void handleReplyWhoisUser(char *prefix, char *params) {
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &nick, &user, &host, NULL, &real
 	);
-	whoisColor = colorGen(user[0] == '~' ? &user[1] : user);
+	whoisColor = colorGen(user);
 	uiFmt(
 		TagStatus, UIWarm,
 		"\3%d%s\3 is %s@%s, \"%s\"",
@@ -372,7 +372,6 @@ static void handleReplyWho(char *prefix, char *params) {
 		prefix, NULL, NULL, NULL,
 		params, 6, 0, NULL, &chan, &user, NULL, NULL, &nick
 	);
-	if (user[0] == '~') user = &user[1];
 	struct Tag tag = colorTag(tagFor(chan), chan);
 
 	tabAdd(tag, nick);

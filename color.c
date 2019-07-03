@@ -29,8 +29,9 @@ static uint32_t hashChar(uint32_t hash, char ch) {
 enum IRCColor colorGen(const char *str) {
 	if (!str) return IRCDefault;
 	uint32_t hash = 0;
-	for (; str[0]; ++str) {
-		hash = hashChar(hash, str[0]);
+	if (*str == '~') str++;
+	for (; *str; ++str) {
+		hash = hashChar(hash, *str);
 	}
 	while (IRCBlack == (hash & IRCLightGray)) {
 		hash = hashChar(hash, '\0');
