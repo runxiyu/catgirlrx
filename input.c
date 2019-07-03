@@ -50,6 +50,16 @@ static void inputJoin(struct Tag tag, char *params) {
 	}
 }
 
+static void inputList(struct Tag tag, char *params) {
+	(void)tag;
+	char *chan = strsep(&params, " ");
+	if (chan) {
+		ircFmt("LIST %s\r\n", chan);
+	} else {
+		ircFmt("LIST\r\n");
+	}
+}
+
 static void inputMe(struct Tag tag, char *params) {
 	privmsg(tag, true, params ? params : "");
 }
@@ -189,6 +199,7 @@ static const struct {
 	{ "/close", inputClose },
 	{ "/help", inputMan },
 	{ "/join", inputJoin },
+	{ "/list", inputList },
 	{ "/man", inputMan },
 	{ "/me", inputMe },
 	{ "/move", inputMove },

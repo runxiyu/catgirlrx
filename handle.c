@@ -1,4 +1,4 @@
-/* Copyright (C) 2018  Curtis McEnroe <june@causal.agency>
+/* Copyright (C) 2018, 2019  Curtis McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -155,6 +155,35 @@ static void handleReplyMOTD(char *prefix, char *params) {
 
 	urlScan(TagStatus, mesg);
 	uiFmt(TagStatus, UICold, "%s", mesg);
+}
+
+static void handleReplyList(char *prefix, char *params) {
+	char *chan, *count, *topic;
+	parse(prefix, NULL, NULL, NULL, params, 4, 0, NULL, &chan, &count, &topic);
+	if (topic[0] == '[') {
+		char *skip = strstr(topic, "] ");
+		if (skip) topic = &skip[2];
+	}
+	const char *people = (strcmp(count, "1") ? "people" : "person");
+	if (topic[0]) {
+		uiFmt(
+			TagStatus, UIWarm,
+			"You see %s %s in \3%d%s\3 under the banner, \"%s\"",
+			count, people, colorGen(chan), chan, topic
+		);
+	} else {
+		uiFmt(
+			TagStatus, UIWarm,
+			"You see %s %s in \3%d%s\3",
+			count, people, colorGen(chan), chan
+		);
+	}
+}
+
+static void handleReplyListEnd(char *prefix, char *params) {
+	(void)prefix;
+	(void)params;
+	uiLog(TagStatus, UICold, L"You don't see anyone else");
 }
 
 static enum IRCColor whoisColor;
@@ -499,6 +528,8 @@ static const struct {
 	{ "315", handleReplyEndOfWho },
 	{ "317", handleReplyWhoisIdle },
 	{ "319", handleReplyWhoisChannels },
+	{ "322", handleReplyList },
+	{ "323", handleReplyListEnd },
 	{ "332", handleReplyTopic },
 	{ "352", handleReplyWho },
 	{ "366", handleReplyEndOfNames },
