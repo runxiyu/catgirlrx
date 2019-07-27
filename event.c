@@ -105,7 +105,7 @@ static void childRead(void) {
 	}
 }
 
-static sig_atomic_t sig[NSIG];
+static volatile sig_atomic_t sig[NSIG];
 static void handler(int n) {
 	sig[n] = 1;
 }
