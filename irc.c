@@ -74,17 +74,6 @@ int ircConnect(void) {
 	error = tls_connect_socket(client, sock, self.host);
 	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
 
-	const char *ssh = getenv("SSH_CLIENT");
-	if (self.webp && ssh) {
-		int len = strlen(ssh);
-		const char *sp = strchr(ssh, ' ');
-		if (sp) len = sp - ssh;
-		ircFmt(
-			"WEBIRC %s %s %.*s %.*s\r\n",
-			self.webp, self.user, len, ssh, len, ssh
-		);
-	}
-
 	if (self.auth) ircFmt("CAP REQ :sasl\r\n");
 	if (self.pass) ircFmt("PASS :%s\r\n", self.pass);
 	ircFmt("NICK %s\r\n", self.nick);

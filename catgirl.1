@@ -9,7 +9,6 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl NPRv
-.Op Fl W Ar pass
 .Op Fl a Ar auth
 .Op Fl h Ar host
 .Op Fl j Ar chan
@@ -43,15 +42,6 @@ Restrict the use of the
 .Ic /quote ,
 .Ic /raw
 commands.
-.
-.It Fl W Ar pass
-Send
-.Cm WEBIRC
-command with
-.Ar pass .
-See
-.Sx ENVIRONMENT
-for details.
 .
 .It Fl a Ar auth
 Authenticate with SASL PLAIN.
@@ -350,20 +340,7 @@ Scroll window up by one line.
 .El
 .
 .Sh ENVIRONMENT
-.Bl -tag -width SSH_CLIENT
-.It Ev SSH_CLIENT
-If
-.Fl W
-is passed and
-.Ev SSH_CLIENT
-is set,
-the
-.Cm WEBIRC
-command is used
-to set the hostname
-to the first word of
-.Ev SSH_CLIENT ,
-usually the client IP address.
+.Bl -tag -width Ds
 .It Ev USER
 The default nickname.
 .El

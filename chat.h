@@ -38,7 +38,6 @@ struct {
 	char *port;
 	char *auth;
 	char *pass;
-	char *webp;
 	char *nick;
 	char *user;
 	char *real;
