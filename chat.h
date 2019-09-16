@@ -44,6 +44,7 @@ struct {
 	char *real;
 	char *join;
 	char *keys;
+	bool limit;
 	bool raw;
 	bool notify;
 	bool quit;

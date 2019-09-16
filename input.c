@@ -195,28 +195,29 @@ static void inputWindow(struct Tag tag, char *params) {
 static const struct {
 	const char *command;
 	Handler *handler;
+	bool limit;
 } Commands[] = {
-	{ "/close", inputClose },
-	{ "/help", inputMan },
-	{ "/join", inputJoin },
-	{ "/list", inputList },
-	{ "/man", inputMan },
-	{ "/me", inputMe },
-	{ "/move", inputMove },
-	{ "/names", inputWho },
-	{ "/nick", inputNick },
-	{ "/open", inputOpen },
-	{ "/part", inputPart },
-	{ "/query", inputQuery },
-	{ "/quit", inputQuit },
-	{ "/quote", inputQuote },
-	{ "/raw", inputRaw },
-	{ "/topic", inputTopic },
-	{ "/url", inputURL },
-	{ "/who", inputWho },
-	{ "/whois", inputWhois },
-	{ "/window", inputWindow },
-	{ "/znc", inputZNC },
+	{ "/close", .handler = inputClose },
+	{ "/help", .handler = inputMan },
+	{ "/join", .handler = inputJoin, .limit = true },
+	{ "/list", .handler = inputList },
+	{ "/man", .handler = inputMan },
+	{ "/me", .handler = inputMe },
+	{ "/move", .handler = inputMove },
+	{ "/names", .handler = inputWho },
+	{ "/nick", .handler = inputNick },
+	{ "/open", .handler = inputOpen },
+	{ "/part", .handler = inputPart },
+	{ "/query", .handler = inputQuery, .limit = true },
+	{ "/quit", .handler = inputQuit },
+	{ "/quote", .handler = inputQuote, .limit = true },
+	{ "/raw", .handler = inputRaw, .limit = true },
+	{ "/topic", .handler = inputTopic },
+	{ "/url", .handler = inputURL },
+	{ "/who", .handler = inputWho },
+	{ "/whois", .handler = inputWhois },
+	{ "/window", .handler = inputWindow },
+	{ "/znc", .handler = inputZNC },
 };
 static const size_t CommandsLen = sizeof(Commands) / sizeof(Commands[0]);
 
@@ -264,6 +265,10 @@ void input(struct Tag tag, char *input) {
 
 	for (size_t i = 0; i < CommandsLen; ++i) {
 		if (strcasecmp(command, Commands[i].command)) continue;
+		if (self.limit && Commands[i].limit) {
+			uiFmt(tag, UIHot, "%s isn't available in restricted mode", command);
+			return;
+		}
 		Commands[i].handler(tag, input);
 		return;
 	}
