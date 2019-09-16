@@ -80,9 +80,9 @@ chroot.tar: catgirl catgirl.1 man.sh
 		/lib/libncursesw.so.8 \
 		/lib/libthr.so.3 \
 		/lib/libz.so.6 \
-		/usr/local/lib/libcrypto.so.44 \
-		/usr/local/lib/libssl.so.46 \
-		/usr/local/lib/libtls.so.18 \
+		/usr/local/lib/libcrypto.so.45 \
+		/usr/local/lib/libssl.so.47 \
+		/usr/local/lib/libtls.so.19 \
 		root/lib
 	cp -fp /etc/hosts /etc/resolv.conf root/etc
 	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
