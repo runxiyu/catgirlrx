@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl NRv
+.Op Fl NPRv
 .Op Fl W Ar pass
 .Op Fl a Ar auth
 .Op Fl h Ar host
@@ -32,6 +32,9 @@ The arguments are as follows:
 .It Fl N
 Send notifications with
 .Xr notify-send 1 .
+.
+.It Fl P
+Prompt for nickname.
 .
 .It Fl R
 Restrict the use of the
@@ -83,6 +86,8 @@ in files named by date.
 .It Fl n Ar nick
 Set nickname to
 .Ar nick .
+The default nickname
+is the user's name.
 .
 .It Fl p Ar port
 Connect to
@@ -113,14 +118,6 @@ to standard error.
 Log in with
 .Ar pass .
 .El
-.
-.Pp
-If
-.Fl h Ar host
-or
-.Fl n Ar nick
-are not provided,
-they will be prompted for.
 .
 .Sh COMMANDS
 Any unique prefix
@@ -367,6 +364,8 @@ to set the hostname
 to the first word of
 .Ev SSH_CLIENT ,
 usually the client IP address.
+.It Ev USER
+The default nickname.
 .El
 .
 .Sh EXAMPLES

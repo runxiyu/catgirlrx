@@ -53,9 +53,10 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "NRW:a:h:j:k:l:n:p:r:u:vw:"))) {
+	while (0 < (opt = getopt(argc, argv, "NPRW:a:h:j:k:l:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case 'N': self.notify = true;
+			break; case 'P': self.nick = prompt("Name: ");
 			break; case 'R': self.limit = true;
 			break; case 'W': self.webp = dupe(optarg);
 			break; case 'a': self.auth = dupe(optarg);
@@ -73,9 +74,14 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	if (!self.nick) {
+		const char *user = getenv("USER");
+		if (!user) errx(EX_USAGE, "USER unset");
+		self.nick = dupe(user);
+	}
+
 	if (!self.host) self.host = prompt("Host: ");
 	if (!self.port) self.port = dupe("6697");
-	if (!self.nick) self.nick = prompt("Name: ");
 	if (!self.user) self.user = dupe(self.nick);
 	if (!self.real) self.real = dupe(self.nick);
 
