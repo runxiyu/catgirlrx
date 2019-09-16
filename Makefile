@@ -65,12 +65,11 @@ chroot.tar: catgirl catgirl.1 man.sh
 	install -d -o root -g wheel \
 		root \
 		root/bin \
-		root/etc \
+		root/etc/ssl \
 		root/home \
 		root/lib \
 		root/libexec \
 		root/usr/bin \
-		root/usr/local/etc/ssl \
 		root/usr/share/man \
 		root/usr/share/misc
 	install -d -o ${CHROOT_USER} -g ${CHROOT_GROUP} root/home/${CHROOT_USER}
@@ -85,7 +84,7 @@ chroot.tar: catgirl catgirl.1 man.sh
 		/usr/local/lib/libtls.so.19 \
 		root/lib
 	cp -fp /etc/hosts /etc/resolv.conf root/etc
-	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
+	cp -fp /etc/ssl/cert.pem root/etc/ssl
 	cp -af /usr/share/locale root/usr/share
 	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
 	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
