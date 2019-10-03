@@ -172,9 +172,10 @@ void edit(struct Tag tag, enum Edit op, wchar_t ch) {
 		break; case EditBackspace: reject(); backspace();
 		break; case EditDelete:    reject(); delete();
 
+		break; case EditKill:         reject(); line.ptr = line.end = line.buf;
 		break; case EditKillBackWord: reject(); killBackWord();
 		break; case EditKillForeWord: reject(); killForeWord();
-		break; case EditKillLine:     reject(); line.end = line.ptr;
+		break; case EditKillEnd:      reject(); line.end = line.ptr;
 
 		break; case EditComplete: complete(tag);
 

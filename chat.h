@@ -165,9 +165,10 @@ enum Edit {
 	EditInsert,
 	EditBackspace,
 	EditDelete,
+	EditKill,
 	EditKillBackWord,
 	EditKillForeWord,
-	EditKillLine,
+	EditKillEnd,
 	EditComplete,
 	EditEnter,
 };

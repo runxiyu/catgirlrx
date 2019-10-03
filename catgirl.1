@@ -1,4 +1,4 @@
-.Dd September 16, 2019
+.Dd October 3, 2019
 .Dt CATGIRL 1
 .Os
 .
@@ -254,6 +254,8 @@ Move cursor to end of line.
 Move cursor right.
 .It Ic C-k
 Delete line after cursor.
+.It Ic C-u
+Delete line.
 .It Ic C-w
 Delete word before cursor.
 .It Ic M-b
@@ -269,6 +271,8 @@ commands, nicks and channels.
 .
 .Ss IRC Formatting
 .Bl -tag -width Ds -compact
+.It Ic C-_
+Toggle underline.
 .It Ic C-o
 Toggle bold.
 .It Ic C-r
@@ -277,8 +281,6 @@ Set or reset color.
 Reset formatting.
 .It Ic C-t
 Toggle italics.
-.It Ic C-u
-Toggle underline.
 .It Ic C-v
 Toggle reverse video.
 This must usually be typed as
