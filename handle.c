@@ -137,6 +137,7 @@ static void handleReplyWelcome(char *prefix, char *params) {
 		free(self.nick);
 		self.nick = strdup(nick);
 		if (!self.nick) err(EX_OSERR, "strdup");
+		uiPrompt(true);
 	}
 	if (self.join && self.keys) {
 		ircFmt("JOIN %s %s\r\n", self.join, self.keys);
