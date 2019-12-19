@@ -97,6 +97,3 @@ install-chroot: chroot.tar
 
 clean:
 	rm -fr ${BINS} ${OBJS} ${TESTS} tags root chroot.tar
-
-README: catgirl.7
-	mandoc catgirl.7 | col -bx > README
