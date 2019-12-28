@@ -34,6 +34,7 @@ typedef unsigned uint;
 typedef unsigned char byte;
 
 struct {
+	bool insecure;
 	char *host;
 	char *port;
 	char *auth;

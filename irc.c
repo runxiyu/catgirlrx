@@ -42,6 +42,10 @@ int ircConnect(void) {
 	if (!client) errx(EX_SOFTWARE, "tls_client");
 
 	error = tls_configure(client, config);
+	if (self.insecure) {
+		tls_config_insecure_noverifycert(config);
+		tls_config_insecure_noverifyname(config);
+	}
 	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(client));
 	tls_config_free(config);
 
@@ -58,7 +62,6 @@ int ircConnect(void) {
 	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
 		sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 		if (sock < 0) err(EX_OSERR, "socket");
-
 		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
 		if (!error) break;
 
