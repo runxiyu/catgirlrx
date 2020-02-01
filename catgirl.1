@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl e
+.Op Fl ev
 .Op Fl a Ar auth
 .Op Fl c Ar cert
 .Op Fl h Ar host
@@ -87,6 +87,13 @@ The default realname is the same as the nickname.
 Set username to
 .Ar user .
 The default username is the same as the nickname.
+.
+.It Fl v
+Log raw IRC messages to the
+.Sy <debug>
+window
+as well as standard error
+if it is not a terminal.
 .
 .It Fl w Ar pass
 Log in with the server password

@@ -101,6 +101,18 @@ int ircConnect(const char *host, const char *port) {
 	return sock;
 }
 
+static void debug(char dir, const char *line) {
+	if (!self.debug) return;
+	size_t len = strcspn(line, "\r\n");
+	/*uiFormat(
+		Debug, Cold, NULL, "\3%02d%c%c\3 %.*s",
+		Gray, dir, dir, (int)len, line
+	);*/
+	if (!isatty(STDERR_FILENO)) {
+		fprintf(stderr, "%c%c %.*s\n", dir, dir, (int)len, line);
+	}
+}
+
 void ircSend(const char *ptr, size_t len) {
 	assert(client);
 	while (len) {
@@ -119,6 +131,7 @@ void ircFormat(const char *format, ...) {
 	int len = vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
 	assert((size_t)len < sizeof(buf));
+	debug('<', buf);
 	ircSend(buf, len);
 }
 
@@ -196,6 +209,7 @@ void ircRecv(void) {
 		crlf = memmem(line, &buf[len] - line, "\r\n", 2);
 		if (!crlf) break;
 		*crlf = '\0';
+		debug('>', line);
 		handle(parse(line));
 		line = crlf + 2;
 	}

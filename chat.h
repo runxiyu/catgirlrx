@@ -33,10 +33,11 @@ enum Cap {
 };
 
 extern struct Self {
+	bool debug;
+	const char *join;
 	enum Cap caps;
 	char *plain;
 	char *nick;
-	const char *join;
 } self;
 
 #define ENUM_TAG \

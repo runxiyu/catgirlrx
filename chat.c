@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	const char *real = NULL;
 
 	int opt;
-	while (0 < (opt = getopt(argc, argv, "!a:c:eh:j:k:n:p:r:u:w:"))) {
+	while (0 < (opt = getopt(argc, argv, "!a:c:eh:j:k:n:p:r:u:vw:"))) {
 		switch (opt) {
 			break; case '!': insecure = true;
 			break; case 'a': sasl = true; self.plain = optarg;
@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
 			break; case 'u': user = optarg;
+			break; case 'v': self.debug = true;
 			break; case 'w': pass = optarg;
 		}
 	}
@@ -70,4 +71,8 @@ int main(int argc, char *argv[]) {
 	ircFormat("CAP LS\r\n");
 	ircFormat("NICK :%s\r\n", nick);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
+
+	for (;;) {
+		ircRecv();
+	}
 }
