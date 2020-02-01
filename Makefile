@@ -8,6 +8,7 @@ LDLIBS = -lcrypto -ltls
 OBJS += chat.o
 OBJS += handle.o
 OBJS += irc.o
+OBJS += term.o
 
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@

@@ -91,6 +91,23 @@ void ircFormat(const char *format, ...)
 
 void handle(struct Message msg);
 
+enum TermMode {
+	TermFocus,
+	TermPaste,
+};
+enum TermEvent {
+	TermNone,
+	TermFocusIn,
+	TermFocusOut,
+	TermPasteStart,
+	TermPasteEnd,
+};
+void termInit(void);
+void termNoFlow(void);
+void termTitle(const char *title);
+void termMode(enum TermMode mode, bool set);
+enum TermEvent termEvent(char ch);
+
 #define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
 
 static const char Base64[64] = {
