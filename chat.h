@@ -1,0 +1,102 @@
+/* Copyright (C) 2020  C. McEnroe <june@causal.agency>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <stdbool.h>
+
+#define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
+#define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
+
+typedef unsigned char byte;
+
+#define ENUM_CAP \
+	X("sasl", CapSASL) \
+	X("server-time", CapServerTime) \
+	X("userhost-in-names", CapUserhostInNames)
+
+enum Cap {
+#define X(name, id) BIT(id),
+	ENUM_CAP
+#undef X
+};
+
+extern struct Self {
+	enum Cap caps;
+	char *plain;
+	char *nick;
+	const char *join;
+} self;
+
+#define ENUM_TAG \
+	X("time", TagTime)
+
+enum Tag {
+#define X(name, id) id,
+	ENUM_TAG
+#undef X
+	TagCap,
+};
+
+enum { ParamCap = 15 };
+struct Message {
+	char *tags[TagCap];
+	char *nick;
+	char *user;
+	char *host;
+	char *cmd;
+	char *params[ParamCap];
+};
+
+void ircConfig(bool insecure, const char *cert, const char *priv);
+int ircConnect(const char *host, const char *port);
+void ircRecv(void);
+void ircSend(const char *ptr, size_t len);
+void ircFormat(const char *format, ...)
+	__attribute__((format(printf, 1, 2)));
+
+void handle(struct Message msg);
+
+#define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
+
+static const char Base64[64] = {
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+};
+
+static inline void base64(char *dst, const byte *src, size_t len) {
+	size_t i = 0;
+	while (len > 2) {
+		dst[i++] = Base64[0x3F & (src[0] >> 2)];
+		dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
+		dst[i++] = Base64[0x3F & (src[1] << 2 | src[2] >> 6)];
+		dst[i++] = Base64[0x3F & src[2]];
+		src += 3;
+		len -= 3;
+	}
+	if (len) {
+		dst[i++] = Base64[0x3F & (src[0] >> 2)];
+		if (len > 1) {
+			dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
+			dst[i++] = Base64[0x3F & (src[1] << 2)];
+		} else {
+			dst[i++] = Base64[0x3F & (src[0] << 4)];
+			dst[i++] = '=';
+		}
+		dst[i++] = '=';
+	}
+	dst[i] = '\0';
+}
+
+// Defined in libcrypto if missing from libc:
+void explicit_bzero(void *b, size_t len);
