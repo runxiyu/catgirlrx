@@ -23,6 +23,13 @@
 
 #include "chat.h"
 
+char *idNames[IDCap] = {
+	[None] = "<none>",
+	[Debug] = "<debug>",
+	[Network] = "<network>",
+};
+size_t idNext = Network + 1;
+
 struct Self self;
 
 int main(int argc, char *argv[]) {

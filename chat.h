@@ -14,12 +14,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <err.h>
 #include <stdbool.h>
+#include <string.h>
+#include <sysexits.h>
+#include <time.h>
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
 
 typedef unsigned char byte;
+
+enum { None, Debug, Network, IDCap = 256 };
+extern char *idNames[IDCap];
+extern size_t idNext;
+
+static inline size_t idFind(const char *name) {
+	for (size_t id = 0; id < idNext; ++id) {
+		if (!strcmp(idNames[id], name)) return id;
+	}
+	return None;
+}
+static inline size_t idFor(const char *name) {
+	size_t id = idFind(name);
+	if (id) return id;
+	idNames[idNext] = strdup(name);
+	if (!idNames[idNext]) err(EX_OSERR, "strdup");
+	return idNext++;
+}
 
 #define ENUM_CAP \
 	X("sasl", CapSASL) \
