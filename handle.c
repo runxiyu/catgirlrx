@@ -24,7 +24,7 @@
 #include "chat.h"
 
 static const char *CapNames[] = {
-#define X(name, id) [id] = name,
+#define X(name, id) [id##Bit] = name,
 	ENUM_CAP
 #undef X
 };
