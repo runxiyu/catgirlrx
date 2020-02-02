@@ -193,15 +193,31 @@ static void handleJoin(struct Message *msg) {
 	);
 }
 
+static bool isAction(struct Message *msg) {
+	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
+	msg->params[1] += 8;
+	size_t len = strlen(msg->params[1]);
+	if (msg->params[1][len - 1] == '\1') msg->params[1][len - 1] = '\0';
+	return true;
+}
+
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
-	bool query = self.nick && !strcmp(msg->params[0], self.nick);
-	size_t id = idFor(query ? msg->nick : msg->params[0]);
-	if (query) idColors[id] = hash(msg->user);
+	bool query = msg->params[0][0] != '#'; // FIXME: CHANTYPES.
+	bool network = query && strchr(msg->nick, '.');
+	bool notice = (msg->cmd[0] == 'N');
+	bool action = isAction(msg);
+	// TODO: Send services to Network?
+	size_t id = (network ? Network : idFor(query ? msg->nick : msg->params[0]));
+	if (query && !network) idColors[id] = hash(msg->user);
 	uiFormat(
 		id, Warm, tagTime(msg),
-		"\3%d<%s>\3 %s",
-		hash(msg->user), msg->nick, msg->params[1]
+		"\3%d%s%s%s\3 %s",
+		hash(msg->user),
+		(action ? "* " : notice ? "-" : "<"),
+		msg->nick,
+		(action ? "" : notice ? "-" : ">"),
+		msg->params[1]
 	);
 }
 
@@ -226,6 +242,7 @@ static const struct Handler {
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
 	{ "JOIN", handleJoin },
+	{ "NOTICE", handlePrivmsg },
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
 };
