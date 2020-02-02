@@ -296,6 +296,16 @@ static void statusUpdate(void) {
 		styleAdd(status, buf, true);
 	}
 	wclrtoeol(status);
+
+	int unread;
+	char buf[256];
+	snprintf(
+		buf, sizeof(buf), "%s %s%n (%d)",
+		self.network, idNames[windows.active->id],
+		&unread, windows.active->unread
+	);
+	if (!windows.active->unread) buf[unread] = '\0';
+	termTitle(buf);
 }
 
 void uiShowID(size_t id) {
