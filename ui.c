@@ -209,11 +209,33 @@ static void styleParse(struct Style *style, const char **str, size_t *len) {
 	*len = strcspn(*str, "\2\3\17\26\35\37");
 }
 
+static int wordWidth(const char *str) {
+	size_t len = strcspn(str, " ");
+	// TODO: wcswidth.
+	return len;
+}
+
 static void styleAdd(WINDOW *win, const char *str) {
+	int _, x, width;
+	getmaxyx(win, _, width);
+
 	size_t len;
 	struct Style style = Reset;
 	while (*str) {
+		if (*str == ' ') {
+			const char *word = &str[strspn(str, " ")];
+			getyx(win, _, x);
+			if (width - x - 1 < wordWidth(word)) {
+				waddch(win, '\n');
+				str = word;
+			}
+		}
+
 		styleParse(&style, &str, &len);
+		size_t sp = strspn(str, " ");
+		sp += strcspn(&str[sp], " ");
+		if (sp < len) len = sp;
+
 		wattr_set(
 			win,
 			style.attr | colorAttr(mapColor(style.fg)),
