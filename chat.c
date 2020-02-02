@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
 	ircConfig(insecure, cert, priv);
 
 	uiInit();
-	uiFormat(Network, Cold, NULL, "Traveling...");
+	uiFormat(Network, Cold, NULL, C "3Trave" U "ling" U C "0,3.." C "0,4.");
 	uiDraw();
 	
 	int irc = ircConnect(host, port);

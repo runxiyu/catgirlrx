@@ -15,12 +15,14 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <curses.h>
 #include <err.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sysexits.h>
 #include <time.h>
 
@@ -56,7 +58,7 @@ static short colorPair(short fg, short bg) {
 		pair_content(pair, &f, &b);
 		if (f == fg && b == bg) return pair;
 	}
-	init_pair(colorPairs, fg, bg);
+	init_pair(colorPairs, fg % COLORS, bg % COLORS);
 	return colorPairs++;
 }
 
@@ -154,11 +156,80 @@ void uiDraw(void) {
 	doupdate();
 }
 
+struct Style {
+	attr_t attr;
+	enum Color fg, bg;
+};
+static const struct Style Reset = { A_NORMAL, Default, Default };
+
+static short mapColor(enum Color color) {
+	switch (color) {
+		break; case White:      return 8 + COLOR_WHITE;
+		break; case Black:      return 0 + COLOR_BLACK;
+		break; case Blue:       return 0 + COLOR_BLUE;
+		break; case Green:      return 0 + COLOR_GREEN;
+		break; case Red:        return 8 + COLOR_RED;
+		break; case Brown:      return 0 + COLOR_RED;
+		break; case Magenta:    return 0 + COLOR_MAGENTA;
+		break; case Orange:     return 0 + COLOR_YELLOW;
+		break; case Yellow:     return 8 + COLOR_YELLOW;
+		break; case LightGreen: return 8 + COLOR_GREEN;
+		break; case Cyan:       return 0 + COLOR_CYAN;
+		break; case LightCyan:  return 8 + COLOR_CYAN;
+		break; case LightBlue:  return 8 + COLOR_BLUE;
+		break; case Pink:       return 8 + COLOR_MAGENTA;
+		break; case Gray:       return 8 + COLOR_BLACK;
+		break; case LightGray:  return 0 + COLOR_WHITE;
+		break; default:         return -1;
+	}
+}
+
+static void styleParse(struct Style *style, const char **str, size_t *len) {
+	switch (**str) {
+		break; case '\2': (*str)++; style->attr ^= A_BOLD;
+		break; case '\17': (*str)++; *style = Reset;
+		break; case '\26': (*str)++; style->attr ^= A_REVERSE;
+		break; case '\35': (*str)++; style->attr ^= A_ITALIC;
+		break; case '\37': (*str)++; style->attr ^= A_UNDERLINE;
+		break; case '\3': {
+			(*str)++;
+			if (!isdigit(**str)) {
+				style->fg = Default;
+				style->bg = Default;
+				break;
+			}
+			style->fg = *(*str)++ - '0';
+			if (isdigit(**str)) style->fg = style->fg * 10 + *(*str)++ - '0';
+			if ((*str)[0] != ',' || !isdigit((*str)[1])) break;
+			(*str)++;
+			style->bg = *(*str)++ - '0';
+			if (isdigit(**str)) style->bg = style->bg * 10 + *(*str)++ - '0';
+		}
+	}
+	*len = strcspn(*str, "\2\3\17\26\35\37");
+}
+
+static void styleAdd(WINDOW *win, const char *str) {
+	size_t len;
+	struct Style style = Reset;
+	while (*str) {
+		styleParse(&style, &str, &len);
+		wattr_set(
+			win,
+			style.attr | colorAttr(mapColor(style.fg)),
+			colorPair(mapColor(style.fg), mapColor(style.bg)),
+			NULL
+		);
+		waddnstr(win, str, len);
+		str += len;
+	}
+}
+
 void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) {
 	(void)time;
 	struct Window *window = windowFor(id);
 	waddch(window->pad, '\n');
-	waddstr(window->pad, str);
+	styleAdd(window->pad, str);
 }
 
 void uiFormat(
