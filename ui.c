@@ -271,8 +271,8 @@ static void statusUpdate(void) {
 		int unread;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), C"%d%s %d %s %n("C"%02d%d"C"%d) ",
-			idColors[window->id], (window == windows.active ? V : ""),
+			buf, sizeof(buf), "\3%d%s %d %s %n(\3%02d%d\3%d) ",
+			idColors[window->id], (window == windows.active ? "\26" : ""),
 			num, idNames[window->id],
 			&unread, (window->heat > Warm ? White : idColors[window->id]),
 			window->unread,

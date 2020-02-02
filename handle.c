@@ -188,7 +188,7 @@ static void handleJoin(struct Message *msg) {
 	}
 	uiFormat(
 		id, Cold, tagTime(msg),
-		C"%02d%s"C" arrives in "C"%02d%s"C,
+		"\3%02d%s\3 arrives in \3%02d%s\3",
 		hash(msg->user), msg->nick, idColors[id], idNames[id]
 	);
 }

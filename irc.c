@@ -105,7 +105,7 @@ static void debug(char dir, const char *line) {
 	if (!self.debug) return;
 	size_t len = strcspn(line, "\r\n");
 	uiFormat(
-		Debug, Cold, NULL, C"%d%c%c"C" %.*s",
+		Debug, Cold, NULL, "\3%d%c%c\3 %.*s",
 		Gray, dir, dir, (int)len, line
 	);
 	if (!isatty(STDERR_FILENO)) {

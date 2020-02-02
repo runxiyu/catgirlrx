@@ -26,12 +26,6 @@
 
 typedef unsigned char byte;
 
-#define B "\2"
-#define C "\3"
-#define R "\17"
-#define V "\26"
-#define I "\35"
-#define U "\37"
 enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
