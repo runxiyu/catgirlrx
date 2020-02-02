@@ -85,6 +85,17 @@ static const struct tm *tagTime(const struct Message *msg) {
 
 typedef void Handler(struct Message *msg);
 
+static void handleErrorNicknameInUse(struct Message *msg) {
+	if (self.nick) return;
+	require(msg, false, 2);
+	ircFormat("NICK :%s_\r\n", msg->params[1]);
+}
+
+static void handleErrorErroneousNickname(struct Message *msg) {
+	require(msg, false, 3);
+	errx(EX_CONFIG, "%s: %s", msg->params[1], msg->params[2]);
+}
+
 static void handleCap(struct Message *msg) {
 	require(msg, false, 3);
 	enum Cap caps = capParse(msg->params[2]);
@@ -178,6 +189,8 @@ static const struct Handler {
 	{ "001", handleReplyWelcome },
 	{ "005", handleReplyISupport },
 	{ "372", handleReplyMOTD },
+	{ "432", handleErrorErroneousNickname },
+	{ "433", handleErrorNicknameInUse },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
 	{ "905", handleErrorSASLFail },
