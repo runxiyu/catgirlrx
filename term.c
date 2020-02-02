@@ -17,18 +17,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 
 #include "chat.h"
-
-static bool xterm;
-
-void termInit(void) {
-	const char *term = getenv("TERM");
-	xterm = (term && !strncmp(term, "xterm", 5));
-}
 
 void termNoFlow(void) {
 	struct termios attr;
@@ -37,12 +29,6 @@ void termNoFlow(void) {
 	attr.c_iflag &= ~IXON;
 	attr.c_cc[VDISCARD] = _POSIX_VDISABLE;
 	tcsetattr(STDIN_FILENO, TCSANOW, &attr);
-}
-
-void termTitle(const char *title) {
-	if (!xterm) return;
-	printf("\33]0;%s\33\\", title);
-	fflush(stdout);
 }
 
 static void privateMode(const char *mode, bool set) {

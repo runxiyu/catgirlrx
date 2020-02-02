@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
+#include <term.h>
 #include <time.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -133,11 +134,15 @@ void uiInit(void) {
 	initscr();
 	cbreak();
 	noecho();
-	termInit();
 	termNoFlow();
 	def_prog_mode();
 	err_set_exit(errExit);
 	colorInit();
+	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
+		to_status_line = "\33]2;";
+		from_status_line = "\7";
+	}
+
 	status = newwin(1, COLS, 0, 0);
 	input = newpad(1, InputCols);
 	keypad(input, true);
@@ -305,7 +310,9 @@ static void statusUpdate(void) {
 		&unread, windows.active->unread
 	);
 	if (!windows.active->unread) buf[unread] = '\0';
-	termTitle(buf);
+	putp(to_status_line);
+	putp(buf);
+	putp(from_status_line);
 }
 
 void uiShowID(size_t id) {
