@@ -104,10 +104,10 @@ int ircConnect(const char *host, const char *port) {
 static void debug(char dir, const char *line) {
 	if (!self.debug) return;
 	size_t len = strcspn(line, "\r\n");
-	/*uiFormat(
-		Debug, Cold, NULL, "\3%02d%c%c\3 %.*s",
+	uiFormat(
+		Debug, Cold, NULL, C"%d%c%c"C" %.*s",
 		Gray, dir, dir, (int)len, line
-	);*/
+	);
 	if (!isatty(STDERR_FILENO)) {
 		fprintf(stderr, "%c%c %.*s\n", dir, dir, (int)len, line);
 	}

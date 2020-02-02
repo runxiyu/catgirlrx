@@ -15,6 +15,7 @@
  */
 
 #include <err.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,8 @@ size_t idNext = Network + 1;
 struct Self self;
 
 int main(int argc, char *argv[]) {
+	setlocale(LC_CTYPE, "");
+
 	bool insecure = false;
 	const char *host = NULL;
 	const char *port = "6697";
@@ -71,6 +74,10 @@ int main(int argc, char *argv[]) {
 	if (!real) real = nick;
 
 	ircConfig(insecure, cert, priv);
+
+	uiInit();
+	uiFormat(Network, Cold, NULL, "Traveling...");
+	uiDraw();
 	
 	int irc = ircConnect(host, port);
 	if (pass) ircFormat("PASS :%s\r\n", pass);
@@ -80,6 +87,7 @@ int main(int argc, char *argv[]) {
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
 	for (;;) {
+		uiDraw();
 		ircRecv();
 	}
 }

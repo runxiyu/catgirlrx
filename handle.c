@@ -136,11 +136,32 @@ static void handleReplyWelcome(struct Message *msg) {
 	if (self.join) ircFormat("JOIN :%s\r\n", self.join);
 }
 
+static void handleReplyISupport(struct Message *msg) {
+	// TODO: Extract CHANTYPES and PREFIX for future use.
+	for (size_t i = 1; i < ParamCap; ++i) {
+		if (!msg->params[i]) break;
+		char *key = strsep(&msg->params[i], "=");
+		if (!msg->params[i]) continue;
+		if (!strcmp(key, "NETWORK")) {
+			uiFormat(Network, Cold, NULL, "You arrive in %s", msg->params[i]);
+		}
+	}
+}
+
+static void handleReplyMOTD(struct Message *msg) {
+	require(msg, false, 2);
+	char *line = msg->params[1];
+	if (!strncmp(line, "- ", 2)) line += 2;
+	uiFormat(Network, Cold, NULL, "%s", line);
+}
+
 static const struct Handler {
 	const char *cmd;
 	Handler *fn;
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
+	{ "005", handleReplyISupport },
+	{ "372", handleReplyMOTD },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
 	{ "905", handleErrorSASLFail },

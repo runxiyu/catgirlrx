@@ -3,12 +3,13 @@ CFLAGS += -I${LIBRESSL_PREFIX}/include
 LDFLAGS += -L${LIBRESSL_PREFIX}/lib
 
 CFLAGS += -std=c11 -Wall -Wextra -Wpedantic
-LDLIBS = -lcrypto -ltls
+LDLIBS = -lcurses -lcrypto -ltls
 
 OBJS += chat.o
 OBJS += handle.o
 OBJS += irc.o
 OBJS += term.o
+OBJS += ui.o
 
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@

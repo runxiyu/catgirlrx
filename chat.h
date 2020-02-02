@@ -82,6 +82,18 @@ struct Message {
 	char *params[ParamCap];
 };
 
+#define B "\2"
+#define C "\3"
+#define R "\17"
+#define V "\26"
+#define I "\35"
+#define U "\37"
+enum Color {
+	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
+	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
+	Default = 99,
+};
+
 void ircConfig(bool insecure, const char *cert, const char *priv);
 int ircConnect(const char *host, const char *port);
 void ircRecv(void);
@@ -90,6 +102,14 @@ void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 
 void handle(struct Message msg);
+
+enum Heat { Cold, Warm, Hot };
+void uiInit(void);
+void uiDraw(void);
+void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str);
+void uiFormat(
+	size_t id, enum Heat heat, const struct tm *time, const char *format, ...
+) __attribute__((format(printf, 4, 5)));
 
 enum TermMode {
 	TermFocus,
@@ -109,11 +129,9 @@ void termMode(enum TermMode mode, bool set);
 enum TermEvent termEvent(char ch);
 
 #define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
-
 static const char Base64[64] = {
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 };
-
 static inline void base64(char *dst, const byte *src, size_t len) {
 	size_t i = 0;
 	while (len > 2) {
