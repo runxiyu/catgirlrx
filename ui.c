@@ -234,7 +234,7 @@ static void styleAdd(WINDOW *win, const char *str) {
 		if (*str == ' ') {
 			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
-			if (width - x - 1 < wordWidth(word)) {
+			if (width - x - 1 <= wordWidth(word)) {
 				waddch(win, '\n');
 				str = word;
 			}
