@@ -16,6 +16,7 @@
 
 #include <err.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include <sysexits.h>
 #include <time.h>
@@ -93,6 +94,16 @@ enum Color {
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
 	Default = 99,
 };
+static inline enum Color hash(const char *str) {
+	if (*str == '~') str++;
+	uint32_t hash = 0;
+	for (; *str; ++str) {
+		hash = (hash << 5) | (hash >> 27);
+		hash ^= *str;
+		hash *= 0x27220A95;
+	}
+	return 2 + hash % 14;
+}
 
 void ircConfig(bool insecure, const char *cert, const char *priv);
 int ircConnect(const char *host, const char *port);
