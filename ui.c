@@ -124,6 +124,11 @@ static struct Window *windowFor(size_t id) {
 	return window;
 }
 
+static void errExit(int eval) {
+	(void)eval;
+	reset_shell_mode();
+}
+
 void uiInit(void) {
 	initscr();
 	cbreak();
@@ -131,6 +136,7 @@ void uiInit(void) {
 	termInit();
 	termNoFlow();
 	def_prog_mode();
+	err_set_exit(errExit);
 	colorInit();
 	status = newwin(1, COLS, 0, 0);
 	input = newpad(1, InputCols);
