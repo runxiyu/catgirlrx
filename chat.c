@@ -80,6 +80,10 @@ int main(int argc, char *argv[]) {
 	if (!user) user = nick;
 	if (!real) real = nick;
 
+	set(&self.network, host);
+	set(&self.chanTypes, "#&");
+	set(&self.prefixes, "@+");
+
 	ircConfig(insecure, cert, priv);
 
 	uiInit();

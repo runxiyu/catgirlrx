@@ -65,11 +65,20 @@ enum Cap {
 
 extern struct Self {
 	bool debug;
+	char *plain;
 	const char *join;
 	enum Cap caps;
-	char *plain;
+	char *network;
+	char *chanTypes;
+	char *prefixes;
 	char *nick;
 } self;
+
+static inline void set(char **field, const char *value) {
+	free(*field);
+	*field = strdup(value);
+	if (!*field) err(EX_OSERR, "strdup");
+}
 
 #define ENUM_TAG \
 	X("time", TagTime)

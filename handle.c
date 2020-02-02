@@ -59,12 +59,6 @@ static const char *capList(enum Cap caps) {
 	return buf;
 }
 
-static void set(char **field, const char *value) {
-	free(*field);
-	*field = strdup(value);
-	if (!*field) err(EX_OSERR, "strdup");
-}
-
 static void require(struct Message *msg, bool origin, size_t len) {
 	if (origin) {
 		if (!msg->nick) errx(EX_PROTOCOL, "%s missing origin", msg->cmd);
@@ -158,16 +152,22 @@ static void handleReplyWelcome(struct Message *msg) {
 }
 
 static void handleReplyISupport(struct Message *msg) {
-	// TODO: Extract CHANTYPES and PREFIX for future use.
 	for (size_t i = 1; i < ParamCap; ++i) {
 		if (!msg->params[i]) break;
 		char *key = strsep(&msg->params[i], "=");
 		if (!msg->params[i]) continue;
 		if (!strcmp(key, "NETWORK")) {
+			set(&self.network, msg->params[i]);
 			uiFormat(
 				Network, Cold, tagTime(msg),
 				"You arrive in %s", msg->params[i]
 			);
+		} else if (!strcmp(key, "CHANTYPES")) {
+			set(&self.chanTypes, msg->params[i]);
+		} else if (!strcmp(key, "PREFIX")) {
+			strsep(&msg->params[i], ")");
+			if (!msg->params[i]) continue;
+			set(&self.prefixes, msg->params[i]);
 		}
 	}
 }
