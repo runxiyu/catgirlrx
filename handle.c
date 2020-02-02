@@ -207,7 +207,6 @@ static void handlePrivmsg(struct Message *msg) {
 	bool network = query && strchr(msg->nick, '.');
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
-	// TODO: Send services to Network?
 	size_t id = (network ? Network : idFor(query ? msg->nick : msg->params[0]));
 	if (query && !network) idColors[id] = hash(msg->user);
 	uiFormat(
