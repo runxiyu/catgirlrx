@@ -25,6 +25,8 @@
 #include <string.h>
 #include <sysexits.h>
 #include <time.h>
+#include <wchar.h>
+#include <wctype.h>
 
 #include "chat.h"
 
@@ -112,7 +114,6 @@ static struct Window *windowFor(size_t id) {
 	if (!window) err(EX_OSERR, "malloc");
 	window->id = id;
 	window->pad = newpad(PadLines, COLS);
-	wsetscrreg(window->pad, 0, PadLines - 1);
 	scrollok(window->pad, true);
 	wmove(window->pad, PadLines - 1, 0);
 	window->heat = Cold;
@@ -211,20 +212,28 @@ static void styleParse(struct Style *style, const char **str, size_t *len) {
 
 static int wordWidth(const char *str) {
 	size_t len = strcspn(str, " ");
-	// TODO: wcswidth.
-	return len;
+	int width = 0;
+	while (len) {
+		wchar_t wc;
+		int n = mbtowc(&wc, str, len);
+		if (n < 1) return width + len;
+		width += (iswprint(wc) ? wcwidth(wc) : 0);
+		str += n;
+		len -= n;
+	}
+	return width;
 }
 
 static void styleAdd(WINDOW *win, const char *str) {
-	int _, x, width;
-	getmaxyx(win, _, width);
+	int y, x, width;
+	getmaxyx(win, y, width);
 
 	size_t len;
 	struct Style style = Reset;
 	while (*str) {
 		if (*str == ' ') {
+			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
-			getyx(win, _, x);
 			if (width - x - 1 < wordWidth(word)) {
 				waddch(win, '\n');
 				str = word;
