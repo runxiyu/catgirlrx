@@ -193,7 +193,7 @@ static short mapColor(enum Color color) {
 
 static void styleParse(struct Style *style, const char **str, size_t *len) {
 	switch (**str) {
-		break; case '\2': (*str)++; style->attr ^= A_BOLD;
+		break; case '\2':  (*str)++; style->attr ^= A_BOLD;
 		break; case '\17': (*str)++; *style = Reset;
 		break; case '\26': (*str)++; style->attr ^= A_REVERSE;
 		break; case '\35': (*str)++; style->attr ^= A_ITALIC;
@@ -230,7 +230,7 @@ static int wordWidth(const char *str) {
 	return width;
 }
 
-static void styleAdd(WINDOW *win, const char *str) {
+static void styleAdd(WINDOW *win, const char *str, bool show) {
 	int y, x, width;
 	getmaxyx(win, y, width);
 
@@ -246,7 +246,21 @@ static void styleAdd(WINDOW *win, const char *str) {
 			}
 		}
 
+		const char *code = str;
 		styleParse(&style, &str, &len);
+		if (show) {
+			wattr_set(win, A_BOLD | A_REVERSE, 0, NULL);
+			switch (*code) {
+				break; case '\2':  waddch(win, 'B');
+				break; case '\3':  waddch(win, 'C');
+				break; case '\17': waddch(win, 'O');
+				break; case '\26': waddch(win, 'R');
+				break; case '\35': waddch(win, 'I');
+				break; case '\37': waddch(win, 'U');
+			}
+			if (str - code > 1) waddnstr(win, &code[1], str - &code[1]);
+		}
+
 		size_t sp = strspn(str, " ");
 		sp += strcspn(&str[sp], " ");
 		if (sp < len) len = sp;
@@ -279,7 +293,7 @@ static void statusUpdate(void) {
 			idColors[window->id]
 		);
 		if (!window->unread) buf[unread] = '\0';
-		styleAdd(status, buf);
+		styleAdd(status, buf, true);
 	}
 	wclrtoeol(status);
 }
@@ -300,7 +314,7 @@ void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) 
 	(void)time;
 	struct Window *window = windowFor(id);
 	waddch(window->pad, '\n');
-	styleAdd(window->pad, str);
+	styleAdd(window->pad, str, true);
 }
 
 void uiFormat(
