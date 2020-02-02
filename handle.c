@@ -65,8 +65,6 @@ static void set(char **field, const char *value) {
 	if (!*field) err(EX_OSERR, "strdup");
 }
 
-typedef void Handler(struct Message *msg);
-
 static void require(const struct Message *msg, bool origin, size_t len) {
 	if (origin && !msg->nick) {
 		errx(EX_PROTOCOL, "%s missing origin", msg->cmd);
@@ -76,6 +74,16 @@ static void require(const struct Message *msg, bool origin, size_t len) {
 		errx(EX_PROTOCOL, "%s missing parameter %zu", msg->cmd, 1 + i);
 	}
 }
+
+static const struct tm *tagTime(const struct Message *msg) {
+	if (!msg->tags[TagTime]) return NULL;
+	static struct tm time;
+	char *rest = strptime(msg->tags[TagTime], "%FT%T", &time);
+	time.tm_gmtoff = 0;
+	return (rest ? &time : NULL);
+}
+
+typedef void Handler(struct Message *msg);
 
 static void handleCap(struct Message *msg) {
 	require(msg, false, 3);
@@ -143,7 +151,10 @@ static void handleReplyISupport(struct Message *msg) {
 		char *key = strsep(&msg->params[i], "=");
 		if (!msg->params[i]) continue;
 		if (!strcmp(key, "NETWORK")) {
-			uiFormat(Network, Cold, NULL, "You arrive in %s", msg->params[i]);
+			uiFormat(
+				Network, Cold, tagTime(msg),
+				"You arrive in %s", msg->params[i]
+			);
 		}
 	}
 }
@@ -152,7 +163,12 @@ static void handleReplyMOTD(struct Message *msg) {
 	require(msg, false, 2);
 	char *line = msg->params[1];
 	if (!strncmp(line, "- ", 2)) line += 2;
-	uiFormat(Network, Cold, NULL, "%s", line);
+	uiFormat(Network, Cold, tagTime(msg), "%s", line);
+}
+
+static void handlePing(struct Message *msg) {
+	require(msg, false, 1);
+	ircFormat("PONG :%s\r\n", msg->params[0]);
 }
 
 static const struct Handler {
@@ -168,6 +184,7 @@ static const struct Handler {
 	{ "906", handleErrorSASLFail },
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
+	{ "PING", handlePing },
 };
 
 static int compar(const void *cmd, const void *_handler) {
