@@ -203,7 +203,7 @@ static bool isAction(struct Message *msg) {
 
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
-	bool query = msg->params[0][0] != '#'; // FIXME: CHANTYPES.
+	bool query = !strchr(self.chanTypes, msg->params[0][0]);
 	bool network = query && strchr(msg->nick, '.');
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
