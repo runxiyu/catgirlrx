@@ -117,6 +117,7 @@ void handle(struct Message msg);
 enum Heat { Cold, Warm, Hot };
 void uiInit(void);
 void uiDraw(void);
+void uiShowID(size_t id);
 void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str);
 void uiFormat(
 	size_t id, enum Heat heat, const struct tm *time, const char *format, ...

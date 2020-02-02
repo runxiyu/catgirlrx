@@ -262,6 +262,40 @@ static void styleAdd(WINDOW *win, const char *str) {
 	}
 }
 
+static void statusUpdate(void) {
+	wmove(status, 0, 0);
+	int num;
+	const struct Window *window;
+	for (num = 0, window = windows.head; window; ++num, window = window->next) {
+		if (!window->unread && window != windows.active) continue;
+		enum Color color = hash(idNames[window->id]); // FIXME: queries.
+		int unread;
+		char buf[256];
+		snprintf(
+			buf, sizeof(buf), C"%d%s %d %s %n("C"%02d%d"C"%d) ",
+			color, (window == windows.active ? V : ""),
+			num, idNames[window->id],
+			&unread, (window->heat > Warm ? White : color), window->unread,
+			color
+		);
+		if (!window->unread) buf[unread] = '\0';
+		styleAdd(status, buf);
+	}
+	wclrtoeol(status);
+}
+
+void uiShowID(size_t id) {
+	struct Window *window = windowFor(id);
+	window->heat = Cold;
+	window->unread = 0;
+	window->mark = false;
+	if (windows.active) windows.active->mark = true;
+	windows.other = windows.active;
+	windows.active = window;
+	touchwin(window->pad);
+	statusUpdate();
+}
+
 void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) {
 	(void)time;
 	struct Window *window = windowFor(id);

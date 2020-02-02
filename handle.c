@@ -65,9 +65,11 @@ static void set(char **field, const char *value) {
 	if (!*field) err(EX_OSERR, "strdup");
 }
 
-static void require(const struct Message *msg, bool origin, size_t len) {
-	if (origin && !msg->nick) {
-		errx(EX_PROTOCOL, "%s missing origin", msg->cmd);
+static void require(struct Message *msg, bool origin, size_t len) {
+	if (origin) {
+		if (!msg->nick) errx(EX_PROTOCOL, "%s missing origin", msg->cmd);
+		if (!msg->user) msg->user = msg->nick;
+		if (!msg->host) msg->host = msg->user;
 	}
 	for (size_t i = 0; i < len; ++i) {
 		if (msg->params[i]) continue;
@@ -177,6 +179,19 @@ static void handleReplyMOTD(struct Message *msg) {
 	uiFormat(Network, Cold, tagTime(msg), "%s", line);
 }
 
+static void handleJoin(struct Message *msg) {
+	require(msg, true, 1);
+	size_t id = idFor(msg->params[0]);
+	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		uiShowID(id);
+	}
+	uiFormat(
+		id, Cold, tagTime(msg),
+		C"%02d%s"C" arrives in "C"%02d%s"C,
+		hash(msg->user), msg->nick, hash(idNames[id]), idNames[id]
+	);
+}
+
 static void handlePing(struct Message *msg) {
 	require(msg, false, 1);
 	ircFormat("PONG :%s\r\n", msg->params[0]);
@@ -197,6 +212,7 @@ static const struct Handler {
 	{ "906", handleErrorSASLFail },
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
+	{ "JOIN", handleJoin },
 	{ "PING", handlePing },
 };
 

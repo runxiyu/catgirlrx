@@ -76,19 +76,8 @@ int main(int argc, char *argv[]) {
 	ircConfig(insecure, cert, priv);
 
 	uiInit();
-	uiFormat(Network, Cold, NULL, C "3Trave" U "ling" U C "0,3.." C "0,4." R);
-	uiFormat(
-		Network, Cold, NULL,
-		"Jackdaws love my big sphinx of quartz. "
-		"The quick brown fox jumps over the lazy dog. "
-		"Jackdaws love my big sphinx of quartz. "
-		"Jackdaws love my big sphinx of quartz. "
-		"Jackdaws love my big sphinx of quartz. "
-		"The quick brown fox jumps over the lazy dog. "
-		"The quick brown fox jumps over the lazy dog. "
-		"Jackdaws love my big sphinx of quartz. "
-		"Jackdaws love my big sphinx of quartz. "
-	);
+	uiShowID(Network);
+	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
 	
 	int irc = ircConnect(host, port);
