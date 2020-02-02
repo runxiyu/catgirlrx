@@ -193,6 +193,18 @@ static void handleJoin(struct Message *msg) {
 	);
 }
 
+static void handlePrivmsg(struct Message *msg) {
+	require(msg, true, 2);
+	bool query = self.nick && !strcmp(msg->params[0], self.nick);
+	size_t id = idFor(query ? msg->nick : msg->params[0]);
+	if (query) idColors[id] = hash(msg->user);
+	uiFormat(
+		id, Warm, tagTime(msg),
+		"\3%d<%s>\3 %s",
+		hash(msg->user), msg->nick, msg->params[1]
+	);
+}
+
 static void handlePing(struct Message *msg) {
 	require(msg, false, 1);
 	ircFormat("PONG :%s\r\n", msg->params[0]);
@@ -215,6 +227,7 @@ static const struct Handler {
 	{ "CAP", handleCap },
 	{ "JOIN", handleJoin },
 	{ "PING", handlePing },
+	{ "PRIVMSG", handlePrivmsg },
 };
 
 static int compar(const void *cmd, const void *_handler) {
