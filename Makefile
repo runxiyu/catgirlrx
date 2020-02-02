@@ -11,10 +11,17 @@ OBJS += irc.o
 OBJS += term.o
 OBJS += ui.o
 
+dev: tags all
+
+all: catgirl
+
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@
 
 ${OBJS}: chat.h
 
+tags: *.h *.c
+	ctags -w *.h *.c
+
 clean:
-	rm -f catgirl ${OBJS}
+	rm -f tags catgirl ${OBJS}
