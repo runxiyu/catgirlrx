@@ -268,15 +268,15 @@ static void statusUpdate(void) {
 	const struct Window *window;
 	for (num = 0, window = windows.head; window; ++num, window = window->next) {
 		if (!window->unread && window != windows.active) continue;
-		enum Color color = hash(idNames[window->id]); // FIXME: queries.
 		int unread;
 		char buf[256];
 		snprintf(
 			buf, sizeof(buf), C"%d%s %d %s %n("C"%02d%d"C"%d) ",
-			color, (window == windows.active ? V : ""),
+			idColors[window->id], (window == windows.active ? V : ""),
 			num, idNames[window->id],
-			&unread, (window->heat > Warm ? White : color), window->unread,
-			color
+			&unread, (window->heat > Warm ? White : idColors[window->id]),
+			window->unread,
+			idColors[window->id]
 		);
 		if (!window->unread) buf[unread] = '\0';
 		styleAdd(status, buf);

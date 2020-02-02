@@ -26,8 +26,21 @@
 
 typedef unsigned char byte;
 
+#define B "\2"
+#define C "\3"
+#define R "\17"
+#define V "\26"
+#define I "\35"
+#define U "\37"
+enum Color {
+	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
+	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
+	Default = 99,
+};
+
 enum { None, Debug, Network, IDCap = 256 };
 extern char *idNames[IDCap];
+extern enum Color idColors[IDCap];
 extern size_t idNext;
 
 static inline size_t idFind(const char *name) {
@@ -36,6 +49,7 @@ static inline size_t idFind(const char *name) {
 	}
 	return None;
 }
+
 static inline size_t idFor(const char *name) {
 	size_t id = idFind(name);
 	if (id) return id;
@@ -83,28 +97,6 @@ struct Message {
 	char *params[ParamCap];
 };
 
-#define B "\2"
-#define C "\3"
-#define R "\17"
-#define V "\26"
-#define I "\35"
-#define U "\37"
-enum Color {
-	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
-	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
-	Default = 99,
-};
-static inline enum Color hash(const char *str) {
-	if (*str == '~') str++;
-	uint32_t hash = 0;
-	for (; *str; ++str) {
-		hash = (hash << 5) | (hash >> 27);
-		hash ^= *str;
-		hash *= 0x27220A95;
-	}
-	return 2 + hash % 14;
-}
-
 void ircConfig(bool insecure, const char *cert, const char *priv);
 int ircConnect(const char *host, const char *port);
 void ircRecv(void);
@@ -139,6 +131,17 @@ void termNoFlow(void);
 void termTitle(const char *title);
 void termMode(enum TermMode mode, bool set);
 enum TermEvent termEvent(char ch);
+
+static inline enum Color hash(const char *str) {
+	if (*str == '~') str++;
+	uint32_t hash = 0;
+	for (; *str; ++str) {
+		hash = (hash << 5) | (hash >> 27);
+		hash ^= *str;
+		hash *= 0x27220A95;
+	}
+	return 2 + hash % 14;
+}
 
 #define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
 static const char Base64[64] = {

@@ -183,12 +183,13 @@ static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	size_t id = idFor(msg->params[0]);
 	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		idColors[id] = hash(msg->params[0]);
 		uiShowID(id);
 	}
 	uiFormat(
 		id, Cold, tagTime(msg),
 		C"%02d%s"C" arrives in "C"%02d%s"C,
-		hash(msg->user), msg->nick, hash(idNames[id]), idNames[id]
+		hash(msg->user), msg->nick, idColors[id], idNames[id]
 	);
 }
 

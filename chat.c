@@ -29,6 +29,13 @@ char *idNames[IDCap] = {
 	[Debug] = "<debug>",
 	[Network] = "<network>",
 };
+
+enum Color idColors[IDCap] = {
+	[None] = Black,
+	[Debug] = Red,
+	[Network] = Gray,
+};
+
 size_t idNext = Network + 1;
 
 struct Self self;
