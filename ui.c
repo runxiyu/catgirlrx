@@ -324,7 +324,7 @@ static void statusUpdate(void) {
 			idColors[window->id]
 		);
 		if (!window->unread) buf[unread] = '\0';
-		styleAdd(status, buf, true);
+		styleAdd(status, buf, false);
 	}
 	wclrtoeol(status);
 
@@ -342,11 +342,11 @@ static void statusUpdate(void) {
 }
 
 void uiShowID(size_t id) {
+	windows.active->mark = true;
 	struct Window *window = windowFor(id);
 	window->heat = Cold;
 	window->unread = 0;
 	window->mark = false;
-	if (windows.active) windows.active->mark = true;
 	windows.other = windows.active;
 	windows.active = window;
 	touchwin(window->pad);
@@ -357,7 +357,14 @@ void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) 
 	(void)time;
 	struct Window *window = windowFor(id);
 	waddch(window->pad, '\n');
-	styleAdd(window->pad, str, true);
+	if (window->mark && heat > Cold) {
+		if (!window->unread++) {
+			waddch(window->pad, '\n');
+		}
+		window->heat = heat;
+		statusUpdate();
+	}
+	styleAdd(window->pad, str, false);
 }
 
 void uiFormat(
