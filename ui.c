@@ -136,6 +136,24 @@ enum {
 	KeyPasteOff,
 };
 
+// XXX: Assuming terminals will be fine with these even if they're unsupported,
+// since they're "private" modes.
+static const char *EnterFocusMode = "\33[?1004h";
+static const char *ExitFocusMode  = "\33[?1004l";
+static const char *EnterPasteMode = "\33[?2004h";
+static const char *ExitPasteMode  = "\33[?2004l";
+
+void uiShow(void) {
+	putp(EnterFocusMode);
+	putp(EnterPasteMode);
+}
+
+void uiHide(void) {
+	putp(ExitFocusMode);
+	putp(ExitPasteMode);
+	endwin();
+}
+
 static void disableFlowControl(void) {
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
@@ -174,6 +192,7 @@ void uiInit(void) {
 	keypad(input, true);
 	nodelay(input, true);
 	windows.active = windowFor(Network);
+	//uiShow();
 }
 
 void uiDraw(void) {
