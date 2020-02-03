@@ -115,9 +115,9 @@ void uiShow(void);
 void uiHide(void);
 void uiDraw(void);
 void uiShowID(size_t id);
-void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str);
+void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
-	size_t id, enum Heat heat, const struct tm *time, const char *format, ...
+	size_t id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 
 static inline enum Color hash(const char *str) {

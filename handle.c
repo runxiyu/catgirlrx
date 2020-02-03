@@ -71,12 +71,13 @@ static void require(struct Message *msg, bool origin, size_t len) {
 	}
 }
 
-static const struct tm *tagTime(const struct Message *msg) {
+static const time_t *tagTime(const struct Message *msg) {
+	static time_t time;
+	struct tm tm;
 	if (!msg->tags[TagTime]) return NULL;
-	static struct tm time;
-	char *rest = strptime(msg->tags[TagTime], "%FT%T", &time);
-	time.tm_gmtoff = 0;
-	return (rest ? &time : NULL);
+	if (!strptime(msg->tags[TagTime], "%FT%T", &tm)) return NULL;
+	time = timegm(&tm);
+	return &time;
 }
 
 typedef void Handler(struct Message *msg);

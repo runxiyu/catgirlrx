@@ -372,7 +372,7 @@ void uiShowID(size_t id) {
 	statusUpdate();
 }
 
-void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) {
+void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
 	(void)time;
 	struct Window *window = windowFor(id);
 	waddch(window->pad, '\n');
@@ -387,7 +387,7 @@ void uiWrite(size_t id, enum Heat heat, const struct tm *time, const char *str) 
 }
 
 void uiFormat(
-	size_t id, enum Heat heat, const struct tm *time, const char *format, ...
+	size_t id, enum Heat heat, const time_t *time, const char *format, ...
 ) {
 	char buf[1024];
 	va_list ap;
