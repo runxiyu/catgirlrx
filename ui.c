@@ -41,32 +41,6 @@
 #define RIGHT (COLS - 1)
 #define WINDOW_LINES (LINES - 2)
 
-static short colorPairs;
-
-static void colorInit(void) {
-	start_color();
-	use_default_colors();
-	for (short pair = 0; pair < 16; ++pair) {
-		init_pair(1 + pair, pair % COLORS, -1);
-	}
-	colorPairs = 17;
-}
-
-static attr_t colorAttr(short fg) {
-	return (fg >= COLORS ? A_BOLD : A_NORMAL);
-}
-
-static short colorPair(short fg, short bg) {
-	if (bg == -1) return 1 + fg;
-	for (short pair = 17; pair < colorPairs; ++pair) {
-		short f, b;
-		pair_content(pair, &f, &b);
-		if (f == fg && b == bg) return pair;
-	}
-	init_pair(colorPairs, fg % COLORS, bg % COLORS);
-	return colorPairs++;
-}
-
 enum {
 	InputCols = 512,
 	PadLines = 512,
@@ -115,16 +89,44 @@ static struct Window *windowFor(size_t id) {
 	}
 	window = malloc(sizeof(*window));
 	if (!window) err(EX_OSERR, "malloc");
+
 	window->id = id;
 	window->pad = newpad(PadLines, COLS);
-	scrollok(window->pad, true);
-	wmove(window->pad, PadLines - 1, 0);
 	window->heat = Cold;
 	window->unread = 0;
 	window->scroll = PadLines;
 	window->mark = true;
+	scrollok(window->pad, true);
+	wmove(window->pad, PadLines - 1, 0);
+
 	windowAdd(window);
 	return window;
+}
+
+static short colorPairs;
+
+static void colorInit(void) {
+	start_color();
+	use_default_colors();
+	for (short pair = 0; pair < 16; ++pair) {
+		init_pair(1 + pair, pair % COLORS, -1);
+	}
+	colorPairs = 17;
+}
+
+static attr_t colorAttr(short fg) {
+	return (fg >= COLORS ? A_BOLD : A_NORMAL);
+}
+
+static short colorPair(short fg, short bg) {
+	if (bg == -1) return 1 + fg;
+	for (short pair = 17; pair < colorPairs; ++pair) {
+		short f, b;
+		pair_content(pair, &f, &b);
+		if (f == fg && b == bg) return pair;
+	}
+	init_pair(colorPairs, fg % COLORS, bg % COLORS);
+	return colorPairs++;
 }
 
 enum {
