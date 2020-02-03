@@ -8,7 +8,6 @@ LDLIBS = -lcurses -lcrypto -ltls
 OBJS += chat.o
 OBJS += handle.o
 OBJS += irc.o
-OBJS += term.o
 OBJS += ui.o
 
 dev: tags all

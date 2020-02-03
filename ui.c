@@ -25,7 +25,9 @@
 #include <string.h>
 #include <sysexits.h>
 #include <term.h>
+#include <termios.h>
 #include <time.h>
+#include <unistd.h>
 #include <wchar.h>
 #include <wctype.h>
 
@@ -125,6 +127,23 @@ static struct Window *windowFor(size_t id) {
 	return window;
 }
 
+enum {
+	KeyFocusIn = KEY_MAX + 1,
+	KeyFocusOut,
+	KeyPasteOn,
+	KeyPasteOff,
+};
+
+static void disableFlowControl(void) {
+	struct termios term;
+	int error = tcgetattr(STDOUT_FILENO, &term);
+	if (error) err(EX_OSERR, "tcgetattr");
+	term.c_iflag &= ~IXON;
+	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
+	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
+	if (error) err(EX_OSERR, "tcsetattr");
+}
+
 static void errExit(int eval) {
 	(void)eval;
 	reset_shell_mode();
@@ -134,15 +153,20 @@ void uiInit(void) {
 	initscr();
 	cbreak();
 	noecho();
-	termNoFlow();
+	disableFlowControl();
 	def_prog_mode();
 	err_set_exit(errExit);
-	colorInit();
+
 	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
 		to_status_line = "\33]2;";
 		from_status_line = "\7";
 	}
+	define_key("\33[I", KeyFocusIn);
+	define_key("\33[O", KeyFocusOut);
+	define_key("\33[200~", KeyPasteOn);
+	define_key("\33[201~", KeyPasteOff);
 
+	colorInit();
 	status = newwin(1, COLS, 0, 0);
 	input = newpad(1, InputCols);
 	keypad(input, true);

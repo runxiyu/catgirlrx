@@ -118,21 +118,6 @@ void uiFormat(
 	size_t id, enum Heat heat, const struct tm *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 
-enum TermMode {
-	TermFocus,
-	TermPaste,
-};
-enum TermEvent {
-	TermNone,
-	TermFocusIn,
-	TermFocusOut,
-	TermPasteStart,
-	TermPasteEnd,
-};
-void termNoFlow(void);
-void termMode(enum TermMode mode, bool set);
-enum TermEvent termEvent(char ch);
-
 static inline enum Color hash(const char *str) {
 	if (*str == '~') str++;
 	uint32_t hash = 0;
