@@ -362,16 +362,20 @@ static void statusUpdate(void) {
 	putp(from_status_line);
 }
 
+static void unmark(void) {
+	windows.active->heat = Cold;
+	windows.active->unread = 0;
+	windows.active->mark = false;
+	statusUpdate();
+}
+
 void uiShowID(size_t id) {
-	windows.active->mark = true;
 	struct Window *window = windowFor(id);
-	window->heat = Cold;
-	window->unread = 0;
-	window->mark = false;
+	touchwin(window->pad);
 	windows.other = windows.active;
 	windows.active = window;
-	touchwin(window->pad);
-	statusUpdate();
+	windows.other->mark = true;
+	unmark();
 }
 
 void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
@@ -403,7 +407,7 @@ void uiFormat(
 static void keyCode(int code) {
 	switch (code) {
 		break; case KEY_RESIZE:; // TODO
-		break; case KeyFocusIn:; // TODO
+		break; case KeyFocusIn:  unmark();
 		break; case KeyFocusOut: windows.active->mark = true;
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
