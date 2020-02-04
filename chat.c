@@ -15,7 +15,9 @@
  */
 
 #include <err.h>
+#include <errno.h>
 #include <locale.h>
+#include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,8 +100,16 @@ int main(int argc, char *argv[]) {
 	ircFormat("NICK :%s\r\n", nick);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
+	struct pollfd fds[2] = {
+		{ .events = POLLIN, .fd = STDIN_FILENO },
+		{ .events = POLLIN, .fd = irc },
+	};
 	for (;;) {
+		int nfds = poll(fds, 2, -1);
+		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
+
+		if (fds[0].revents) uiRead();
+		if (fds[1].revents) ircRecv();
 		uiDraw();
-		ircRecv();
 	}
 }

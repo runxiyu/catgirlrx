@@ -14,6 +14,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define _XOPEN_SOURCE_EXTENDED
+
 #include <assert.h>
 #include <ctype.h>
 #include <curses.h>
@@ -192,7 +194,7 @@ void uiInit(void) {
 	keypad(input, true);
 	nodelay(input, true);
 	windows.active = windowFor(Network);
-	//uiShow();
+	uiShow();
 }
 
 void uiDraw(void) {
@@ -396,4 +398,45 @@ void uiFormat(
 	va_end(ap);
 	assert((size_t)len < sizeof(buf));
 	uiWrite(id, heat, time, buf);
+}
+
+static void keyCode(int code) {
+	switch (code) {
+		break; case KEY_RESIZE:; // TODO
+		break; case KeyFocusIn:; // TODO
+		break; case KeyFocusOut: windows.active->mark = true;
+		break; case KeyPasteOn:; // TODO
+		break; case KeyPasteOff:; // TODO
+	}
+}
+
+static void keyMeta(wchar_t ch) {
+	switch (ch) {
+		break; case L'm': uiWrite(windows.active->id, Cold, NULL, "");
+	}
+}
+
+static void keyChar(wchar_t ch) {
+	switch (ch) {
+		break; case CTRL(L'L'): clearok(curscr, true);
+	}
+}
+
+void uiRead(void) {
+	int ret;
+	wint_t ch;
+	static bool meta;
+	while (ERR != (ret = wget_wch(input, &ch))) {
+		if (ret == KEY_CODE_YES) {
+			keyCode(ch);
+		} else if (ch == '\33') {
+			meta = true;
+			continue;
+		} else if (meta) {
+			keyMeta(ch);
+		} else {
+			keyChar(ch);
+		}
+		meta = false;
+	}
 }
