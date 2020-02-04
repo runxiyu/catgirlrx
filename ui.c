@@ -369,13 +369,25 @@ static void unmark(void) {
 	statusUpdate();
 }
 
-void uiShowID(size_t id) {
-	struct Window *window = windowFor(id);
+static void windowShow(struct Window *window) {
 	touchwin(window->pad);
 	windows.other = windows.active;
 	windows.active = window;
 	windows.other->mark = true;
 	unmark();
+}
+
+void uiShowID(size_t id) {
+	windowShow(windowFor(id));
+}
+
+void uiShowNum(size_t num) {
+	struct Window *window = windows.head;
+	for (size_t i = 0; i < num; ++i) {
+		window = window->next;
+		if (!window) return;
+	}
+	windowShow(window);
 }
 
 void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
@@ -417,6 +429,9 @@ static void keyCode(int code) {
 static void keyMeta(wchar_t ch) {
 	switch (ch) {
 		break; case L'm': uiWrite(windows.active->id, Cold, NULL, "");
+		break; default: {
+			if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0');
+		}
 	}
 }
 
