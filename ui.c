@@ -35,6 +35,9 @@
 
 #include "chat.h"
 
+// Annoying stuff from <term.h>:
+#undef lines
+
 #ifndef A_ITALIC
 #define A_ITALIC A_UNDERLINE
 #endif
@@ -43,16 +46,28 @@
 #define RIGHT (COLS - 1)
 #define WINDOW_LINES (LINES - 2)
 
-enum {
-	InputCols = 512,
-	PadLines = 512,
-};
-
 static WINDOW *status;
 static WINDOW *input;
 
+enum { BufferCap = 512 };
+struct Buffer {
+	time_t times[BufferCap];
+	char *lines[BufferCap];
+	size_t len;
+};
+static_assert(!(BufferCap & (BufferCap - 1)), "BufferCap is power of two");
+
+static void bufferPush(struct Buffer *buffer, time_t time, const char *line) {
+	size_t i = buffer->len++ % BufferCap;
+	free(buffer->lines[i]);
+	buffer->times[i] = time;
+	buffer->lines[i] = strdup(line);
+	if (!buffer->lines[i]) err(EX_OSERR, "strdup");
+}
+
 struct Window {
 	size_t id;
+	struct Buffer buffer;
 	WINDOW *pad;
 	enum Heat heat;
 	int unread;
@@ -89,17 +104,15 @@ static struct Window *windowFor(size_t id) {
 	for (window = windows.head; window; window = window->next) {
 		if (window->id == id) return window;
 	}
-	window = malloc(sizeof(*window));
+	window = calloc(1, sizeof(*window));
 	if (!window) err(EX_OSERR, "malloc");
 
 	window->id = id;
-	window->pad = newpad(PadLines, COLS);
-	window->heat = Cold;
-	window->unread = 0;
-	window->scroll = PadLines;
-	window->mark = true;
+	window->pad = newpad(BufferCap, COLS);
 	scrollok(window->pad, true);
-	wmove(window->pad, PadLines - 1, 0);
+	wmove(window->pad, BufferCap - 1, 0);
+	window->scroll = BufferCap;
+	window->mark = true;
 
 	windowAdd(window);
 	return window;
@@ -190,7 +203,7 @@ void uiInit(void) {
 
 	colorInit();
 	status = newwin(1, COLS, 0, 0);
-	input = newpad(1, InputCols);
+	input = newpad(1, 512);
 	keypad(input, true);
 	nodelay(input, true);
 	windows.active = windowFor(Network);
@@ -380,9 +393,11 @@ static void wordWrap(WINDOW *win, const char *str) {
 	}
 }
 
-void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
-	(void)time;
+void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windowFor(id);
+	time_t clock = (src ? *src : time(NULL));
+	bufferPush(&window->buffer, clock, str);
+
 	waddch(window->pad, '\n');
 	if (window->mark && heat > Cold) {
 		if (!window->unread++) {
@@ -404,6 +419,25 @@ void uiFormat(
 	va_end(ap);
 	assert((size_t)len < sizeof(buf));
 	uiWrite(id, heat, time, buf);
+}
+
+static void reflow(struct Window *window) {
+	werase(window->pad);
+	wmove(window->pad, BufferCap - 1, 0);
+	size_t len = window->buffer.len;
+	for (size_t i = (len > BufferCap ? len - BufferCap : 0); i < len; ++i) {
+		waddch(window->pad, '\n');
+		wordWrap(window->pad, window->buffer.lines[i % BufferCap]);
+	}
+}
+
+static void resize(void) {
+	// FIXME: Only reflow when COLS changes.
+	for (struct Window *window = windows.head; window; window = window->next) {
+		wresize(window->pad, BufferCap, COLS);
+		reflow(window);
+	}
+	statusUpdate();
 }
 
 static void inputAdd(struct Style *style, const char *str) {
@@ -480,7 +514,7 @@ void uiShowNum(size_t num) {
 
 static void keyCode(int code) {
 	switch (code) {
-		break; case KEY_RESIZE:; // TODO
+		break; case KEY_RESIZE:  resize();
 		break; case KeyFocusIn:  unmark();
 		break; case KeyFocusOut: windows.active->mark = true;
 		break; case KeyPasteOn:; // TODO
@@ -490,7 +524,7 @@ static void keyCode(int code) {
 
 static void keyMeta(wchar_t ch) {
 	switch (ch) {
-		break; case L'm': uiWrite(windows.active->id, Cold, NULL, "");
+		break; case L'm': waddch(windows.active->pad, '\n');
 		break; default: {
 			if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0');
 		}
