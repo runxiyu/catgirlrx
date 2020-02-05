@@ -325,27 +325,6 @@ static void unmark(void) {
 	statusUpdate();
 }
 
-static void windowShow(struct Window *window) {
-	touchwin(window->pad);
-	windows.other = windows.active;
-	windows.active = window;
-	windows.other->mark = true;
-	unmark();
-}
-
-void uiShowID(size_t id) {
-	windowShow(windowFor(id));
-}
-
-void uiShowNum(size_t num) {
-	struct Window *window = windows.head;
-	for (size_t i = 0; i < num; ++i) {
-		window = window->next;
-		if (!window) return;
-	}
-	windowShow(window);
-}
-
 static int wordWidth(const char *str) {
 	size_t len = strcspn(str, " ");
 	int width = 0;
@@ -462,6 +441,7 @@ static void inputUpdate(void) {
 		NULL
 	);
 	if (self.nick) {
+		// TODO: Check if input is command or action.
 		waddch(input, '<');
 		waddstr(input, self.nick);
 		waddstr(input, "> ");
@@ -474,6 +454,28 @@ static void inputUpdate(void) {
 	inputAdd(&style, editTail());
 	wclrtoeol(input);
 	wmove(input, y, x);
+}
+
+static void windowShow(struct Window *window) {
+	touchwin(window->pad);
+	windows.other = windows.active;
+	windows.active = window;
+	windows.other->mark = true;
+	inputUpdate();
+	unmark();
+}
+
+void uiShowID(size_t id) {
+	windowShow(windowFor(id));
+}
+
+void uiShowNum(size_t num) {
+	struct Window *window = windows.head;
+	for (size_t i = 0; i < num; ++i) {
+		window = window->next;
+		if (!window) return;
+	}
+	windowShow(window);
 }
 
 static void keyCode(int code) {
