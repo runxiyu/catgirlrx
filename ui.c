@@ -268,71 +268,18 @@ static void styleParse(struct Style *style, const char **str, size_t *len) {
 	*len = strcspn(*str, "\2\3\17\26\35\37");
 }
 
-static int wordWidth(const char *str) {
-	size_t len = strcspn(str, " ");
-	int width = 0;
-	while (len) {
-		wchar_t wc;
-		int n = mbtowc(&wc, str, len);
-		if (n < 1) return width + len;
-		width += (iswprint(wc) ? wcwidth(wc) : 0);
-		str += n;
-		len -= n;
-	}
-	return width;
-}
-
-static void styleAdd(WINDOW *win, const char *str, bool show) {
-	int y, x, width;
-	getmaxyx(win, y, width);
-
+static void statusAdd(const char *str) {
 	size_t len;
-	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
-		if (*str == '\t') {
-			waddch(win, ' ');
-			getyx(win, y, align);
-			str++;
-		} else if (*str == ' ') {
-			getyx(win, y, x);
-			const char *word = &str[strspn(str, " ")];
-			if (width - x - 1 <= wordWidth(word)) {
-				waddch(win, '\n');
-				getyx(win, y, x);
-				wmove(win, y, align);
-				str = word;
-			} else {
-				waddch(win, ' ');
-				str++;
-			}
-		}
-
-		const char *code = str;
 		styleParse(&style, &str, &len);
-		if (show) {
-			wattr_set(win, A_BOLD | A_REVERSE, 0, NULL);
-			switch (*code) {
-				break; case '\2':  waddch(win, 'B');
-				break; case '\3':  waddch(win, 'C');
-				break; case '\17': waddch(win, 'O');
-				break; case '\26': waddch(win, 'R');
-				break; case '\35': waddch(win, 'I');
-				break; case '\37': waddch(win, 'U');
-			}
-			if (str - code > 1) waddnstr(win, &code[1], str - &code[1]);
-		}
-
-		size_t ws = strcspn(str, "\t ");
-		if (ws < len) len = ws;
-
 		wattr_set(
-			win,
+			status,
 			style.attr | colorAttr(mapColor(style.fg)),
 			colorPair(mapColor(style.fg), mapColor(style.bg)),
 			NULL
 		);
-		waddnstr(win, str, len);
+		waddnstr(status, str, len);
 		str += len;
 	}
 }
@@ -354,7 +301,7 @@ static void statusUpdate(void) {
 			idColors[window->id]
 		);
 		if (!window->unread) buf[unread] = '\0';
-		styleAdd(status, buf, false);
+		statusAdd(buf);
 	}
 	wclrtoeol(status);
 
@@ -399,6 +346,61 @@ void uiShowNum(size_t num) {
 	windowShow(window);
 }
 
+static int wordWidth(const char *str) {
+	size_t len = strcspn(str, " ");
+	int width = 0;
+	while (len) {
+		wchar_t wc;
+		int n = mbtowc(&wc, str, len);
+		if (n < 1) return width + len;
+		width += (iswprint(wc) ? wcwidth(wc) : 0);
+		str += n;
+		len -= n;
+	}
+	return width;
+}
+
+static void wordWrap(WINDOW *win, const char *str) {
+	int y, x, width;
+	getmaxyx(win, y, width);
+
+	size_t len;
+	int align = 0;
+	struct Style style = Reset;
+	while (*str) {
+		if (*str == '\t') {
+			waddch(win, ' ');
+			getyx(win, y, align);
+			str++;
+		} else if (*str == ' ') {
+			getyx(win, y, x);
+			const char *word = &str[strspn(str, " ")];
+			if (width - x - 1 <= wordWidth(word)) {
+				waddch(win, '\n');
+				getyx(win, y, x);
+				wmove(win, y, align);
+				str = word;
+			} else {
+				waddch(win, ' ');
+				str++;
+			}
+		}
+
+		styleParse(&style, &str, &len);
+		size_t ws = strcspn(str, "\t ");
+		if (ws < len) len = ws;
+
+		wattr_set(
+			win,
+			style.attr | colorAttr(mapColor(style.fg)),
+			colorPair(mapColor(style.fg), mapColor(style.bg)),
+			NULL
+		);
+		waddnstr(win, str, len);
+		str += len;
+	}
+}
+
 void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
 	(void)time;
 	struct Window *window = windowFor(id);
@@ -410,7 +412,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str) {
 		window->heat = heat;
 		statusUpdate();
 	}
-	styleAdd(window->pad, str, false);
+	wordWrap(window->pad, str);
 }
 
 void uiFormat(
@@ -423,6 +425,55 @@ void uiFormat(
 	va_end(ap);
 	assert((size_t)len < sizeof(buf));
 	uiWrite(id, heat, time, buf);
+}
+
+static void inputAdd(struct Style *style, const char *str) {
+	size_t len;
+	while (*str) {
+		const char *code = str;
+		styleParse(style, &str, &len);
+		wattr_set(input, A_BOLD | A_REVERSE, 0, NULL);
+		switch (*code) {
+			break; case '\2':  waddch(input, 'B');
+			break; case '\3':  waddch(input, 'C');
+			break; case '\17': waddch(input, 'O');
+			break; case '\26': waddch(input, 'R');
+			break; case '\35': waddch(input, 'I');
+			break; case '\37': waddch(input, 'U');
+		}
+		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
+		wattr_set(
+			input,
+			style->attr | colorAttr(mapColor(style->fg)),
+			colorPair(mapColor(style->fg), mapColor(style->bg)),
+			NULL
+		);
+		waddnstr(input, str, len);
+		str += len;
+	}
+}
+
+static void inputUpdate(void) {
+	wmove(input, 0, 0);
+	wattr_set(
+		input,
+		colorAttr(mapColor(self.color)),
+		colorPair(mapColor(self.color), -1),
+		NULL
+	);
+	if (self.nick) {
+		waddch(input, '<');
+		waddstr(input, self.nick);
+		waddstr(input, "> ");
+	}
+
+	int y, x;
+	struct Style style = Reset;
+	inputAdd(&style, editHead());
+	getyx(input, y, x);
+	inputAdd(&style, editTail());
+	wclrtoeol(input);
+	wmove(input, y, x);
 }
 
 static void keyCode(int code) {
@@ -467,4 +518,5 @@ void uiRead(void) {
 		}
 		meta = false;
 	}
+	inputUpdate();
 }

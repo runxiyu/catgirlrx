@@ -41,7 +41,7 @@ enum Color idColors[IDCap] = {
 
 size_t idNext = Network + 1;
 
-struct Self self;
+struct Self self = { .color = Default };
 
 static volatile sig_atomic_t signals[NSIG];
 static void signalHandler(int signal) {

@@ -6,6 +6,7 @@ CFLAGS += -std=c11 -Wall -Wextra -Wpedantic
 LDLIBS = -lcurses -lcrypto -ltls
 
 OBJS += chat.o
+OBJS += edit.o
 OBJS += handle.o
 OBJS += irc.o
 OBJS += ui.o

@@ -72,6 +72,7 @@ extern struct Self {
 	char *chanTypes;
 	char *prefixes;
 	char *nick;
+	enum Color color;
 } self;
 
 static inline void set(char **field, const char *value) {
@@ -120,6 +121,9 @@ void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
 	size_t id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
+
+const char *editHead(void);
+const char *editTail(void);
 
 static inline enum Color hash(const char *str) {
 	if (*str == '~') str++;
