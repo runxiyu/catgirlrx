@@ -23,7 +23,7 @@ void command(size_t id, char *input) {
 	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], input);
 	struct Message msg = {
 		.nick = self.nick,
-		// TODO: .user,
+		.user = self.user,
 		.cmd = "PRIVMSG",
 		.params[0] = idNames[id],
 		.params[1] = input,

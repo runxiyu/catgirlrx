@@ -73,6 +73,7 @@ extern struct Self {
 	char *chanTypes;
 	char *prefixes;
 	char *nick;
+	char *user;
 	enum Color color;
 } self;
 
