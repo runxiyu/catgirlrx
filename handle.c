@@ -176,8 +176,11 @@ static void handleReplyISupport(struct Message *msg) {
 static void handleReplyMOTD(struct Message *msg) {
 	require(msg, false, 2);
 	char *line = msg->params[1];
-	if (!strncmp(line, "- ", 2)) line += 2;
-	uiFormat(Network, Cold, tagTime(msg), "%s", line);
+	if (!strncmp(line, "- ", 2)) {
+		uiFormat(Network, Cold, tagTime(msg), "\3%d-\3\t%s", Gray, &line[2]);
+	} else {
+		uiFormat(Network, Cold, tagTime(msg), "%s", line);
+	}
 }
 
 static void handleJoin(struct Message *msg) {
