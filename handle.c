@@ -184,6 +184,7 @@ static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	size_t id = idFor(msg->params[0]);
 	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		self.color = hash(msg->user);
 		idColors[id] = hash(msg->params[0]);
 		uiShowID(id);
 	}
