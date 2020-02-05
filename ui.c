@@ -434,7 +434,9 @@ static void reflow(struct Window *window) {
 }
 
 static void resize(void) {
-	// FIXME: Only reflow when COLS changes.
+	int height, width;
+	getmaxyx(windows.active->pad, height, width);
+	if (width == COLS) return;
 	for (struct Window *window = windows.head; window; window = window->next) {
 		wresize(window->pad, BufferCap, COLS);
 		reflow(window);
