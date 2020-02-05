@@ -498,8 +498,11 @@ static void keyMeta(wchar_t ch) {
 }
 
 static void keyCtrl(wchar_t ch) {
+	size_t id = windows.active->id;
 	switch (ch) {
+		break; case L'J': edit(id, EditEnter, 0);
 		break; case L'L': clearok(curscr, true);
+		break; case L'U': edit(id, EditKill, 0);
 	}
 }
 
@@ -518,7 +521,7 @@ void uiRead(void) {
 		} else if (iswcntrl(ch)) {
 			keyCtrl(ch ^ L'@');
 		} else {
-			// TODO: Insert.
+			edit(windows.active->id, EditInsert, ch);
 		}
 		meta = false;
 	}

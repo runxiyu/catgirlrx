@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sysexits.h>
 #include <time.h>
+#include <wchar.h>
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
@@ -109,6 +110,7 @@ void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 
 void handle(struct Message msg);
+void command(size_t id, char *input);
 
 enum Heat { Cold, Warm, Hot };
 void uiInit(void);
@@ -122,8 +124,14 @@ void uiFormat(
 	size_t id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 
-const char *editHead(void);
-const char *editTail(void);
+enum Edit {
+	EditKill,
+	EditInsert,
+	EditEnter,
+};
+void edit(size_t id, enum Edit op, wchar_t ch);
+char *editHead(void);
+char *editTail(void);
 
 static inline enum Color hash(const char *str) {
 	if (*str == '~') str++;

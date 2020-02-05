@@ -23,22 +23,40 @@
 #include "chat.h"
 
 enum { Cap = 512 };
-static wchar_t buf[Cap] = L"foo\0033bar\3baz";
-static size_t len = 12;
-static size_t pos = 6;
+static wchar_t buf[Cap];
+static size_t len;
+static size_t pos;
 
-const char *editHead(void) {
+char *editHead(void) {
 	static char mbs[MB_LEN_MAX * Cap];
 	const wchar_t *ptr = buf;
-	size_t n = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs), NULL);
+	size_t n = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs) - 1, NULL);
 	assert(n != (size_t)-1);
+	mbs[n] = '\0';
 	return mbs;
 }
 
-const char *editTail(void) {
+char *editTail(void) {
 	static char mbs[MB_LEN_MAX * Cap];
 	const wchar_t *ptr = &buf[pos];
-	size_t n = wcsnrtombs(mbs, &ptr, len - pos, sizeof(mbs), NULL);
+	size_t n = wcsnrtombs(mbs, &ptr, len - pos, sizeof(mbs) - 1, NULL);
 	assert(n != (size_t)-1);
+	mbs[n] = '\0';
 	return mbs;
+}
+
+void edit(size_t id, enum Edit op, wchar_t ch) {
+	switch (op) {
+		break; case EditKill: len = pos = 0;
+		break; case EditInsert: {
+			if (len == Cap) break;
+			buf[pos++] = ch;
+			len++;
+		}
+		break; case EditEnter: {
+			pos = 0;
+			command(id, editTail());
+			len = 0;
+		}
+	}
 }
