@@ -122,11 +122,12 @@ int main(int argc, char *argv[]) {
 		if (signals[SIGHUP] || signals[SIGINT] || signals[SIGTERM]) {
 			break;
 		}
-		// FIXME: Display doesn't update properly when receiving many of these
-		// until some input?
 		if (signals[SIGWINCH]) {
 			signals[SIGWINCH] = 0;
 			cursesWinch(SIGWINCH);
+			// XXX: For some reason, calling uiDraw() here is the only way to
+			// get uiRead() to properly receive KEY_RESIZE.
+			uiDraw();
 			uiRead();
 		}
 
