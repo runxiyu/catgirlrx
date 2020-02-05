@@ -20,6 +20,10 @@
 #include "chat.h"
 
 void command(size_t id, char *input) {
+	if (id == Debug) {
+		ircFormat("%s\r\n", input);
+		return;
+	}
 	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], input);
 	struct Message msg = {
 		.nick = self.nick,
