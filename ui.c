@@ -220,10 +220,11 @@ void uiDraw(void) {
 		1, 0,
 		BOTTOM - 1, RIGHT
 	);
-	// TODO: Input scrolling.
+	int y, x;
+	getyx(input, y, x);
 	pnoutrefresh(
 		input,
-		0, 0,
+		0, (x > RIGHT ? x - RIGHT : 0),
 		BOTTOM, 0,
 		BOTTOM, RIGHT
 	);
