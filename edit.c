@@ -14,17 +14,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <err.h>
+#include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sysexits.h>
+#include <wchar.h>
 
 #include "chat.h"
 
+enum { Cap = 512 };
+static wchar_t buf[Cap] = L"foo\0033bar\3baz";
+static size_t len = 12;
+static size_t pos = 6;
+
 const char *editHead(void) {
-	return "foo\0033bar";
+	static char mbs[MB_LEN_MAX * Cap];
+	const wchar_t *ptr = buf;
+	size_t n = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs), NULL);
+	assert(n != (size_t)-1);
+	return mbs;
 }
 
 const char *editTail(void) {
-	return "baz\3";
+	static char mbs[MB_LEN_MAX * Cap];
+	const wchar_t *ptr = &buf[pos];
+	size_t n = wcsnrtombs(mbs, &ptr, len - pos, sizeof(mbs), NULL);
+	assert(n != (size_t)-1);
+	return mbs;
 }
