@@ -497,9 +497,9 @@ static void keyMeta(wchar_t ch) {
 	}
 }
 
-static void keyChar(wchar_t ch) {
+static void keyCtrl(wchar_t ch) {
 	switch (ch) {
-		break; case CTRL(L'L'): clearok(curscr, true);
+		break; case L'L': clearok(curscr, true);
 	}
 }
 
@@ -515,8 +515,10 @@ void uiRead(void) {
 			continue;
 		} else if (meta) {
 			keyMeta(ch);
+		} else if (iswcntrl(ch)) {
+			keyCtrl(ch ^ L'@');
 		} else {
-			keyChar(ch);
+			// TODO: Insert.
 		}
 		meta = false;
 	}
