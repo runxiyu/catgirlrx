@@ -287,14 +287,24 @@ static void styleAdd(WINDOW *win, const char *str, bool show) {
 	getmaxyx(win, y, width);
 
 	size_t len;
+	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
-		if (*str == ' ') {
+		if (*str == '\t') {
+			waddch(win, ' ');
+			getyx(win, y, align);
+			str++;
+		} else if (*str == ' ') {
 			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
 			if (width - x - 1 <= wordWidth(word)) {
 				waddch(win, '\n');
+				getyx(win, y, x);
+				wmove(win, y, align);
 				str = word;
+			} else {
+				waddch(win, ' ');
+				str++;
 			}
 		}
 
@@ -313,9 +323,8 @@ static void styleAdd(WINDOW *win, const char *str, bool show) {
 			if (str - code > 1) waddnstr(win, &code[1], str - &code[1]);
 		}
 
-		size_t sp = strspn(str, " ");
-		sp += strcspn(&str[sp], " ");
-		if (sp < len) len = sp;
+		size_t ws = strcspn(str, "\t ");
+		if (ws < len) len = ws;
 
 		wattr_set(
 			win,

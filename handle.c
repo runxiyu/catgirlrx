@@ -212,7 +212,7 @@ static void handlePrivmsg(struct Message *msg) {
 	if (query && !network) idColors[id] = hash(msg->user);
 	uiFormat(
 		id, Warm, tagTime(msg),
-		"\3%d%s%s%s\3 %s",
+		"\3%d%s%s%s\3\t%s",
 		hash(msg->user),
 		(action ? "* " : notice ? "-" : "<"),
 		msg->nick,
