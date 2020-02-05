@@ -125,11 +125,11 @@ int main(int argc, char *argv[]) {
 		if (signals[SIGWINCH]) {
 			signals[SIGWINCH] = 0;
 			cursesWinch(SIGWINCH);
-			fds[0].revents = POLLIN;
+			uiRead();
 		}
 
-		if (fds[0].revents) uiRead();
-		if (fds[1].revents) ircRecv();
+		if (nfds > 0 && fds[0].revents) uiRead();
+		if (nfds > 0 && fds[1].revents) ircRecv();
 		uiDraw();
 	}
 
