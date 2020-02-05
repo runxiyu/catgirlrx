@@ -135,12 +135,14 @@ static attr_t colorAttr(short fg) {
 
 static short colorPair(short fg, short bg) {
 	if (bg == -1) return 1 + fg;
+	fg %= COLORS;
+	bg %= COLORS;
 	for (short pair = 17; pair < colorPairs; ++pair) {
 		short f, b;
 		pair_content(pair, &f, &b);
 		if (f == fg && b == bg) return pair;
 	}
-	init_pair(colorPairs, fg % COLORS, bg % COLORS);
+	init_pair(colorPairs, fg, bg);
 	return colorPairs++;
 }
 
