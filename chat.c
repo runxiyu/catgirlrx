@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <locale.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,13 +35,18 @@ char *idNames[IDCap] = {
 
 enum Color idColors[IDCap] = {
 	[None] = Black,
-	[Debug] = Red,
+	[Debug] = Green,
 	[Network] = Gray,
 };
 
 size_t idNext = Network + 1;
 
 struct Self self;
+
+static volatile sig_atomic_t signals[NSIG];
+static void signalHandler(int signal) {
+	signals[signal] = 1;
+}
 
 int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
@@ -100,6 +106,11 @@ int main(int argc, char *argv[]) {
 	ircFormat("NICK :%s\r\n", nick);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
+	signal(SIGHUP, signalHandler);
+	signal(SIGINT, signalHandler);
+	signal(SIGTERM, signalHandler);
+	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
+
 	struct pollfd fds[2] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
@@ -108,8 +119,20 @@ int main(int argc, char *argv[]) {
 		int nfds = poll(fds, 2, -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 
+		if (signals[SIGHUP] || signals[SIGINT] || signals[SIGTERM]) {
+			break;
+		}
+		if (signals[SIGWINCH]) {
+			signals[SIGWINCH] = 0;
+			cursesWinch(SIGWINCH);
+			fds[0].revents = POLLIN;
+		}
+
 		if (fds[0].revents) uiRead();
 		if (fds[1].revents) ircRecv();
 		uiDraw();
 	}
+
+	ircFormat("QUIT\r\n");
+	uiHide();
 }
