@@ -190,7 +190,7 @@ static void handleJoin(struct Message *msg) {
 	}
 	uiFormat(
 		id, Cold, tagTime(msg),
-		"\3%02d%s\3 arrives in \3%02d%s\3",
+		"\3%02d%s\3\tarrives in \3%02d%s\3",
 		hash(msg->user), msg->nick, idColors[id], idNames[id]
 	);
 }
