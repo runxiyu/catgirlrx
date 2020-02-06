@@ -39,7 +39,7 @@
 #undef lines
 
 #ifndef A_ITALIC
-#define A_ITALIC A_UNDERLINE
+#define A_ITALIC A_NORMAL
 #endif
 
 #define BOTTOM (LINES - 1)

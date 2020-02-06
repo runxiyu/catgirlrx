@@ -294,14 +294,16 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
+	const char *italic = (action ? "\35" : "");
+	const char *reverse = (mention ? "\26" : "");
 	uiFormat(
 		id, (!notice && (mention || query) ? Hot : Warm), tagTime(msg),
-		"%s\3%d%s%s%s\17\t%s",
-		(mention ? "\26" : ""),
-		hash(msg->user),
+		"%s%s\3%d%s%s%s\3%s\t%s",
+		italic, reverse, hash(msg->user),
 		(action ? "* " : notice ? "-" : "<"),
 		msg->nick,
 		(action ? "" : notice ? "-" : ">"),
+		reverse,
 		msg->params[1]
 	);
 }
