@@ -112,6 +112,9 @@ void ircFormat(const char *format, ...)
 
 void handle(struct Message msg);
 void command(size_t id, char *input);
+const char *commandIsPrivmsg(size_t id, const char *input);
+const char *commandIsNotice(size_t id, const char *input);
+const char *commandIsAction(size_t id, const char *input);
 
 enum Heat { Cold, Warm, Hot };
 void uiInit(void);

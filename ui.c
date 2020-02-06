@@ -479,16 +479,29 @@ static void inputUpdate(void) {
 		colorPair(mapColor(self.color), -1),
 		NULL
 	);
+	const char *head = editHead();
+	const char *skip = NULL;
 	if (self.nick) {
-		// TODO: Check if input is command or action.
-		waddch(input, '<');
-		waddstr(input, self.nick);
-		waddstr(input, "> ");
+		size_t id = windows.active->id;
+		if (NULL != (skip = commandIsPrivmsg(id, head))) {
+			waddch(input, '<');
+			waddstr(input, self.nick);
+			waddstr(input, "> ");
+		} else if (NULL != (skip = commandIsNotice(id, head))) {
+			waddch(input, '-');
+			waddstr(input, self.nick);
+			waddstr(input, "- ");
+		} else if (NULL != (skip = commandIsAction(id, head))) {
+			waddstr(input, "* ");
+			waddstr(input, self.nick);
+			waddch(input, ' ');
+		}
 	}
+	if (skip) head = skip;
 
 	int y, x;
 	struct Style style = Reset;
-	inputAdd(&style, editHead());
+	inputAdd(&style, head);
 	getyx(input, y, x);
 	inputAdd(&style, editTail());
 	wclrtoeol(input);

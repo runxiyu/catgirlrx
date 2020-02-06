@@ -19,6 +19,27 @@
 
 #include "chat.h"
 
+const char *commandIsPrivmsg(size_t id, const char *input) {
+	if (id == Network || id == Debug) return NULL;
+	if (input[0] != '/') return input;
+	const char *space = strchr(&input[1], ' ');
+	const char *slash = strchr(&input[1], '/');
+	if (slash && (!space || slash < space)) return input;
+	return NULL;
+}
+
+const char *commandIsNotice(size_t id, const char *input) {
+	if (id == Network || id == Debug) return NULL;
+	if (strncmp(input, "/notice ", 8)) return NULL;
+	return &input[8];
+}
+
+const char *commandIsAction(size_t id, const char *input) {
+	if (id == Network || id == Debug) return NULL;
+	if (strncmp(input, "/me ", 4)) return NULL;
+	return &input[4];
+}
+
 void command(size_t id, char *input) {
 	if (id == Debug) {
 		ircFormat("%s\r\n", input);
