@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
 			break; case 'u': user = optarg;
 			break; case 'v': self.debug = true;
 			break; case 'w': pass = optarg;
+			break; default:  return EX_USAGE;
 		}
 	}
 	if (!host) errx(EX_USAGE, "host required");
