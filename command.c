@@ -23,7 +23,7 @@ typedef void Command(size_t id, char *params);
 
 static void commandQuote(size_t id, char *params) {
 	(void)id;
-	ircFormat("%s\r\n", params);
+	if (params) ircFormat("%s\r\n", params);
 }
 
 static void commandPrivmsg(size_t id, char *params) {
@@ -65,8 +65,7 @@ static void commandQuit(size_t id, char *params) {
 
 static void commandWindow(size_t id, char *params) {
 	(void)id;
-	if (!params) return;
-	uiShowNum(strtoul(params, NULL, 10));
+	if (params) uiShowNum(strtoul(params, NULL, 10));
 }
 
 static const struct Handler {
