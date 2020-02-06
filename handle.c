@@ -149,7 +149,7 @@ static void handleErrorSASLFail(struct Message *msg) {
 static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
-	if (self.join) ircFormat("JOIN :%s\r\n", self.join);
+	if (self.join) ircFormat("JOIN %s\r\n", self.join);
 }
 
 static void handleReplyISupport(struct Message *msg) {
