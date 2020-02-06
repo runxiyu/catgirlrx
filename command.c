@@ -57,7 +57,14 @@ static void commandMe(size_t id, char *params) {
 }
 
 static void commandQuit(size_t id, char *params) {
+	(void)id;
 	set(&self.quit, (params ? params : "Goodbye"));
+}
+
+static void commandWindow(size_t id, char *params) {
+	(void)id;
+	if (!params) return;
+	uiShowNum(strtoul(params, NULL, 10));
 }
 
 static const struct Handler {
@@ -68,6 +75,7 @@ static const struct Handler {
 	{ "/notice", commandNotice },
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
+	{ "/window", commandWindow },
 };
 
 static int compar(const void *cmd, const void *_handler) {
@@ -97,21 +105,21 @@ const char *commandIsAction(size_t id, const char *input) {
 }
 
 void command(size_t id, char *input) {
-	if (id == Debug) {
+	if (id == Debug && input[0] != '/') {
 		commandQuote(id, input);
-		return;
-	}
-	if (commandIsPrivmsg(id, input)) {
+	} else if (commandIsPrivmsg(id, input)) {
 		commandPrivmsg(id, input);
-		return;
-	}
-	char *cmd = strsep(&input, " ");
-	const struct Handler *handler = bsearch(
-		cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
-	);
-	if (handler) {
-		handler->fn(id, input);
+	} else if (input[0] == '/' && isdigit(input[1])) {
+		commandWindow(id, &input[1]);
 	} else {
-		uiFormat(id, Hot, NULL, "No such command %s", cmd);
+		char *cmd = strsep(&input, " ");
+		const struct Handler *handler = bsearch(
+			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
+		);
+		if (handler) {
+			handler->fn(id, input);
+		} else {
+			uiFormat(id, Hot, NULL, "No such command %s", cmd);
+		}
 	}
 }
