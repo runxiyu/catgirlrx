@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <err.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -260,6 +261,21 @@ static bool isAction(struct Message *msg) {
 	return true;
 }
 
+static bool isMention(const struct Message *msg) {
+	if (!self.nick) return false;
+	size_t len = strlen(self.nick);
+	const char *match = msg->params[1];
+	while (NULL != (match = strcasestr(match, self.nick))) {
+		char a = (match > msg->params[1] ? match[-1] : ' ');
+		char b = (match[len] ? match[len] : ' ');
+		if ((isspace(a) || ispunct(a)) && (isspace(b) || ispunct(b))) {
+			return true;
+		}
+		match = &match[len];
+	}
+	return false;
+}
+
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
 	bool query = !strchr(self.chanTypes, msg->params[0][0]);
@@ -277,9 +293,11 @@ static void handlePrivmsg(struct Message *msg) {
 
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
+	bool mention = !mine && isMention(msg);
 	uiFormat(
-		id, Warm, tagTime(msg),
-		"\3%d%s%s%s\3\t%s",
+		id, (mention || query ? Hot : Warm), tagTime(msg),
+		"%s\3%d%s%s%s\17\t%s",
+		(mention ? "\26" : ""),
 		hash(msg->user),
 		(action ? "* " : notice ? "-" : "<"),
 		msg->nick,
