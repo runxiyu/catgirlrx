@@ -197,20 +197,55 @@ static void handleJoin(struct Message *msg) {
 	uiFormat(
 		id, Cold, tagTime(msg),
 		"\3%02d%s\3\tarrives in \3%02d%s\3",
-		hash(msg->user), msg->nick, idColors[id], idNames[id]
+		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
 	);
 }
 
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
-	size_t id = idFor(msg->params[0]);
 	uiFormat(
-		id, Cold, tagTime(msg),
+		idFor(msg->params[0]), Cold, tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
-		hash(msg->user), msg->nick, idColors[id], idNames[id],
+		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 		(msg->params[1] ? ": " : ""),
 		(msg->params[1] ? msg->params[1] : "")
 	);
+}
+
+static void handleReplyNoTopic(struct Message *msg) {
+	require(msg, false, 2);
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"There is no sign in \3%02d%s\3",
+		hash(msg->params[1]), msg->params[1]
+	);
+}
+
+static void handleReplyTopic(struct Message *msg) {
+	require(msg, false, 3);
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"The sign in \3%02d%s\3 reads: %s",
+		hash(msg->params[1]), msg->params[1], msg->params[2]
+	);
+}
+
+static void handleTopic(struct Message *msg) {
+	require(msg, true, 2);
+	if (msg->params[1][0]) {
+		uiFormat(
+			idFor(msg->params[0]), Warm, tagTime(msg),
+			"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
+			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
+			msg->params[1]
+		);
+	} else {
+		uiFormat(
+			idFor(msg->params[0]), Warm, tagTime(msg),
+			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
+			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+		);
+	}
 }
 
 static bool isAction(struct Message *msg) {
@@ -256,6 +291,8 @@ static const struct Handler {
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
 	{ "005", handleReplyISupport },
+	{ "331", handleReplyNoTopic },
+	{ "332", handleReplyTopic },
 	{ "372", handleReplyMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
@@ -271,6 +308,7 @@ static const struct Handler {
 	{ "PART", handlePart },
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
+	{ "TOPIC", handleTopic },
 };
 
 static int compar(const void *cmd, const void *_handler) {
