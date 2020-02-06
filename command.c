@@ -17,6 +17,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "chat.h"
 
@@ -59,6 +60,10 @@ static void commandMe(size_t id, char *params) {
 	commandPrivmsg(id, buf);
 }
 
+static void commandJoin(size_t id, char *params) {
+	ircFormat("JOIN %s\r\n", (params ? params : idNames[id]));
+}
+
 static void commandQuit(size_t id, char *params) {
 	(void)id;
 	set(&self.quit, (params ? params : "Goodbye"));
@@ -78,6 +83,7 @@ static const struct Handler {
 	const char *cmd;
 	Command *fn;
 } Commands[] = {
+	{ "/join", commandJoin },
 	{ "/me", commandMe },
 	{ "/notice", commandNotice },
 	{ "/quit", commandQuit },
