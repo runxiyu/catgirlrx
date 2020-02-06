@@ -111,7 +111,19 @@ int main(int argc, char *argv[]) {
 	set(&self.chanTypes, "#&");
 	set(&self.prefixes, "@+");
 
-	ircConfig(insecure, cert, priv);
+	FILE *certFile = NULL;
+	FILE *privFile = NULL;
+	if (cert) {
+		certFile = configOpen(cert, "r");
+		if (!certFile) err(EX_NOINPUT, "%s", cert);
+	}
+	if (priv) {
+		privFile = configOpen(priv, "r");
+		if (!privFile) err(EX_NOINPUT, "%s", priv);
+	}
+	ircConfig(insecure, certFile, privFile);
+	if (certFile) fclose(certFile);
+	if (privFile) fclose(privFile);
 
 	uiInit();
 	uiShowID(Network);

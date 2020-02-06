@@ -105,7 +105,7 @@ struct Message {
 	char *params[ParamCap];
 };
 
-void ircConfig(bool insecure, const char *cert, const char *priv);
+void ircConfig(bool insecure, FILE *cert, FILE *priv);
 int ircConnect(const char *host, const char *port);
 void ircRecv(void);
 void ircSend(const char *ptr, size_t len);

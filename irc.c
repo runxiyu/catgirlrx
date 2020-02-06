@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sysexits.h>
 #include <tls.h>
 #include <unistd.h>
@@ -31,7 +32,22 @@
 
 struct tls *client;
 
-void ircConfig(bool insecure, const char *cert, const char *priv) {
+static byte *readFile(size_t *len, FILE *file) {
+	struct stat stat;
+	int error = fstat(fileno(file), &stat);
+	if (error) err(EX_IOERR, "fstat");
+
+	byte *buf = malloc(stat.st_size);
+	if (!buf) err(EX_OSERR, "malloc");
+
+	rewind(file);
+	*len = fread(buf, 1, stat.st_size, file);
+	if (ferror(file)) err(EX_IOERR, "fread");
+
+	return buf;
+}
+
+void ircConfig(bool insecure, FILE *cert, FILE *priv) {
 	struct tls_config *config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
@@ -49,13 +65,28 @@ void ircConfig(bool insecure, const char *cert, const char *priv) {
 	}
 
 	if (cert) {
-		error = tls_config_set_keypair_file(config, cert, (priv ? priv : cert));
+		size_t len;
+		byte *buf = readFile(&len, cert);
+		error = tls_config_set_cert_mem(config, buf, len);
 		if (error) {
 			errx(
-				EX_SOFTWARE, "tls_config_set_keypair_file: %s",
+				EX_CONFIG, "tls_config_set_cert_mem: %s",
 				tls_config_error(config)
 			);
 		}
+		if (priv) {
+			free(buf);
+			buf = readFile(&len, priv);
+		}
+		error = tls_config_set_key_mem(config, buf, len);
+		if (error) {
+			errx(
+				EX_CONFIG, "tls_config_set_key_mem: %s",
+				tls_config_error(config)
+			);
+		}
+		explicit_bzero(buf, len);
+		free(buf);
 	}
 
 	client = tls_client();
