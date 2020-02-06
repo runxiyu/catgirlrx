@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -64,8 +65,13 @@ static void commandQuit(size_t id, char *params) {
 }
 
 static void commandWindow(size_t id, char *params) {
-	(void)id;
-	if (params) uiShowNum(strtoul(params, NULL, 10));
+	if (!params) return;
+	if (isdigit(params[0])) {
+		uiShowNum(strtoul(params, NULL, 10));
+	} else {
+		id = idFind(params);
+		if (id) uiShowID(id);
+	}
 }
 
 static const struct Handler {
