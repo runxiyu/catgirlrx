@@ -1,4 +1,4 @@
-.Dd February  1, 2020
+.Dd February  5, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -98,4 +98,23 @@ if it is not a terminal.
 .It Fl w Ar pass
 Log in with the server password
 .Ar pass .
+.El
+.
+.Sh COMMANDS
+.Ss Chat Commands
+.Bl -tag -width Ds
+.It Ic /me Op Ar action
+Send an action message.
+.It Ic /notice Ar message
+Send a notice.
+.It Ic /quit Op Ar message
+Quit IRC.
+.It Ic /quote Ar command
+Send a raw IRC command.
+.El
+.
+.Ss UI Commands
+.Bl -tag -width Ds
+.It Ic /window Ar num , Ic / Ns Ar num
+Switch to window by number.
 .El
