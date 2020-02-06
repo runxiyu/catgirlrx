@@ -263,11 +263,20 @@ static bool isAction(struct Message *msg) {
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
 	bool query = !strchr(self.chanTypes, msg->params[0][0]);
-	bool network = query && strchr(msg->nick, '.');
+	bool network = strchr(msg->nick, '.');
+	bool mine = self.nick && !strcmp(msg->nick, self.nick);
+	size_t id;
+	if (query && network) {
+		id = Network;
+	} else if (query && !mine) {
+		id = idFor(msg->nick);
+		idColors[id] = hash(msg->user);
+	} else {
+		id = idFor(msg->params[0]);
+	}
+
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
-	size_t id = (network ? Network : idFor(query ? msg->nick : msg->params[0]));
-	if (query && !network) idColors[id] = hash(msg->user);
 	uiFormat(
 		id, Warm, tagTime(msg),
 		"\3%d%s%s%s\3\t%s",
