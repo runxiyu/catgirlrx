@@ -201,6 +201,18 @@ static void handleJoin(struct Message *msg) {
 	);
 }
 
+static void handlePart(struct Message *msg) {
+	require(msg, true, 1);
+	size_t id = idFor(msg->params[0]);
+	uiFormat(
+		id, Cold, tagTime(msg),
+		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
+		hash(msg->user), msg->nick, idColors[id], idNames[id],
+		(msg->params[1] ? ": " : ""),
+		(msg->params[1] ? msg->params[1] : "")
+	);
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -256,6 +268,7 @@ static const struct Handler {
 	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
 	{ "NOTICE", handlePrivmsg },
+	{ "PART", handlePart },
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
 };
