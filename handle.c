@@ -295,7 +295,7 @@ static void handlePrivmsg(struct Message *msg) {
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
 	uiFormat(
-		id, (mention || query ? Hot : Warm), tagTime(msg),
+		id, (!notice && (mention || query) ? Hot : Warm), tagTime(msg),
 		"%s\3%d%s%s%s\17\t%s",
 		(mention ? "\26" : ""),
 		hash(msg->user),
