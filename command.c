@@ -27,6 +27,7 @@ static void commandQuote(size_t id, char *params) {
 }
 
 static void commandPrivmsg(size_t id, char *params) {
+	if (!params || !params[0]) return;
 	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], params);
 	struct Message msg = {
 		.nick = self.nick,
@@ -39,6 +40,7 @@ static void commandPrivmsg(size_t id, char *params) {
 }
 
 static void commandNotice(size_t id, char *params) {
+	if (!params || !params[0]) return;
 	ircFormat("NOTICE %s :%s\r\n", idNames[id], params);
 	struct Message msg = {
 		.nick = self.nick,
@@ -52,7 +54,7 @@ static void commandNotice(size_t id, char *params) {
 
 static void commandMe(size_t id, char *params) {
 	char buf[512];
-	snprintf(buf, sizeof(buf), "\1ACTION %s\1", params);
+	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ? params : ""));
 	commandPrivmsg(id, buf);
 }
 
