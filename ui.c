@@ -176,6 +176,7 @@ static void disableFlowControl(void) {
 	int error = tcgetattr(STDOUT_FILENO, &term);
 	if (error) err(EX_OSERR, "tcgetattr");
 	term.c_iflag &= ~IXON;
+	term.c_cc[VSUSP] = _POSIX_VDISABLE;
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
 	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
 	if (error) err(EX_OSERR, "tcsetattr");
