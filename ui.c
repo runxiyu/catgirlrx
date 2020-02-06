@@ -411,6 +411,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 		statusUpdate();
 	}
 	wordWrap(window->pad, str);
+	if (heat > Warm) beep();
 }
 
 void uiFormat(
