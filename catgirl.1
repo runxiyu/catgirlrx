@@ -19,6 +19,7 @@
 .Op Fl r Ar real
 .Op Fl u Ar user
 .Op Fl w Ar pass
+.Op Ar config ...
 .
 .Sh DESCRIPTION
 The
@@ -27,9 +28,25 @@ program is a curses
 TLS-only IRC client.
 .
 .Pp
+Options can be loaded from files
+listed on the command line.
+Files are searched for in
+.Pa $XDG_CONFIG_DIRS/catgirl
+unless the path starts with
+.Ql /
+or
+.Ql \&. .
+Each option is placed on a line,
+and lines beginning with
+.Ql #
+are ignored.
+The options are listed below
+following their corresponding flags.
+.
+.Pp
 The arguments are as follows:
 .Bl -tag -width Ds
-.It Fl a Ar user Ns : Ns Ar pass
+.It Fl a Ar user Ns : Ns Ar pass , Cm sasl-plain = Ar user Ns : Ns Ar pass
 Authenticate as
 .Ar user
 with
@@ -40,7 +57,7 @@ in plain text,
 it is recommended to use SASL EXTERNAL instead with
 .Fl e .
 .
-.It Fl c Ar path
+.It Fl c Ar path , Cm cert = Ar path
 Load the TLS client certificate from
 .Ar path .
 If the private key is in a separate file,
@@ -50,52 +67,52 @@ With
 .Fl e ,
 authenticate using SASL EXTERNAL.
 .
-.It Fl e
+.It Fl e , Cm sasl-external
 Authenticate using SASL EXTERNAL,
 also known as CertFP.
 The TLS client certificate is loaded with
 .Fl c .
 .
-.It Fl h Ar host
+.It Fl h Ar host , Cm host = Ar host
 Connect to
 .Ar host .
 .
-.It Fl j Ar join
+.It Fl j Ar join , Cm join = Ar join
 Join the comma-separated list of channels
 .Ar join .
 .
-.It Fl k Ar path
+.It Fl k Ar path , Cm priv = Ar priv
 Load the TLS client private key from
 .Ar path .
 .
-.It Fl n Ar nick
+.It Fl n Ar nick , Cm nick = Ar nick
 Set nickname to
 .Ar nick .
 The default nickname is the user's name.
 .
-.It Fl p Ar port
+.It Fl p Ar port , Cm port = Ar port
 Connect to
 .Ar port .
 The default port is 6697.
 .
-.It Fl r Ar real
+.It Fl r Ar real , Cm real = Ar real
 Set realname to
 .Ar real .
 The default realname is the same as the nickname.
 .
-.It Fl u Ar user
+.It Fl u Ar user , Cm user = Ar user
 Set username to
 .Ar user .
 The default username is the same as the nickname.
 .
-.It Fl v
+.It Fl v , Cm debug
 Log raw IRC messages to the
 .Sy <debug>
 window
 as well as standard error
 if it is not a terminal.
 .
-.It Fl w Ar pass
+.It Fl w Ar pass , Cm pass = Ar pass
 Log in with the server password
 .Ar pass .
 .El

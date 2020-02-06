@@ -7,6 +7,7 @@ LDLIBS = -lcurses -lcrypto -ltls
 
 OBJS += chat.o
 OBJS += command.o
+OBJS += config.o
 OBJS += edit.o
 OBJS += handle.o
 OBJS += irc.o

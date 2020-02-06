@@ -15,6 +15,7 @@
  */
 
 #include <err.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -138,6 +139,12 @@ enum Edit {
 void edit(size_t id, enum Edit op, wchar_t ch);
 char *editHead(void);
 char *editTail(void);
+
+FILE *configOpen(const char *path, const char *mode);
+int getopt_config(
+	int argc, char *const *argv,
+	const char *optstring, const struct option *longopts, int *longindex
+);
 
 static inline enum Color hash(const char *str) {
 	if (*str == '~') str++;
