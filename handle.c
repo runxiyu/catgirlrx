@@ -98,7 +98,11 @@ static void handleCap(struct Message *msg) {
 	enum Cap caps = capParse(msg->params[2]);
 	if (!strcmp(msg->params[1], "LS")) {
 		caps &= ~CapSASL;
-		ircFormat("CAP REQ :%s\r\n", capList(caps));
+		if (caps) {
+			ircFormat("CAP REQ :%s\r\n", capList(caps));
+		} else {
+			if (!(self.caps & CapSASL)) ircFormat("CAP END\r\n");
+		}
 	} else if (!strcmp(msg->params[1], "ACK")) {
 		self.caps |= caps;
 		if (caps & CapSASL) {
