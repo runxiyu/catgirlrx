@@ -51,6 +51,7 @@ static inline size_t idFor(const char *name) {
 	if (id) return id;
 	idNames[idNext] = strdup(name);
 	if (!idNames[idNext]) err(EX_OSERR, "strdup");
+	idColors[idNext] = Default;
 	return idNext++;
 }
 
