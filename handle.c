@@ -233,6 +233,11 @@ static void handlePing(struct Message *msg) {
 	ircFormat("PONG :%s\r\n", msg->params[0]);
 }
 
+static void handleError(struct Message *msg) {
+	require(msg, false, 1);
+	errx(EX_UNAVAILABLE, "%s", msg->params[0]);
+}
+
 static const struct Handler {
 	const char *cmd;
 	Handler *fn;
@@ -248,6 +253,7 @@ static const struct Handler {
 	{ "906", handleErrorSASLFail },
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
+	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
 	{ "NOTICE", handlePrivmsg },
 	{ "PING", handlePing },
