@@ -56,12 +56,17 @@ static void commandMe(size_t id, char *params) {
 	commandPrivmsg(id, buf);
 }
 
+static void commandQuit(size_t id, char *params) {
+	set(&self.quit, (params ? params : "Goodbye"));
+}
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
 } Commands[] = {
 	{ "/me", commandMe },
 	{ "/notice", commandNotice },
+	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
 };
 

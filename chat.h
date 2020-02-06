@@ -75,6 +75,7 @@ extern struct Self {
 	char *nick;
 	char *user;
 	enum Color color;
+	char *quit;
 } self;
 
 static inline void set(char **field, const char *value) {

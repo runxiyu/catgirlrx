@@ -115,13 +115,12 @@ int main(int argc, char *argv[]) {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
 	};
-	for (;;) {
+	while (!self.quit) {
 		int nfds = poll(fds, 2, -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 
-		if (signals[SIGHUP] || signals[SIGINT] || signals[SIGTERM]) {
-			break;
-		}
+		if (signals[SIGHUP]) self.quit = "zzz";
+		if (signals[SIGINT] || signals[SIGTERM]) break;
 		if (signals[SIGWINCH]) {
 			signals[SIGWINCH] = 0;
 			cursesWinch(SIGWINCH);
@@ -136,6 +135,10 @@ int main(int argc, char *argv[]) {
 		uiDraw();
 	}
 
-	ircFormat("QUIT\r\n");
+	if (self.quit) {
+		ircFormat("QUIT :%s\r\n", self.quit);
+	} else {
+		ircFormat("QUIT\r\n");
+	}
 	uiHide();
 }
