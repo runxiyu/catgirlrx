@@ -19,6 +19,57 @@
 
 #include "chat.h"
 
+typedef void Command(size_t id, char *params);
+
+static void commandQuote(size_t id, char *params) {
+	(void)id;
+	ircFormat("%s\r\n", params);
+}
+
+static void commandPrivmsg(size_t id, char *params) {
+	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], params);
+	struct Message msg = {
+		.nick = self.nick,
+		.user = self.user,
+		.cmd = "PRIVMSG",
+		.params[0] = idNames[id],
+		.params[1] = params,
+	};
+	handle(msg);
+}
+
+static void commandNotice(size_t id, char *params) {
+	ircFormat("NOTICE %s :%s\r\n", idNames[id], params);
+	struct Message msg = {
+		.nick = self.nick,
+		.user = self.user,
+		.cmd = "NOTICE",
+		.params[0] = idNames[id],
+		.params[1] = params,
+	};
+	handle(msg);
+}
+
+static void commandMe(size_t id, char *params) {
+	char buf[512];
+	snprintf(buf, sizeof(buf), "\1ACTION %s\1", params);
+	commandPrivmsg(id, buf);
+}
+
+static const struct Handler {
+	const char *cmd;
+	Command *fn;
+} Commands[] = {
+	{ "/me", commandMe },
+	{ "/notice", commandNotice },
+	{ "/quote", commandQuote },
+};
+
+static int compar(const void *cmd, const void *_handler) {
+	const struct Handler *handler = _handler;
+	return strcmp(cmd, handler->cmd);
+}
+
 const char *commandIsPrivmsg(size_t id, const char *input) {
 	if (id == Network || id == Debug) return NULL;
 	if (input[0] != '/') return input;
@@ -42,16 +93,20 @@ const char *commandIsAction(size_t id, const char *input) {
 
 void command(size_t id, char *input) {
 	if (id == Debug) {
-		ircFormat("%s\r\n", input);
+		commandQuote(id, input);
 		return;
 	}
-	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], input);
-	struct Message msg = {
-		.nick = self.nick,
-		.user = self.user,
-		.cmd = "PRIVMSG",
-		.params[0] = idNames[id],
-		.params[1] = input,
-	};
-	handle(msg);
+	if (commandIsPrivmsg(id, input)) {
+		commandPrivmsg(id, input);
+		return;
+	}
+	char *cmd = strsep(&input, " ");
+	const struct Handler *handler = bsearch(
+		cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
+	);
+	if (handler) {
+		handler->fn(id, input);
+	} else {
+		uiFormat(id, Hot, NULL, "No such command %s", cmd);
+	}
 }
