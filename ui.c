@@ -546,12 +546,20 @@ void uiShowNum(size_t num) {
 }
 
 static void keyCode(int code) {
+	size_t id = windows.active->id;
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
 		break; case KeyFocusIn:  unmark();
 		break; case KeyFocusOut: windows.active->mark = true;
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
+
+		break; case KEY_BACKSPACE: edit(id, EditErase, 0);
+		break; case KEY_END: edit(id, EditEnd, 0);
+		break; case KEY_ENTER: edit(id, EditEnter, 0);
+		break; case KEY_HOME: edit(id, EditHome, 0);
+		break; case KEY_LEFT: edit(id, EditLeft, 0);
+		break; case KEY_RIGHT: edit(id, EditRight, 0);
 	}
 }
 
@@ -567,6 +575,10 @@ static void keyMeta(wchar_t ch) {
 static void keyCtrl(wchar_t ch) {
 	size_t id = windows.active->id;
 	switch (ch) {
+		break; case L'?': edit(id, EditErase, 0);
+		break; case L'A': edit(id, EditHome, 0);
+		break; case L'E': edit(id, EditEnd, 0);
+		break; case L'H': edit(id, EditErase, 0);
 		break; case L'J': edit(id, EditEnter, 0);
 		break; case L'L': clearok(curscr, true);
 		break; case L'U': edit(id, EditKill, 0);

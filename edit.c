@@ -45,13 +45,33 @@ char *editTail(void) {
 	return mbs;
 }
 
+static void reserve(size_t index, size_t count) {
+	if (len + count > Cap) return;
+	memmove(&buf[index + count], &buf[index], sizeof(*buf) * (len - index));
+	len += count;
+}
+
+static void delete(size_t index, size_t count) {
+	if (index + count > len) return;
+	memmove(
+		&buf[index], &buf[index + count], sizeof(*buf) * (len - index - count)
+	);
+	len -= count;
+}
+
 void edit(size_t id, enum Edit op, wchar_t ch) {
 	switch (op) {
-		break; case EditKill: len = pos = 0;
+		break; case EditHome:  pos = 0;
+		break; case EditEnd:   pos = len;
+		break; case EditLeft:  if (pos) pos--;
+		break; case EditRight: if (pos < len) pos++;
+
+		break; case EditKill:  len = pos = 0;
+		break; case EditErase: if (pos) delete(--pos, 1);
+
 		break; case EditInsert: {
-			if (len == Cap) break;
-			buf[pos++] = ch;
-			len++;
+			reserve(pos, 1);
+			if (pos < Cap) buf[pos++] = ch;
 		}
 		break; case EditEnter: {
 			pos = 0;

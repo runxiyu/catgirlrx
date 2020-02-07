@@ -133,7 +133,12 @@ void uiFormat(
 ) __attribute__((format(printf, 4, 5)));
 
 enum Edit {
+	EditHome,
+	EditEnd,
+	EditLeft,
+	EditRight,
 	EditKill,
+	EditErase,
 	EditInsert,
 	EditEnter,
 };
