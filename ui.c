@@ -474,36 +474,44 @@ static void inputAdd(struct Style *style, const char *str) {
 }
 
 static void inputUpdate(void) {
-	wmove(input, 0, 0);
-	wattr_set(
-		input,
-		colorAttr(mapColor(self.color)),
-		colorPair(mapColor(self.color), -1),
-		NULL
-	);
+	size_t id = windows.active->id;
+	const char *nick = self.nick;
 	const char *head = editHead();
 	const char *skip = NULL;
-	if (self.nick) {
-		size_t id = windows.active->id;
-		if (NULL != (skip = commandIsPrivmsg(id, head))) {
-			waddch(input, '<');
-			waddstr(input, self.nick);
-			waddstr(input, "> ");
-		} else if (NULL != (skip = commandIsNotice(id, head))) {
-			waddch(input, '-');
-			waddstr(input, self.nick);
-			waddstr(input, "- ");
-		} else if (NULL != (skip = commandIsAction(id, head))) {
-			waddstr(input, "* ");
-			waddstr(input, self.nick);
-			waddch(input, ' ');
-		}
+	const char *pre = "";
+	const char *suf = " ";
+	struct Style style = { .fg = self.color, .bg = Default };
+	if (NULL != (skip = commandIsPrivmsg(id, head))) {
+		pre = "<";
+		suf = "> ";
+	} else if (NULL != (skip = commandIsNotice(id, head))) {
+		pre = "-";
+		suf = "- ";
+	} else if (NULL != (skip = commandIsAction(id, head))) {
+		style.attr |= A_ITALIC;
+		pre = "* ";
+	} else if (id == Debug) {
+		skip = head;
+		style.fg = Gray;
+		pre = "<<";
+		nick = NULL;
 	}
-	if (skip) head = skip;
 
 	int y, x;
-	struct Style style = Reset;
-	inputAdd(&style, head);
+	wmove(input, 0, 0);
+	if (skip) {
+		wattr_set(
+			input,
+			style.attr | colorAttr(mapColor(style.fg)),
+			colorPair(mapColor(style.fg), mapColor(style.bg)),
+			NULL
+		);
+		waddstr(input, pre);
+		if (nick) waddstr(input, nick);
+		waddstr(input, suf);
+	}
+	style.fg = Default;
+	inputAdd(&style, (skip ? skip : head));
 	getyx(input, y, x);
 	inputAdd(&style, editTail());
 	wclrtoeol(input);
