@@ -163,6 +163,7 @@ static const char *ExitPasteMode  = "\33[?2004l";
 void uiShow(void) {
 	putp(EnterFocusMode);
 	putp(EnterPasteMode);
+	fflush(stdout);
 }
 
 void uiHide(void) {
@@ -333,6 +334,7 @@ static void statusUpdate(void) {
 	putp(to_status_line);
 	putp(buf);
 	putp(from_status_line);
+	fflush(stdout);
 }
 
 static void unmark(void) {
