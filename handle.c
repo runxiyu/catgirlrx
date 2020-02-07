@@ -294,18 +294,26 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
-	const char *italic = (action ? "\35" : "");
-	const char *reverse = (mention ? "\26" : "");
-	uiFormat(
-		id, (!notice && (mention || query) ? Hot : Warm), tagTime(msg),
-		"%s%s\3%d%s%s%s\3%s\t%s",
-		italic, reverse, hash(msg->user),
-		(action ? "* " : notice ? "-" : "<"),
-		msg->nick,
-		(action ? "" : notice ? "-" : ">"),
-		reverse,
-		msg->params[1]
-	);
+	if (notice) {
+		uiFormat(
+			id, Warm, tagTime(msg),
+			"%s\3%d-%s-\17\3%d\t%s",
+			(mention ? "\26" : ""), hash(msg->user), msg->nick,
+			LightGray, msg->params[1]
+		);
+	} else if (action) {
+		uiFormat(
+			id, (mention || query ? Hot : Warm), tagTime(msg),
+			"%s\35\3%d* %s\17\35\t%s",
+			(mention ? "\26" : ""), hash(msg->user), msg->nick, msg->params[1]
+		);
+	} else {
+		uiFormat(
+			id, (mention || query ? Hot : Warm), tagTime(msg),
+			"%s\3%d<%s>\17\t%s",
+			(mention ? "\26" : ""), hash(msg->user), msg->nick, msg->params[1]
+		);
+	}
 }
 
 static void handlePing(struct Message *msg) {
