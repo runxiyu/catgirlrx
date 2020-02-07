@@ -1,9 +1,7 @@
-LIBRESSL_PREFIX = /usr/local
-CFLAGS += -I${LIBRESSL_PREFIX}/include
-LDFLAGS += -L${LIBRESSL_PREFIX}/lib
-
 CFLAGS += -std=c11 -Wall -Wextra -Wpedantic
-LDLIBS = -lcurses -lcrypto -ltls
+LDLIBS = -lcrypto -ltls -lncursesw
+
+-include config.mk
 
 OBJS += chat.o
 OBJS += command.o
