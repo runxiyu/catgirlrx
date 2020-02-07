@@ -1,4 +1,4 @@
-.Dd February  6, 2020
+.Dd February  7, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -138,6 +138,27 @@ Send a raw IRC command.
 Switch to window by name.
 .It Ic /window Ar num , Ic / Ns Ar num
 Switch to window by number.
+.El
+.
+.Sh KEY BINDINGS
+.Ss Line Editing
+.Bl -tag -width Ds -compact
+.It Ic C-a
+Move to beginning of line.
+.It Ic C-e
+Move to end of line.
+.It Ic C-u
+Delete line.
+.El
+.
+.Ss Window Keys
+.Bl -tag -width Ds -compact
+.It Ic C-l
+Redraw the UI.
+.It Ic M-m
+Insert a blank line in the window.
+.It Ic M- Ns Ar n
+Switch to window by number 0\(en9.
 .El
 .
 .Sh FILES
