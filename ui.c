@@ -481,15 +481,18 @@ static void inputUpdate(void) {
 	const char *pre = "";
 	const char *suf = " ";
 	struct Style style = { .fg = self.color, .bg = Default };
+	struct Style reset = Reset;
 	if (NULL != (skip = commandIsPrivmsg(id, head))) {
 		pre = "<";
 		suf = "> ";
 	} else if (NULL != (skip = commandIsNotice(id, head))) {
 		pre = "-";
 		suf = "- ";
+		reset.fg = LightGray;
 	} else if (NULL != (skip = commandIsAction(id, head))) {
 		style.attr |= A_ITALIC;
 		pre = "* ";
+		reset.attr |= A_ITALIC;
 	} else if (id == Debug) {
 		skip = head;
 		style.fg = Gray;
@@ -510,7 +513,7 @@ static void inputUpdate(void) {
 		if (nick) waddstr(input, nick);
 		waddstr(input, suf);
 	}
-	style.fg = Default;
+	style = reset;
 	inputAdd(&style, (skip ? skip : head));
 	getyx(input, y, x);
 	inputAdd(&style, editTail());
