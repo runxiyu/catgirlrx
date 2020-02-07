@@ -161,6 +161,47 @@ Insert a blank line in the window.
 Switch to window by number 0\(en9.
 .El
 .
+.Ss IRC Formatting
+.Bl -tag -width Ds -compact
+.It Ic C-z b
+Toggle bold.
+.It Ic C-z c
+Set or reset color.
+.It Ic C-z i
+Toggle italics.
+.It Ic C-z o
+Reset formatting.
+.It Ic C-z r
+Toggle reverse color.
+.It Ic C-z u
+Toggle underline.
+.El
+.
+.Pp
+To set colors, follow
+.Ic C-z c
+by one or two digits for the foreground color,
+optionally followed by a comma
+and one or two digits for the background color.
+To reset color, follow
+.Ic C-z c
+by a non-digit.
+.
+.Pp
+The color numbers are as follows:
+.Pp
+.Bl -column "99" "orange (dark yellow)" "15" "pink (light magenta)"
+.It \ 0 Ta white Ta \ 8 Ta yellow
+.It \ 1 Ta black Ta \ 9 Ta light green
+.It \ 2 Ta blue Ta 10 Ta cyan
+.It \ 3 Ta green Ta 11 Ta light cyan
+.It \ 4 Ta red Ta 12 Ta light blue
+.It \ 5 Ta brown (dark red) Ta 13 Ta pink (light magenta)
+.It \ 6 Ta magenta Ta 14 Ta gray
+.It \ 7 Ta orange (dark yellow) Ta 15 Ta light gray
+.It 99 Ta default
+.El
+.
 .Sh FILES
 .Bl -tag -width Ds
 .It Pa $XDG_CONFIG_DIRS/catgirl

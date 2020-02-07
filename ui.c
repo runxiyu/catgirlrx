@@ -261,14 +261,16 @@ static short mapColor(enum Color color) {
 	}
 }
 
+enum { B = '\2', C = '\3', O = '\17', R = '\26', I = '\35', U = '\37' };
+
 static void styleParse(struct Style *style, const char **str, size_t *len) {
 	switch (**str) {
-		break; case '\2':  (*str)++; style->attr ^= A_BOLD;
-		break; case '\17': (*str)++; *style = Reset;
-		break; case '\26': (*str)++; style->attr ^= A_REVERSE;
-		break; case '\35': (*str)++; style->attr ^= A_ITALIC;
-		break; case '\37': (*str)++; style->attr ^= A_UNDERLINE;
-		break; case '\3': {
+		break; case B: (*str)++; style->attr ^= A_BOLD;
+		break; case O: (*str)++; *style = Reset;
+		break; case R: (*str)++; style->attr ^= A_REVERSE;
+		break; case I: (*str)++; style->attr ^= A_ITALIC;
+		break; case U: (*str)++; style->attr ^= A_UNDERLINE;
+		break; case C: {
 			(*str)++;
 			if (!isdigit(**str)) {
 				style->fg = Default;
@@ -283,7 +285,7 @@ static void styleParse(struct Style *style, const char **str, size_t *len) {
 			if (isdigit(**str)) style->bg = style->bg * 10 + *(*str)++ - '0';
 		}
 	}
-	*len = strcspn(*str, "\2\3\17\26\35\37");
+	*len = strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
 }
 
 static void statusAdd(const char *str) {
@@ -456,12 +458,12 @@ static void inputAdd(struct Style *style, const char *str) {
 		styleParse(style, &str, &len);
 		wattr_set(input, A_BOLD | A_REVERSE, 0, NULL);
 		switch (*code) {
-			break; case '\2':  waddch(input, 'B');
-			break; case '\3':  waddch(input, 'C');
-			break; case '\17': waddch(input, 'O');
-			break; case '\26': waddch(input, 'R');
-			break; case '\35': waddch(input, 'I');
-			break; case '\37': waddch(input, 'U');
+			break; case B: waddch(input, 'B');
+			break; case C: waddch(input, 'C');
+			break; case O: waddch(input, 'O');
+			break; case R: waddch(input, 'R');
+			break; case I: waddch(input, 'I');
+			break; case U: waddch(input, 'U');
 		}
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
 		wattr_set(
@@ -574,7 +576,7 @@ static void keyMeta(wchar_t ch) {
 
 static void keyCtrl(wchar_t ch) {
 	size_t id = windows.active->id;
-	switch (ch) {
+	switch (ch ^ L'@') {
 		break; case L'?': edit(id, EditErase, 0);
 		break; case L'A': edit(id, EditHome, 0);
 		break; case L'E': edit(id, EditEnd, 0);
@@ -585,10 +587,22 @@ static void keyCtrl(wchar_t ch) {
 	}
 }
 
+static void keyStyle(wchar_t ch) {
+	size_t id = windows.active->id;
+	switch (iswcntrl(ch) ? ch ^ L'@' : towupper(ch)) {
+		break; case L'B': edit(id, EditInsert, B);
+		break; case L'C': edit(id, EditInsert, C);
+		break; case L'I': edit(id, EditInsert, I);
+		break; case L'O': edit(id, EditInsert, O);
+		break; case L'R': edit(id, EditInsert, R);
+		break; case L'U': edit(id, EditInsert, U);
+	}
+}
+
 void uiRead(void) {
 	int ret;
 	wint_t ch;
-	static bool meta;
+	static bool meta, style;
 	while (ERR != (ret = wget_wch(input, &ch))) {
 		if (ret == KEY_CODE_YES) {
 			keyCode(ch);
@@ -597,12 +611,17 @@ void uiRead(void) {
 			continue;
 		} else if (meta) {
 			keyMeta(ch);
+		} else if (ch == (L'Z' ^ L'@')) {
+			style = true;
+			continue;
+		} else if (style) {
+			keyStyle(ch);
 		} else if (iswcntrl(ch)) {
-			keyCtrl(ch ^ L'@');
+			keyCtrl(ch);
 		} else {
 			edit(windows.active->id, EditInsert, ch);
 		}
-		meta = false;
+		meta = style = false;
 	}
 	inputUpdate();
 }
