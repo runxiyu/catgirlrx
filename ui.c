@@ -573,6 +573,34 @@ void uiShowNum(size_t num) {
 	windowShow(window);
 }
 
+static void windowClose(struct Window *window) {
+	if (window->id == Network) return;
+	if (windows.active == window) {
+		windowShow(window->prev ? window->prev : window->next);
+	}
+	if (windows.other == window) windows.other = NULL;
+	windowRemove(window);
+	for (size_t i = 0; i < BufferCap; ++i) {
+		free(window->buffer.lines[i]);
+	}
+	delwin(window->pad);
+	free(window);
+	statusUpdate();
+}
+
+void uiCloseID(size_t id) {
+	windowClose(windowFor(id));
+}
+
+void uiCloseNum(size_t num) {
+	struct Window *window = windows.head;
+	for (size_t i = 0; i < num; ++i) {
+		window = window->next;
+		if (!window) return;
+	}
+	windowClose(window);
+}
+
 static void keyCode(int code) {
 	size_t id = windows.active->id;
 	switch (code) {

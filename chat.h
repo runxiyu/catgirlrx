@@ -128,6 +128,8 @@ void uiHide(void);
 void uiDraw(void);
 void uiShowID(size_t id);
 void uiShowNum(size_t num);
+void uiCloseID(size_t id);
+void uiCloseNum(size_t id);
 void uiRead(void);
 void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(

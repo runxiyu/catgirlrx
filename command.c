@@ -100,10 +100,22 @@ static void commandWindow(size_t id, char *params) {
 	}
 }
 
+static void commandClose(size_t id, char *params) {
+	if (!params) {
+		uiCloseID(id);
+	} else if (isdigit(params[0])) {
+		uiCloseNum(strtoul(params, NULL, 10));
+	} else {
+		id = idFind(params);
+		if (id) uiCloseID(id);
+	}
+}
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
 } Commands[] = {
+	{ "/close", commandClose },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
 	{ "/nick", commandNick },
