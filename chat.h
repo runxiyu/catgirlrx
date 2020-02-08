@@ -49,6 +49,7 @@ static inline size_t idFind(const char *name) {
 static inline size_t idFor(const char *name) {
 	size_t id = idFind(name);
 	if (id) return id;
+	if (idNext == IDCap) return Network;
 	idNames[idNext] = strdup(name);
 	if (!idNames[idNext]) err(EX_OSERR, "strdup");
 	idColors[idNext] = Default;
