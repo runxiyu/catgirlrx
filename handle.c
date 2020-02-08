@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <ctype.h>
 #include <err.h>
 #include <stdbool.h>
@@ -225,6 +226,32 @@ static void handlePart(struct Message *msg) {
 	);
 }
 
+static void handleReplyNames(struct Message *msg) {
+	require(msg, false, 4);
+	size_t id = idFor(msg->params[2]);
+	char buf[1024];
+	size_t len = 0;
+	while (msg->params[3]) {
+		char *name = strsep(&msg->params[3], " ");
+		name += strspn(name, self.prefixes);
+		char *nick = strsep(&name, "!");
+		char *user = strsep(&name, "@");
+		enum Color color = (user ? hash(user) : Default);
+		completeAdd(id, nick, color);
+		int n = snprintf(
+			&buf[len], sizeof(buf) - len,
+			"%s\3%02d%s\3", (len ? ", " : ""), color, nick
+		);
+		assert(n > 0 && len + n < sizeof(buf));
+		len += n;
+	}
+	uiFormat(
+		id, Cold, tagTime(msg),
+		"In \3%02d%s\3 are %s",
+		hash(msg->params[2]), msg->params[2], buf
+	);
+}
+
 static void handleReplyNoTopic(struct Message *msg) {
 	require(msg, false, 2);
 	uiFormat(
@@ -359,6 +386,7 @@ static const struct Handler {
 	{ "005", handleReplyISupport },
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
+	{ "353", handleReplyNames },
 	{ "372", handleReplyMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
