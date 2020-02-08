@@ -122,3 +122,15 @@ void completeRemove(size_t id, const char *str) {
 		free(node);
 	}
 }
+
+void completeClear(size_t id) {
+	struct Node *next = NULL;
+	for (struct Node *node = head; node; node = next) {
+		next = node->next;
+		if (node->id != id) continue;
+		if (match == node) match = NULL;
+		detach(node);
+		free(node->str);
+		free(node);
+	}
+}

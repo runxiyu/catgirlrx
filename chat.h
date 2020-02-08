@@ -154,6 +154,7 @@ void completeReject(void);
 void completeAdd(size_t id, const char *str, enum Color color);
 void completeTouch(size_t id, const char *str, enum Color color);
 void completeRemove(size_t id, const char *str);
+void completeClear(size_t id);
 
 FILE *configOpen(const char *path, const char *mode);
 int getopt_config(

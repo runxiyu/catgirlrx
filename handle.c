@@ -212,6 +212,9 @@ static void handleJoin(struct Message *msg) {
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
 	size_t id = idFor(msg->params[0]);
+	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		completeClear(id);
+	}
 	completeRemove(id, msg->nick);
 	uiFormat(
 		id, Cold, tagTime(msg),
