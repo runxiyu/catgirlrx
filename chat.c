@@ -150,6 +150,8 @@ int main(int argc, char *argv[]) {
 	while (!self.quit) {
 		int nfds = poll(fds, 2, -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
+		if (nfds > 0 && fds[0].revents) uiRead();
+		if (nfds > 0 && fds[1].revents) ircRecv();
 
 		if (signals[SIGHUP]) self.quit = "zzz";
 		if (signals[SIGINT] || signals[SIGTERM]) break;
@@ -162,8 +164,6 @@ int main(int argc, char *argv[]) {
 			uiRead();
 		}
 
-		if (nfds > 0 && fds[0].revents) uiRead();
-		if (nfds > 0 && fds[1].revents) ircRecv();
 		uiDraw();
 	}
 
