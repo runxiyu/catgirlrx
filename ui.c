@@ -176,8 +176,7 @@ static void disableFlowControl(void) {
 	if (error) err(EX_OSERR, "tcsetattr");
 }
 
-static void errExit(int eval) {
-	(void)eval;
+static void errExit(void) {
 	reset_shell_mode();
 }
 
@@ -211,7 +210,7 @@ void uiInit(void) {
 	noecho();
 	disableFlowControl();
 	def_prog_mode();
-	err_set_exit(errExit);
+	atexit(errExit);
 
 	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
 		to_status_line = "\33]2;";
