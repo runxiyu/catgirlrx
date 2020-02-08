@@ -144,6 +144,16 @@ static void commandClose(size_t id, char *params) {
 	}
 }
 
+static void commandOpen(size_t id, char *params) {
+	if (!params) {
+		urlOpenCount(id, 1);
+	} else if (isdigit(params[0])) {
+		urlOpenCount(id, strtoul(params, NULL, 10));
+	} else {
+		urlOpenMatch(id, params);
+	}
+}
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
@@ -155,6 +165,7 @@ static const struct Handler {
 	{ "/names", commandNames },
 	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
+	{ "/open", commandOpen },
 	{ "/part", commandPart },
 	{ "/query", commandQuery },
 	{ "/quit", commandQuit },

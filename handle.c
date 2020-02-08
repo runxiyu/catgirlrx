@@ -193,6 +193,7 @@ static void handleReplyISupport(struct Message *msg) {
 static void handleReplyMOTD(struct Message *msg) {
 	require(msg, false, 2);
 	char *line = msg->params[1];
+	urlScan(Network, msg->nick, line);
 	if (!strncmp(line, "- ", 2)) {
 		uiFormat(Network, Cold, tagTime(msg), "\3%d-\3\t%s", Gray, &line[2]);
 	} else {
@@ -227,6 +228,7 @@ static void handlePart(struct Message *msg) {
 		completeClear(id);
 	}
 	completeRemove(id, msg->nick);
+	urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
 		id, Cold, tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
@@ -241,6 +243,7 @@ static void handleKick(struct Message *msg) {
 	size_t id = idFor(msg->params[0]);
 	bool kicked = self.nick && !strcmp(msg->params[1], self.nick);
 	completeTouch(id, msg->nick, hash(msg->user));
+	urlScan(id, msg->nick, msg->params[2]);
 	uiFormat(
 		id, (kicked ? Hot : Cold), tagTime(msg),
 		"%s\3%02d%s\17\tkicks \3%02d%s\3 out of \3%02d%s\3%s%s",
@@ -275,6 +278,7 @@ static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	size_t id;
 	while (None != (id = completeID(msg->nick))) {
+		urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
 			id, Cold, tagTime(msg),
 			"\3%02d%s\3\tleaves%s%s",
@@ -333,8 +337,10 @@ static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
 	if (!replies.topic) return;
 	replies.topic--;
+	size_t id = idFor(msg->params[1]);
+	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
+		id, Cold, tagTime(msg),
 		"The sign in \3%02d%s\3 reads: %s",
 		hash(msg->params[1]), msg->params[1], msg->params[2]
 	);
@@ -342,16 +348,18 @@ static void handleReplyTopic(struct Message *msg) {
 
 static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
+	size_t id = idFor(msg->params[0]);
 	if (msg->params[1][0]) {
+		urlScan(id, msg->nick, msg->params[1]);
 		uiFormat(
-			idFor(msg->params[0]), Warm, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 			msg->params[1]
 		);
 	} else {
 		uiFormat(
-			idFor(msg->params[0]), Warm, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
 		);
@@ -400,6 +408,7 @@ static void handlePrivmsg(struct Message *msg) {
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
 	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
+	urlScan(id, msg->nick, msg->params[1]);
 	if (notice) {
 		uiFormat(
 			id, Warm, tagTime(msg),

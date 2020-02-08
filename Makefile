@@ -11,6 +11,7 @@ OBJS += edit.o
 OBJS += handle.o
 OBJS += irc.o
 OBJS += ui.o
+OBJS += url.o
 
 dev: tags all
 
