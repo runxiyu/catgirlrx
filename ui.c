@@ -368,7 +368,7 @@ static void wordWrap(WINDOW *win, const char *str) {
 	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
-		if (*str == '\t') {
+		if (*str == '\t' && !align) {
 			waddch(win, ' ');
 			getyx(win, y, align);
 			str++;
