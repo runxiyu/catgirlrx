@@ -459,10 +459,12 @@ void uiFormat(
 static void reflow(struct Window *window) {
 	werase(window->pad);
 	wmove(window->pad, BufferCap - 1, 0);
-	size_t len = window->buffer.len;
-	for (size_t i = (len > BufferCap ? len - BufferCap : 0); i < len; ++i) {
+	struct Buffer *buffer = &window->buffer;
+	for (size_t i = 0; i < BufferCap; ++i) {
+		char *line = buffer->lines[(buffer->len + i) % BufferCap];
+		if (!line) continue;
 		waddch(window->pad, '\n');
-		wordWrap(window->pad, window->buffer.lines[i % BufferCap]);
+		wordWrap(window->pad, line);
 	}
 }
 
