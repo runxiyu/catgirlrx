@@ -101,6 +101,15 @@ static void commandNick(size_t id, char *params) {
 	ircFormat("NICK :%s\r\n", params);
 }
 
+static void commandTopic(size_t id, char *params) {
+	if (params) {
+		ircFormat("TOPIC %s :%s\r\n", idNames[id], params);
+	} else {
+		ircFormat("TOPIC %s\r\n", idNames[id]);
+		replies.topic++;
+	}
+}
+
 static void commandNames(size_t id, char *params) {
 	(void)params;
 	ircFormat("NAMES :%s\r\n", idNames[id]);
@@ -150,6 +159,7 @@ static const struct Handler {
 	{ "/query", commandQuery },
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
+	{ "/topic", commandTopic },
 	{ "/window", commandWindow },
 };
 
