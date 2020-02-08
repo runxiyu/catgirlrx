@@ -69,6 +69,12 @@ static void commandQuit(size_t id, char *params) {
 	set(&self.quit, (params ? params : "Goodbye"));
 }
 
+static void commandNick(size_t id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("NICK :%s\r\n", params);
+}
+
 static void commandWindow(size_t id, char *params) {
 	if (!params) return;
 	if (isdigit(params[0])) {
@@ -85,6 +91,7 @@ static const struct Handler {
 } Commands[] = {
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
+	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
