@@ -226,6 +226,25 @@ static void handlePart(struct Message *msg) {
 	);
 }
 
+static void handleKick(struct Message *msg) {
+	require(msg, true, 2);
+	size_t id = idFor(msg->params[0]);
+	bool kicked = self.nick && !strcmp(msg->params[1], self.nick);
+	completeTouch(id, msg->nick, hash(msg->user));
+	uiFormat(
+		id, (kicked ? Hot : Cold), tagTime(msg),
+		"%s\3%02d%s\17\tkicks \3%02d%s\3 out of \3%02d%s\3%s%s",
+		(kicked ? "\26" : ""),
+		hash(msg->user), msg->nick,
+		completeColor(id, msg->params[1]), msg->params[1],
+		hash(msg->params[0]), msg->params[0],
+		(msg->params[2] ? ": " : ""),
+		(msg->params[2] ? msg->params[2] : "")
+	);
+	completeRemove(id, msg->params[1]);
+	if (kicked) completeClear(id);
+}
+
 static void handleNick(struct Message *msg) {
 	require(msg, true, 1);
 	if (self.nick && !strcmp(msg->nick, self.nick)) {
@@ -413,6 +432,7 @@ static const struct Handler {
 	{ "CAP", handleCap },
 	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
+	{ "KICK", handleKick },
 	{ "NICK", handleNick },
 	{ "NOTICE", handlePrivmsg },
 	{ "PART", handlePart },

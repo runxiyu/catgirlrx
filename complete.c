@@ -90,6 +90,11 @@ void completeTouch(size_t id, const char *str, enum Color color) {
 	prepend(node ? detach(node) : alloc(id, str, color));
 }
 
+enum Color completeColor(size_t id, const char *str) {
+	struct Node *node = find(id, str);
+	return (node ? node->color : Default);
+}
+
 static struct Node *match;
 
 const char *complete(size_t id, const char *prefix) {
