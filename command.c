@@ -125,7 +125,12 @@ void command(size_t id, char *input) {
 	} else if (input[0] == '/' && isdigit(input[1])) {
 		commandWindow(id, &input[1]);
 	} else {
-		char *cmd = strsep(&input, " ");
+		const char *cmd = strsep(&input, " ");
+		const char *unique = complete(None, cmd);
+		if (unique && !complete(None, cmd)) {
+			cmd = unique;
+			completeReject();
+		}
 		const struct Handler *handler = bsearch(
 			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
 		);
