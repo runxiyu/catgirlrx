@@ -226,6 +226,37 @@ static void handlePart(struct Message *msg) {
 	);
 }
 
+static void handleNick(struct Message *msg) {
+	require(msg, true, 1);
+	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		set(&self.nick, msg->params[0]);
+	}
+	size_t id;
+	while (None != (id = completeID(msg->nick))) {
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"\3%02d%s\3\tis now known as \3%02d%s\3",
+			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
+		);
+	}
+	completeReplace(None, msg->nick, msg->params[0]);
+}
+
+static void handleQuit(struct Message *msg) {
+	require(msg, true, 0);
+	size_t id;
+	while (None != (id = completeID(msg->nick))) {
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"\3%02d%s\3\tleaves%s%s",
+			hash(msg->user), msg->nick,
+			(msg->params[0] ? ": " : ""),
+			(msg->params[0] ? msg->params[0] : "")
+		);
+	}
+	completeRemove(None, msg->nick);
+}
+
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	size_t id = idFor(msg->params[2]);
@@ -284,22 +315,6 @@ static void handleTopic(struct Message *msg) {
 			idFor(msg->params[0]), Warm, tagTime(msg),
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
-		);
-	}
-}
-
-static void handleNick(struct Message *msg) {
-	require(msg, true, 1);
-	if (self.nick && !strcmp(msg->nick, self.nick)) {
-		set(&self.nick, msg->params[0]);
-	}
-	size_t id;
-	completeReplace(None, msg->nick, msg->params[0]);
-	while (None != (id = completeID(msg->params[0]))) {
-		uiFormat(
-			id, Cold, tagTime(msg),
-			"\3%02d%s\3\tis now known as \3%02d%s\3",
-			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
 		);
 	}
 }
@@ -403,6 +418,7 @@ static const struct Handler {
 	{ "PART", handlePart },
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
+	{ "QUIT", handleQuit },
 	{ "TOPIC", handleTopic },
 };
 
