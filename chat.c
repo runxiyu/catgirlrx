@@ -45,6 +45,21 @@ size_t idNext = Network + 1;
 
 struct Self self = { .color = Default };
 
+int procPipe[2] = { -1, -1 };
+
+static void pipeRead(void) {
+	char buf[1024];
+	ssize_t len = read(procPipe[0], buf, sizeof(buf) - 1);
+	if (len < 0) err(EX_IOERR, "read");
+	if (!len) return;
+	buf[len - 1] = '\0';
+	char *ptr = buf;
+	while (ptr) {
+		char *line = strsep(&ptr, "\n");
+		uiFormat(Network, Warm, NULL, "%s", line);
+	}
+}
+
 static volatile sig_atomic_t signals[NSIG];
 static void signalHandler(int signal) {
 	signals[signal] = 1;
@@ -146,15 +161,22 @@ int main(int argc, char *argv[]) {
 	signal(SIGCHLD, signalHandler);
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
-	struct pollfd fds[2] = {
+	int error = pipe(procPipe);
+	if (error) err(EX_OSERR, "pipe");
+
+	struct pollfd fds[3] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
+		{ .events = POLLIN, .fd = procPipe[0] },
 	};
 	while (!self.quit) {
-		int nfds = poll(fds, 2, -1);
+		int nfds = poll(fds, ARRAY_LEN(fds), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
-		if (nfds > 0 && fds[0].revents) uiRead();
-		if (nfds > 0 && fds[1].revents) ircRecv();
+		if (nfds > 0) {
+			if (fds[0].revents) uiRead();
+			if (fds[1].revents) ircRecv();
+			if (fds[2].revents) pipeRead();
+		}
 
 		if (signals[SIGHUP]) self.quit = "zzz";
 		if (signals[SIGINT] || signals[SIGTERM]) break;

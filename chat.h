@@ -28,6 +28,8 @@
 
 typedef unsigned char byte;
 
+int procPipe[2];
+
 enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
