@@ -226,7 +226,7 @@ void uiDraw(void) {
 	getyx(input, y, x);
 	pnoutrefresh(
 		input,
-		0, (x > RIGHT ? x - RIGHT : 0),
+		0, (x + 1 > RIGHT ? x + 1 - RIGHT : 0),
 		BOTTOM, 0,
 		BOTTOM, RIGHT
 	);
