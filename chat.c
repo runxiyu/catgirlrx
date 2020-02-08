@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
 	set(&self.network, host);
 	set(&self.chanTypes, "#&");
 	set(&self.prefixes, "@+");
+	commandComplete();
 
 	FILE *certFile = NULL;
 	FILE *privFile = NULL;

@@ -136,3 +136,9 @@ void command(size_t id, char *input) {
 		}
 	}
 }
+
+void commandComplete(void) {
+	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
+		completeAdd(None, Commands[i].cmd, Default);
+	}
+}

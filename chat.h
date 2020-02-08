@@ -118,6 +118,7 @@ void command(size_t id, char *input);
 const char *commandIsPrivmsg(size_t id, const char *input);
 const char *commandIsNotice(size_t id, const char *input);
 const char *commandIsAction(size_t id, const char *input);
+void commandComplete(void);
 
 enum Heat { Cold, Warm, Hot };
 void uiInit(void);
@@ -140,11 +141,18 @@ enum Edit {
 	EditKill,
 	EditErase,
 	EditInsert,
+	EditComplete,
 	EditEnter,
 };
 void edit(size_t id, enum Edit op, wchar_t ch);
 char *editHead(void);
 char *editTail(void);
+
+const char *complete(size_t id, const char *prefix);
+void completeAccept(void);
+void completeReject(void);
+void completeAdd(size_t id, const char *str, enum Color color);
+void completeTouch(size_t id, const char *str, enum Color color);
 
 FILE *configOpen(const char *path, const char *mode);
 int getopt_config(

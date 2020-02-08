@@ -73,6 +73,9 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 			reserve(pos, 1);
 			if (pos < Cap) buf[pos++] = ch;
 		}
+		break; case EditComplete: {
+			// TODO
+		}
 		break; case EditEnter: {
 			pos = 0;
 			command(id, editTail());
