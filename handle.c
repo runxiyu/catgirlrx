@@ -261,6 +261,22 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleNick(struct Message *msg) {
+	require(msg, true, 1);
+	if (self.nick && !strcmp(msg->nick, self.nick)) {
+		set(&self.nick, msg->params[0]);
+	}
+	size_t id;
+	completeReplace(None, msg->nick, msg->params[0]);
+	while (None != (id = completeID(msg->params[0]))) {
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"\3%02d%s\3\tis now known as \3%02d%s\3",
+			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
+		);
+	}
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -354,6 +370,7 @@ static const struct Handler {
 	{ "CAP", handleCap },
 	{ "ERROR", handleError },
 	{ "JOIN", handleJoin },
+	{ "NICK", handleNick },
 	{ "NOTICE", handlePrivmsg },
 	{ "PART", handlePart },
 	{ "PING", handlePing },

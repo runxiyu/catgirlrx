@@ -151,8 +151,10 @@ char *editTail(void);
 const char *complete(size_t id, const char *prefix);
 void completeAccept(void);
 void completeReject(void);
+size_t completeID(const char *str);
 void completeAdd(size_t id, const char *str, enum Color color);
 void completeTouch(size_t id, const char *str, enum Color color);
+void completeReplace(size_t id, const char *old, const char *new);
 void completeRemove(size_t id, const char *str);
 void completeClear(size_t id);
 

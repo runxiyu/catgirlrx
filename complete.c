@@ -110,6 +110,27 @@ void completeReject(void) {
 	match = NULL;
 }
 
+size_t completeID(const char *str) {
+	for (match = (match ? match->next : head); match; match = match->next) {
+		if (match->id && !strcmp(match->str, str)) return match->id;
+	}
+	return None;
+}
+
+void completeReplace(size_t id, const char *old, const char *new) {
+	struct Node *next = NULL;
+	for (struct Node *node = head; node; node = node->next) {
+		next = node->next;
+		if (id && node->id != id) continue;
+		if (strcmp(node->str, old)) continue;
+		if (match == node) match = NULL;
+		free(node->str);
+		node->str = strdup(new);
+		if (!node->str) err(EX_OSERR, "strdup");
+		prepend(detach(node));
+	}
+}
+
 void completeRemove(size_t id, const char *str) {
 	struct Node *next = NULL;
 	for (struct Node *node = head; node; node = next) {
