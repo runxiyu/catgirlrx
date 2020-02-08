@@ -146,13 +146,6 @@ static short colorPair(short fg, short bg) {
 	return colorPairs++;
 }
 
-enum {
-	KeyFocusIn = KEY_MAX + 1,
-	KeyFocusOut,
-	KeyPasteOn,
-	KeyPasteOff,
-};
-
 // XXX: Assuming terminals will be fine with these even if they're unsupported,
 // since they're "private" modes.
 static const char *EnterFocusMode = "\33[?1004h";
@@ -188,6 +181,30 @@ static void errExit(int eval) {
 	reset_shell_mode();
 }
 
+#define ENUM_KEY \
+	X(KeyMeta0, "\0330") \
+	X(KeyMeta1, "\0331") \
+	X(KeyMeta2, "\0332") \
+	X(KeyMeta3, "\0333") \
+	X(KeyMeta4, "\0334") \
+	X(KeyMeta5, "\0335") \
+	X(KeyMeta6, "\0336") \
+	X(KeyMeta7, "\0337") \
+	X(KeyMeta8, "\0338") \
+	X(KeyMeta9, "\0339") \
+	X(KeyMetaM, "\33m") \
+	X(KeyFocusIn, "\33[I") \
+	X(KeyFocusOut, "\33[O") \
+	X(KeyPasteOn, "\33[200~") \
+	X(KeyPasteOff, "\33[201~")
+
+enum {
+	KeyMax = KEY_MAX,
+#define X(id, seq) id,
+	ENUM_KEY
+#undef X
+};
+
 void uiInit(void) {
 	initscr();
 	cbreak();
@@ -200,10 +217,9 @@ void uiInit(void) {
 		to_status_line = "\33]2;";
 		from_status_line = "\7";
 	}
-	define_key("\33[I", KeyFocusIn);
-	define_key("\33[O", KeyFocusOut);
-	define_key("\33[200~", KeyPasteOn);
-	define_key("\33[201~", KeyPasteOff);
+#define X(id, seq) define_key(seq, id);
+	ENUM_KEY
+#undef X
 
 	colorInit();
 	status = newwin(1, COLS, 0, 0);
@@ -556,20 +572,19 @@ static void keyCode(int code) {
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
+		break; case KeyMetaM: waddch(windows.active->pad, '\n');
+
 		break; case KEY_BACKSPACE: edit(id, EditErase, 0);
 		break; case KEY_END: edit(id, EditEnd, 0);
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHome, 0);
 		break; case KEY_LEFT: edit(id, EditLeft, 0);
 		break; case KEY_RIGHT: edit(id, EditRight, 0);
-	}
-}
-
-static void keyMeta(wchar_t ch) {
-	switch (ch) {
-		break; case L'm': waddch(windows.active->pad, '\n');
+		
 		break; default: {
-			if (ch >= L'0' && ch <= L'9') uiShowNum(ch - L'0');
+			if (code >= KeyMeta0 && code <= KeyMeta9) {
+				uiShowNum(code - KeyMeta0);
+			}
 		}
 	}
 }
@@ -602,15 +617,10 @@ static void keyStyle(wchar_t ch) {
 void uiRead(void) {
 	int ret;
 	wint_t ch;
-	static bool meta, style;
+	static bool style;
 	while (ERR != (ret = wget_wch(input, &ch))) {
 		if (ret == KEY_CODE_YES) {
 			keyCode(ch);
-		} else if (ch == '\33') {
-			meta = true;
-			continue;
-		} else if (meta) {
-			keyMeta(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
 			style = true;
 			continue;
@@ -621,7 +631,7 @@ void uiRead(void) {
 		} else {
 			edit(windows.active->id, EditInsert, ch);
 		}
-		meta = style = false;
+		style = false;
 	}
 	inputUpdate();
 }
