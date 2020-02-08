@@ -23,6 +23,16 @@
 
 typedef void Command(size_t id, char *params);
 
+static void commandDebug(size_t id, char *params) {
+	(void)id;
+	(void)params;
+	self.debug ^= true;
+	uiFormat(
+		Debug, Warm, NULL,
+		"\3%dDebug is %s", Gray, (self.debug ? "on" : "off")
+	);
+}
+
 static void commandQuote(size_t id, char *params) {
 	(void)id;
 	if (params) ircFormat("%s\r\n", params);
@@ -116,6 +126,7 @@ static const struct Handler {
 	Command *fn;
 } Commands[] = {
 	{ "/close", commandClose },
+	{ "/debug", commandDebug },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
 	{ "/nick", commandNick },
