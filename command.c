@@ -101,6 +101,12 @@ static void commandNick(size_t id, char *params) {
 	ircFormat("NICK :%s\r\n", params);
 }
 
+static void commandNames(size_t id, char *params) {
+	(void)params;
+	ircFormat("NAMES :%s\r\n", idNames[id]);
+	replies.names++;
+}
+
 static void commandQuery(size_t id, char *params) {
 	if (!params) return;
 	size_t query = idFor(params);
@@ -137,6 +143,7 @@ static const struct Handler {
 	{ "/debug", commandDebug },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
+	{ "/names", commandNames },
 	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
 	{ "/part", commandPart },
