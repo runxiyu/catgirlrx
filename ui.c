@@ -384,9 +384,14 @@ static void wordWrap(WINDOW *win, const char *str) {
 	struct Style style = Reset;
 	while (*str) {
 		if (*str == '\t') {
-			waddch(win, ' ');
-			getyx(win, y, align);
-			str++;
+			if (align) {
+				waddch(win, '\t');
+				str++;
+			} else {
+				waddch(win, ' ');
+				getyx(win, y, align);
+				str++;
+			}
 		} else if (*str == ' ') {
 			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
