@@ -71,7 +71,15 @@ static void commandMe(size_t id, char *params) {
 }
 
 static void commandJoin(size_t id, char *params) {
+	size_t count = 1;
+	if (params) {
+		for (char *ch = params; *ch && *ch != ' '; ++ch) {
+			if (*ch == ',') count++;
+		}
+	}
 	ircFormat("JOIN %s\r\n", (params ? params : idNames[id]));
+	replies.topic += count;
+	replies.names += count;
 }
 
 static void commandPart(size_t id, char *params) {

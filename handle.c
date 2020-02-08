@@ -25,6 +25,8 @@
 
 #include "chat.h"
 
+struct Replies replies;
+
 static const char *CapNames[] = {
 #define X(name, id) [id##Bit] = name,
 	ENUM_CAP
@@ -156,7 +158,15 @@ static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
 	completeTouch(None, self.nick, Default);
-	if (self.join) ircFormat("JOIN %s\r\n", self.join);
+	if (self.join) {
+		size_t count = 1;
+		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
+			if (*ch == ',') count++;
+		}
+		ircFormat("JOIN %s\r\n", self.join);
+		replies.topic += count;
+		replies.names += count;
+	}
 }
 
 static void handleReplyISupport(struct Message *msg) {
@@ -278,6 +288,7 @@ static void handleQuit(struct Message *msg) {
 
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
+	if (!replies.names) return;
 	size_t id = idFor(msg->params[2]);
 	char buf[1024];
 	size_t len = 0;
@@ -302,8 +313,15 @@ static void handleReplyNames(struct Message *msg) {
 	);
 }
 
+static void handleReplyEndOfNames(struct Message *msg) {
+	(void)msg;
+	if (replies.names) replies.names--;
+}
+
 static void handleReplyNoTopic(struct Message *msg) {
 	require(msg, false, 2);
+	if (!replies.topic) return;
+	replies.topic--;
 	uiFormat(
 		idFor(msg->params[1]), Cold, tagTime(msg),
 		"There is no sign in \3%02d%s\3",
@@ -313,6 +331,8 @@ static void handleReplyNoTopic(struct Message *msg) {
 
 static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
+	if (!replies.topic) return;
+	replies.topic--;
 	uiFormat(
 		idFor(msg->params[1]), Cold, tagTime(msg),
 		"The sign in \3%02d%s\3 reads: %s",
@@ -421,6 +441,7 @@ static const struct Handler {
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
 	{ "353", handleReplyNames },
+	{ "366", handleReplyEndOfNames },
 	{ "372", handleReplyMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },

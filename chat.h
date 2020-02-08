@@ -114,6 +114,11 @@ void ircSend(const char *ptr, size_t len);
 void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 
+extern struct Replies {
+	size_t topic;
+	size_t names;
+} replies;
+
 void handle(struct Message msg);
 void command(size_t id, char *input);
 const char *commandIsPrivmsg(size_t id, const char *input);
