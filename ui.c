@@ -109,6 +109,7 @@ static struct Window *windowFor(size_t id) {
 
 	window->id = id;
 	window->pad = newpad(BufferCap, COLS);
+	if (!window->pad) err(EX_OSERR, "newpad");
 	scrollok(window->pad, true);
 	wmove(window->pad, BufferCap - 1, 0);
 	window->scroll = BufferCap;
@@ -211,20 +212,25 @@ void uiInit(void) {
 	disableFlowControl();
 	def_prog_mode();
 	atexit(errExit);
+	colorInit();
 
 	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
 		to_status_line = "\33]2;";
 		from_status_line = "\7";
 	}
+
 #define X(id, seq) define_key(seq, id);
 	ENUM_KEY
 #undef X
 
-	colorInit();
 	status = newwin(1, COLS, 0, 0);
+	if (!status) err(EX_OSERR, "newwin");
+
 	input = newpad(1, 512);
+	if (!input) err(EX_OSERR, "newpad");
 	keypad(input, true);
 	nodelay(input, true);
+
 	windows.active = windowFor(Network);
 	uiShow();
 }
