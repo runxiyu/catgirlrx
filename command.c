@@ -64,6 +64,14 @@ static void commandJoin(size_t id, char *params) {
 	ircFormat("JOIN %s\r\n", (params ? params : idNames[id]));
 }
 
+static void commandPart(size_t id, char *params) {
+	if (params) {
+		ircFormat("PART %s :%s\r\n", idNames[id], params);
+	} else {
+		ircFormat("PART %s\r\n", idNames[id]);
+	}
+}
+
 static void commandQuit(size_t id, char *params) {
 	(void)id;
 	set(&self.quit, (params ? params : "Goodbye"));
@@ -93,6 +101,7 @@ static const struct Handler {
 	{ "/me", commandMe },
 	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
+	{ "/part", commandPart },
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
 	{ "/window", commandWindow },
