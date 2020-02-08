@@ -83,6 +83,13 @@ static void commandNick(size_t id, char *params) {
 	ircFormat("NICK :%s\r\n", params);
 }
 
+static void commandQuery(size_t id, char *params) {
+	if (!params) return;
+	size_t query = idFor(params);
+	idColors[query] = completeColor(id, params);
+	uiShowID(query);
+}
+
 static void commandWindow(size_t id, char *params) {
 	if (!params) return;
 	if (isdigit(params[0])) {
@@ -102,6 +109,7 @@ static const struct Handler {
 	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
 	{ "/part", commandPart },
+	{ "/query", commandQuery },
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
 	{ "/window", commandWindow },
@@ -151,6 +159,7 @@ void command(size_t id, char *input) {
 			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
 		);
 		if (handler) {
+			if (input && !input[0]) input = NULL;
 			handler->fn(id, input);
 		} else {
 			uiFormat(id, Hot, NULL, "No such command %s", cmd);
