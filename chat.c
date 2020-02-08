@@ -22,6 +22,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
 #include <sysexits.h>
 #include <unistd.h>
 
@@ -141,6 +143,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGHUP, signalHandler);
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);
+	signal(SIGCHLD, signalHandler);
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
 	struct pollfd fds[2] = {
@@ -155,6 +158,25 @@ int main(int argc, char *argv[]) {
 
 		if (signals[SIGHUP]) self.quit = "zzz";
 		if (signals[SIGINT] || signals[SIGTERM]) break;
+
+		if (signals[SIGCHLD]) {
+			int status;
+			while (0 < waitpid(-1, &status, WNOHANG)) {
+				if (WIFEXITED(status) && WEXITSTATUS(status)) {
+					uiFormat(
+						Network, Warm, NULL,
+						"Process exits with status %d", WEXITSTATUS(status)
+					);
+				} else if (WIFSIGNALED(status)) {
+					uiFormat(
+						Network, Warm, NULL,
+						"Process terminates from %s",
+						strsignal(WTERMSIG(status))
+					);
+				}
+			}
+		}
+
 		if (signals[SIGWINCH]) {
 			signals[SIGWINCH] = 0;
 			cursesWinch(SIGWINCH);
