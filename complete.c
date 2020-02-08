@@ -109,3 +109,16 @@ void completeAccept(void) {
 void completeReject(void) {
 	match = NULL;
 }
+
+void completeRemove(size_t id, const char *str) {
+	struct Node *next = NULL;
+	for (struct Node *node = head; node; node = next) {
+		next = node->next;
+		if (id && node->id != id) continue;
+		if (strcmp(node->str, str)) continue;
+		if (match == node) match = NULL;
+		detach(node);
+		free(node->str);
+		free(node);
+	}
+}

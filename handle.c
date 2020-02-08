@@ -154,6 +154,7 @@ static void handleErrorSASLFail(struct Message *msg) {
 static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
+	completeTouch(None, self.nick, Default);
 	if (self.join) ircFormat("JOIN %s\r\n", self.join);
 }
 
@@ -197,8 +198,10 @@ static void handleJoin(struct Message *msg) {
 			self.color = hash(msg->user);
 		}
 		idColors[id] = hash(msg->params[0]);
+		completeTouch(None, msg->params[0], idColors[id]);
 		uiShowID(id);
 	}
+	completeTouch(id, msg->nick, hash(msg->user));
 	uiFormat(
 		id, Cold, tagTime(msg),
 		"\3%02d%s\3\tarrives in \3%02d%s\3",
@@ -208,8 +211,10 @@ static void handleJoin(struct Message *msg) {
 
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
+	size_t id = idFor(msg->params[0]);
+	completeRemove(id, msg->nick);
 	uiFormat(
-		idFor(msg->params[0]), Cold, tagTime(msg),
+		id, Cold, tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 		(msg->params[1] ? ": " : ""),
@@ -294,6 +299,7 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
+	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
 	if (notice) {
 		uiFormat(
 			id, Warm, tagTime(msg),
