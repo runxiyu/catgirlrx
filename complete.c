@@ -86,6 +86,7 @@ void completeAdd(size_t id, const char *str, enum Color color) {
 
 void completeTouch(size_t id, const char *str, enum Color color) {
 	struct Node *node = find(id, str);
+	if (node && node->color != color) node->color = color;
 	prepend(node ? detach(node) : alloc(id, str, color));
 }
 
