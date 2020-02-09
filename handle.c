@@ -389,6 +389,53 @@ static bool isMention(const struct Message *msg) {
 	return false;
 }
 
+static const char *colorMentions(size_t id, struct Message *msg) {
+	char *mention;
+	char final;
+	if (strchr(msg->params[1], ':')) {
+		mention = strsep(&msg->params[1], ":");
+		final = ':';
+	} else if (strchr(msg->params[1], ' ')) {
+		mention = strsep(&msg->params[1], " ");
+		final = ' ';
+	} else {
+		mention = msg->params[1];
+		msg->params[1] = "";
+		final = '\0';
+	}
+
+	static char buf[1024];
+	size_t len = 0;
+	while (*mention) {
+		size_t skip = strspn(mention, ", ");
+		int n = snprintf(
+			&buf[len], sizeof(buf) - len,
+			"%.*s", (int)skip, mention
+		);
+		assert(n >= 0 && len + n < sizeof(buf));
+		len += n;
+		mention += skip;
+
+		size_t word = strcspn(mention, ", ");
+		char punct = mention[word];
+		mention[word] = '\0';
+
+		n = snprintf(
+			&buf[len], sizeof(buf) - len,
+			"\3%02d%s\3", completeColor(id, mention), mention
+		);
+		assert(n > 0 && len + n < sizeof(buf));
+		len += n;
+
+		mention[word] = punct;
+		mention += word;
+	}
+	assert(len + 1 < sizeof(buf));
+	buf[len++] = final;
+	buf[len] = '\0';
+	return buf;
+}
+
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
 	bool query = !strchr(self.chanTypes, msg->params[0][0]);
@@ -423,10 +470,12 @@ static void handlePrivmsg(struct Message *msg) {
 			(mention ? "\26" : ""), hash(msg->user), msg->nick, msg->params[1]
 		);
 	} else {
+		const char *mentions = colorMentions(id, msg);
 		uiFormat(
 			id, (mention || query ? Hot : Warm), tagTime(msg),
-			"%s\3%d<%s>\17\t%s",
-			(mention ? "\26" : ""), hash(msg->user), msg->nick, msg->params[1]
+			"%s\3%d<%s>\17\t%s%s",
+			(mention ? "\26" : ""), hash(msg->user), msg->nick,
+			mentions, msg->params[1]
 		);
 	}
 }
