@@ -124,6 +124,13 @@ static void commandNames(size_t id, char *params) {
 	replies.names++;
 }
 
+static void commandWhois(size_t id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("WHOIS :%s\r\n", params);
+	replies.whois++;
+}
+
 static void commandQuery(size_t id, char *params) {
 	if (!params) return;
 	size_t query = idFor(params);
@@ -203,6 +210,7 @@ static const struct Handler {
 	{ "/quit", commandQuit },
 	{ "/quote", commandQuote },
 	{ "/topic", commandTopic },
+	{ "/whois", commandWhois },
 	{ "/window", commandWindow },
 };
 

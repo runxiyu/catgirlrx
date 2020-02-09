@@ -120,6 +120,7 @@ void ircFormat(const char *format, ...)
 extern struct Replies {
 	size_t topic;
 	size_t names;
+	size_t whois;
 } replies;
 
 void handle(struct Message msg);

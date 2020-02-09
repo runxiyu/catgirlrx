@@ -374,6 +374,97 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleReplyWhoisUser(struct Message *msg) {
+	require(msg, false, 6);
+	if (!replies.whois) return;
+	completeTouch(Network, msg->params[1], hash(msg->params[2]));
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\tis %s!%s@%s (%s)",
+		hash(msg->params[2]), msg->params[1],
+		msg->params[1], msg->params[2], msg->params[3], msg->params[5]
+	);
+}
+
+static void handleReplyWhoisServer(struct Message *msg) {
+	require(msg, false, 4);
+	if (!replies.whois) return;
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\tis connected to %s (%s)",
+		completeColor(Network, msg->params[1]), msg->params[1],
+		msg->params[2], msg->params[3]
+	);
+}
+
+static void handleReplyWhoisIdle(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.whois) return;
+	unsigned long idle = strtoul(msg->params[2], NULL, 10);
+	const char *unit = "second";
+	if (idle / 60) { idle /= 60; unit = "minute"; }
+	if (idle / 60) { idle /= 60; unit = "hour"; }
+	if (idle / 24) { idle /= 24; unit = "day"; }
+	time_t signon = (msg->params[3] ? strtoul(msg->params[3], NULL, 10) : 0);
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\tis idle for %lu %s%s%s%.*s",
+		completeColor(Network, msg->params[1]), msg->params[1],
+		idle, unit, (idle != 1 ? "s" : ""),
+		(signon ? ", signed on " : ""),
+		24, (signon ? ctime(&signon) : "")
+	);
+}
+
+static void handleReplyWhoisChannels(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.whois) return;
+	char buf[1024];
+	size_t len = 0;
+	while (msg->params[2]) {
+		char *channel = strsep(&msg->params[2], " ");
+		channel += strspn(channel, self.prefixes);
+		int n = snprintf(
+			&buf[len], sizeof(buf) - len,
+			"%s\3%02d%s\3", (len ? ", " : ""), hash(channel), channel
+		);
+		assert(n > 0 && len + n < sizeof(buf));
+		len += n;
+	}
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\tis in %s",
+		completeColor(Network, msg->params[1]), msg->params[1], buf
+	);
+}
+
+static void handleReplyWhoisGeneric(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.whois) return;
+	if (msg->params[3]) {
+		msg->params[0] = msg->params[2];
+		msg->params[2] = msg->params[3];
+		msg->params[3] = msg->params[0];
+	}
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\t%s%s%s",
+		completeColor(Network, msg->params[1]), msg->params[1],
+		msg->params[2],
+		(msg->params[3] ? " " : ""),
+		(msg->params[3] ? msg->params[3] : "")
+	);
+}
+
+static void handleReplyEndOfWhois(struct Message *msg) {
+	require(msg, false, 2);
+	if (!replies.whois) return;
+	if (!self.nick || strcmp(msg->params[1], self.nick)) {
+		completeRemove(Network, msg->params[1]);
+	}
+	replies.whois--;
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -495,6 +586,15 @@ static const struct Handler {
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
 	{ "005", handleReplyISupport },
+	{ "276", handleReplyWhoisGeneric },
+	{ "307", handleReplyWhoisGeneric },
+	{ "311", handleReplyWhoisUser },
+	{ "312", handleReplyWhoisServer },
+	{ "313", handleReplyWhoisGeneric },
+	{ "317", handleReplyWhoisIdle },
+	{ "318", handleReplyEndOfWhois },
+	{ "319", handleReplyWhoisChannels },
+	{ "330", handleReplyWhoisGeneric },
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
 	{ "353", handleReplyNames },
@@ -502,6 +602,7 @@ static const struct Handler {
 	{ "372", handleReplyMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
+	{ "671", handleReplyWhoisGeneric },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
 	{ "905", handleErrorSASLFail },
