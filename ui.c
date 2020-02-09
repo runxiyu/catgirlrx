@@ -163,7 +163,6 @@ void uiShow(void) {
 	putp(EnterPasteMode);
 	fflush(stdout);
 	hidden = false;
-	uiDraw();
 }
 
 void uiHide(void) {
