@@ -148,8 +148,8 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 
 		break; case EditDeletePrev: if (pos) delete(--pos, 1);
 		break; case EditDeleteNext: delete(pos, 1);
-		break; case EditKillPrev: delete(0, pos); pos = 0;
-		break; case EditKillNext: delete(pos, len - pos);
+		break; case EditDeleteHead: delete(0, pos); pos = 0;
+		break; case EditDeleteTail: delete(pos, len - pos);
 
 		break; case EditInsert: {
 			reserve(pos, 1);

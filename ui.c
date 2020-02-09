@@ -656,9 +656,9 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'H': edit(id, EditDeletePrev, 0);
 		break; case L'I': edit(id, EditComplete, 0);
 		break; case L'J': edit(id, EditEnter, 0);
-		break; case L'K': edit(id, EditKillNext, 0);
+		break; case L'K': edit(id, EditDeleteTail, 0);
 		break; case L'L': clearok(curscr, true);
-		break; case L'U': edit(id, EditKillPrev, 0);
+		break; case L'U': edit(id, EditDeleteHead, 0);
 	}
 }
 
