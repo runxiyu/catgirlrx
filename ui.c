@@ -194,6 +194,7 @@ static void errExit(void) {
 	X(KeyMeta7, "\0337") \
 	X(KeyMeta8, "\0338") \
 	X(KeyMeta9, "\0339") \
+	X(KeyMetaA, "\33a") \
 	X(KeyMetaB, "\33b") \
 	X(KeyMetaD, "\33d") \
 	X(KeyMetaF, "\33f") \
@@ -619,6 +620,29 @@ void uiCloseNum(size_t num) {
 	windowClose(window);
 }
 
+static void showAuto(void) {
+	static bool origin;
+	if (!origin) {
+		windows.other = windows.active;
+		origin = true;
+	}
+	struct Window *other = windows.other;
+	for (struct Window *window = windows.head; window; window = window->next) {
+		if (window->heat < Hot) continue;
+		windowShow(window);
+		windows.other = other;
+		return;
+	}
+	for (struct Window *window = windows.head; window; window = window->next) {
+		if (window->heat < Warm) continue;
+		windowShow(window);
+		windows.other = other;
+		return;
+	}
+	windowShow(windows.other);
+	origin = false;
+}
+
 static void keyCode(int code) {
 	size_t id = windows.active->id;
 	switch (code) {
@@ -628,6 +652,7 @@ static void keyCode(int code) {
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
+		break; case KeyMetaA: showAuto();
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
