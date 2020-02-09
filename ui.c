@@ -44,11 +44,11 @@
 
 #define BOTTOM (LINES - 1)
 #define RIGHT (COLS - 1)
-#define WINDOW_LINES (LINES - 2)
+#define PAGE_LINES (LINES - 2)
 
 static WINDOW *status;
+static WINDOW *marker;
 static WINDOW *input;
-static WINDOW *scrollBar;
 
 enum { BufferCap = 512 };
 struct Buffer {
@@ -66,6 +66,7 @@ static void bufferPush(struct Buffer *buffer, time_t time, const char *line) {
 	if (!buffer->lines[i]) err(EX_OSERR, "strdup");
 }
 
+enum { WindowLines = BufferCap };
 struct Window {
 	size_t id;
 	struct Buffer buffer;
@@ -109,19 +110,14 @@ static struct Window *windowFor(size_t id) {
 	if (!window) err(EX_OSERR, "malloc");
 
 	window->id = id;
-	window->pad = newpad(BufferCap, COLS);
+	window->pad = newpad(WindowLines, COLS);
 	if (!window->pad) err(EX_OSERR, "newpad");
 	scrollok(window->pad, true);
 	wmove(window->pad, BufferCap - 1, 0);
-	window->scroll = BufferCap;
 	window->mark = true;
 
 	windowAdd(window);
 	return window;
-}
-
-static bool windowScrolled(struct Window *window) {
-	return window->scroll < BufferCap;
 }
 
 static short colorPairs;
@@ -238,14 +234,14 @@ void uiInit(void) {
 	status = newwin(1, COLS, 0, 0);
 	if (!status) err(EX_OSERR, "newwin");
 
+	marker = newwin(1, COLS, LINES - 2, 0);
+	short fg = 8 + COLOR_BLACK;
+	wbkgd(marker, '~' | colorAttr(fg) | COLOR_PAIR(colorPair(fg, -1)));
+
 	input = newpad(1, 512);
 	if (!input) err(EX_OSERR, "newpad");
 	keypad(input, true);
 	nodelay(input, true);
-
-	scrollBar = newwin(1, COLS, LINES - 2, 0);
-	short fg = 8 + COLOR_BLACK;
-	wbkgd(scrollBar, '~' | colorAttr(fg) | COLOR_PAIR(colorPair(fg, -1)));
 
 	windows.active = windowFor(Network);
 	uiShow();
@@ -253,16 +249,16 @@ void uiInit(void) {
 
 void uiDraw(void) {
 	wnoutrefresh(status);
-	int scrolled = windowScrolled(windows.active);
+	struct Window *window = windows.active;
 	pnoutrefresh(
-		windows.active->pad,
-		windows.active->scroll - WINDOW_LINES + scrolled, 0,
+		window->pad,
+		WindowLines - window->scroll - PAGE_LINES + !!window->scroll, 0,
 		1, 0,
-		BOTTOM - 1 - scrolled, RIGHT
+		BOTTOM - 1 - !!window->scroll, RIGHT
 	);
-	if (scrolled) {
-		touchwin(scrollBar);
-		wnoutrefresh(scrollBar);
+	if (window->scroll) {
+		touchwin(marker);
+		wnoutrefresh(marker);
 	}
 	int y, x;
 	getyx(input, y, x);
@@ -382,7 +378,7 @@ static void statusUpdate(void) {
 }
 
 static void unmark(struct Window *window) {
-	if (!windowScrolled(window)) {
+	if (!window->scroll) {
 		window->heat = Cold;
 		window->unread = 0;
 		window->mark = false;
@@ -391,11 +387,13 @@ static void unmark(struct Window *window) {
 }
 
 static void windowScroll(struct Window *window, int n) {
-	if (window->scroll == BufferCap) window->mark = true;
+	if (!window->scroll) window->mark = true;
 	window->scroll += n;
-	if (window->scroll < WINDOW_LINES) window->scroll = WINDOW_LINES;
-	if (window->scroll > BufferCap) window->scroll = BufferCap;
-	if (window->scroll == BufferCap) unmark(window);
+	if (window->scroll > WindowLines - PAGE_LINES) {
+		window->scroll = WindowLines - PAGE_LINES;
+	}
+	if (window->scroll < 0) window->scroll = 0;
+	if (!window->scroll) unmark(window);
 }
 
 static int wordWidth(const char *str) {
@@ -477,9 +475,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
-	if (windowScrolled(window)) {
-		windowScroll(window, -lines);
-	}
+	if (window->scroll) windowScroll(window, lines);
 	if (heat > Warm) beep();
 }
 
@@ -696,15 +692,15 @@ static void keyCode(int code) {
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
-		break; case KEY_DOWN: windowScroll(window, +1);
+		break; case KEY_DOWN: windowScroll(window, -1);
 		break; case KEY_END: edit(id, EditTail, 0);
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHead, 0);
 		break; case KEY_LEFT: edit(id, EditPrev, 0);
-		break; case KEY_NPAGE: windowScroll(window, +(WINDOW_LINES - 2));
-		break; case KEY_PPAGE: windowScroll(window, -(WINDOW_LINES - 2));
+		break; case KEY_NPAGE: windowScroll(window, -(PAGE_LINES - 2));
+		break; case KEY_PPAGE: windowScroll(window, +(PAGE_LINES - 2));
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
-		break; case KEY_UP: windowScroll(window, -1);
+		break; case KEY_UP: windowScroll(window, +1);
 		
 		break; default: {
 			if (code >= KeyMeta0 && code <= KeyMeta9) {
