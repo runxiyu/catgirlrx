@@ -151,6 +151,7 @@ enum Edit {
 	EditRight,
 	EditKill,
 	EditErase,
+	EditDelete,
 	EditInsert,
 	EditComplete,
 	EditEnter,

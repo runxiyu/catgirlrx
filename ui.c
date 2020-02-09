@@ -625,6 +625,7 @@ static void keyCode(int code) {
 		break; case KeyMetaM: waddch(windows.active->pad, '\n');
 
 		break; case KEY_BACKSPACE: edit(id, EditErase, 0);
+		break; case KEY_DC: edit(id, EditDelete, 0);
 		break; case KEY_END: edit(id, EditEnd, 0);
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHome, 0);
@@ -645,6 +646,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'?': edit(id, EditErase, 0);
 		break; case L'A': edit(id, EditHome, 0);
 		break; case L'B': edit(id, EditLeft, 0);
+		break; case L'D': edit(id, EditDelete, 0);
 		break; case L'E': edit(id, EditEnd, 0);
 		break; case L'F': edit(id, EditRight, 0);
 		break; case L'H': edit(id, EditErase, 0);
