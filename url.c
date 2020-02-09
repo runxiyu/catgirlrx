@@ -14,12 +14,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
+#include <unistd.h>
 
 #include "chat.h"
 
@@ -55,26 +58,31 @@ static void compile(void) {
 	errx(EX_SOFTWARE, "regcomp: %s: %s", buf, Pattern);
 }
 
+struct URL {
+	size_t id;
+	char *nick;
+	char *url;
+};
+
 enum { Cap = 32 };
 static struct {
-	size_t ids[Cap];
-	char *nicks[Cap];
-	char *urls[Cap];
+	struct URL urls[Cap];
 	size_t len;
 } ring;
+static_assert(!(Cap & (Cap - 1)), "Cap is power of two");
 
-static void push(size_t id, const char *nick, const char *url, size_t len) {
-	size_t i = ring.len++ % Cap;
-	free(ring.nicks[i]);
-	free(ring.urls[i]);
-	ring.ids[i] = id;
-	ring.nicks[i] = NULL;
+static void push(size_t id, const char *nick, const char *str, size_t len) {
+	struct URL *url = &ring.urls[ring.len++ % Cap];
+	free(url->nick);
+	free(url->url);
+	url->id = id;
+	url->nick = NULL;
 	if (nick) {
-		ring.nicks[i] = strdup(nick);
-		if (!ring.nicks[i]) err(EX_OSERR, "strdup");
+		url->nick = strdup(nick);
+		if (!url->nick) err(EX_OSERR, "strdup");
 	}
-	ring.urls[i] = strndup(url, len);
-	if (!ring.urls[i]) err(EX_OSERR, "strndup");
+	url->url = strndup(str, len);
+	if (!url->url) err(EX_OSERR, "strndup");
 }
 
 void urlScan(size_t id, const char *nick, const char *mesg) {
@@ -87,10 +95,45 @@ void urlScan(size_t id, const char *nick, const char *mesg) {
 	}
 }
 
+static const char *OpenBins[] = { "open", "xdg-open" };
+
+static void urlOpen(const char *url) {
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) return;
+
+	close(STDIN_FILENO);
+	dup2(procPipe[1], STDOUT_FILENO);
+	dup2(procPipe[1], STDERR_FILENO);
+	for (size_t i = 0; i < ARRAY_LEN(OpenBins); ++i) {
+		execlp(OpenBins[i], OpenBins[i], url, NULL);
+		if (errno != ENOENT) {
+			warn("%s", OpenBins[i]);
+			_exit(EX_CONFIG);
+		}
+	}
+	warnx("no open utility found");
+	_exit(EX_CONFIG);
+}
+
 void urlOpenCount(size_t id, size_t count) {
-	// TODO
+	for (size_t i = 1; i <= Cap; ++i) {
+		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
+		if (!url->url) break;
+		if (url->id != id) continue;
+		urlOpen(url->url);
+		if (!--count) break;
+	}
 }
 
 void urlOpenMatch(size_t id, const char *str) {
-	// TODO
+	for (size_t i = 1; i <= Cap; ++i) {
+		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
+		if (!url->url) break;
+		if (url->id != id) continue;
+		if ((url->nick && !strcmp(url->nick, str)) || strstr(url->url, str)) {
+			urlOpen(url->url);
+			break;
+		}
+	}
 }
