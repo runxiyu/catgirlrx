@@ -87,7 +87,7 @@ static void tabComplete(size_t id) {
 		tab.len = tab.pre;
 	}
 
-	char mbs[MB_LEN_MAX * tab.pre + 1];
+	char mbs[MB_LEN_MAX * Cap];
 	const wchar_t *ptr = &buf[tab.pos];
 	size_t n = wcsnrtombs(mbs, &ptr, tab.pre, sizeof(mbs) - 1, NULL);
 	assert(n != (size_t)-1);
@@ -100,7 +100,7 @@ static void tabComplete(size_t id) {
 		return;
 	}
 
-	wchar_t wcs[strlen(comp) + 1];
+	wchar_t wcs[Cap];
 	n = mbstowcs(wcs, comp, sizeof(wcs));
 	assert(n != (size_t)-1);
 	if (tab.pos + n + 2 > Cap) {
