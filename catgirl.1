@@ -195,6 +195,19 @@ Switch to window by number.
 .El
 .
 .Sh KEY BINDINGS
+The
+.Nm
+interface provides
+.Xr emacs 1 Ns -like
+line editing
+as well as keys for IRC formatting.
+The prefixes
+.Ic C-
+and
+.Ic M-
+represent the control and meta (alt)
+modifiers, respectively.
+.
 .Ss Line Editing
 .Bl -tag -width Ds -compact
 .It Ic C-a
@@ -219,6 +232,8 @@ Move to previous word.
 Delete next word.
 .It Ic M-f
 Move to next word.
+.It Ic Tab
+Complete nick, channel or command.
 .El
 .
 .Ss Window Keys
