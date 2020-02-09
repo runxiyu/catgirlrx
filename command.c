@@ -154,11 +154,16 @@ static void commandOpen(size_t id, char *params) {
 	}
 }
 
+static void commandCopy(size_t id, char *params) {
+	urlCopyMatch(id, params);
+}
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
 } Commands[] = {
 	{ "/close", commandClose },
+	{ "/copy", commandCopy },
 	{ "/debug", commandDebug },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },

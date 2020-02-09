@@ -9,6 +9,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl ev
+.Op Fl C Ar copy
 .Op Fl O Ar open
 .Op Fl a Ar auth
 .Op Fl c Ar cert
@@ -47,8 +48,17 @@ following their corresponding flags.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
+.It Fl C Ar util , Cm copy = Ar util
+Set the utility used by
+.Ic /copy .
+The default is the first available of
+.Xr pbcopy 1 ,
+.Xr wl-copy 1 ,
+.Xr xclip 1 ,
+.Xr xsel 1 .
+.
 .It Fl O Ar util , Cm open = Ar util
-Set the command used by
+Set the utility used by
 .Ic /open .
 The default is the first available of
 .Xr open 1 ,
@@ -160,6 +170,11 @@ Show or set the topic of the channel.
 .Bl -tag -width Ds
 .It Ic /close Op Ar name | num
 Close the named, numbered or current window.
+.It Ic /copy Op Ar nick | substring
+Copy the most recent URL from
+.Ar nick
+or matching
+.Ar substring .
 .It Ic /debug
 Toggle logging in the
 .Sy <debug>

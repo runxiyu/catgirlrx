@@ -122,6 +122,47 @@ static void urlOpen(const char *url) {
 	_exit(EX_CONFIG);
 }
 
+const char *urlCopyUtil;
+static const char *CopyUtils[] = { "pbcopy", "wl-copy", "xclip", "xsel" };
+
+static void urlCopy(const char *url) {
+	int rw[2];
+	int error = pipe(rw);
+	if (error) err(EX_OSERR, "pipe");
+
+	ssize_t len = write(rw[1], url, strlen(url));
+	if (len < 0) err(EX_IOERR, "write");
+
+	error = close(rw[1]);
+	if (error) err(EX_IOERR, "close");
+
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) {
+		close(rw[0]);
+		return;
+	}
+
+	dup2(rw[0], STDIN_FILENO);
+	dup2(procPipe[1], STDOUT_FILENO);
+	dup2(procPipe[1], STDERR_FILENO);
+	close(rw[0]);
+	if (urlCopyUtil) {
+		execlp(urlCopyUtil, urlCopyUtil, NULL);
+		warn("%s", urlCopyUtil);
+		_exit(EX_CONFIG);
+	}
+	for (size_t i = 0; i < ARRAY_LEN(CopyUtils); ++i) {
+		execlp(CopyUtils[i], CopyUtils[i], NULL);
+		if (errno != ENOENT) {
+			warn("%s", CopyUtils[i]);
+			_exit(EX_CONFIG);
+		}
+	}
+	warnx("no copy utility found");
+	_exit(EX_CONFIG);
+}
+
 void urlOpenCount(size_t id, size_t count) {
 	for (size_t i = 1; i <= Cap; ++i) {
 		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
@@ -139,6 +180,22 @@ void urlOpenMatch(size_t id, const char *str) {
 		if (url->id != id) continue;
 		if ((url->nick && !strcmp(url->nick, str)) || strstr(url->url, str)) {
 			urlOpen(url->url);
+			break;
+		}
+	}
+}
+
+void urlCopyMatch(size_t id, const char *str) {
+	for (size_t i = 1; i <= Cap; ++i) {
+		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
+		if (!url->url) break;
+		if (url->id != id) continue;
+		if (
+			!str
+			|| (url->nick && !strcmp(url->nick, str))
+			|| strstr(url->url, str)
+		) {
+			urlCopy(url->url);
 			break;
 		}
 	}
