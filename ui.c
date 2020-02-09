@@ -367,11 +367,20 @@ static void statusUpdate(void) {
 	fflush(stdout);
 }
 
-static void unmark(void) {
-	windows.active->heat = Cold;
-	windows.active->unread = 0;
-	windows.active->mark = false;
+static void unmark(struct Window *window) {
+	if (window->scroll < BufferCap) return;
+	window->heat = Cold;
+	window->unread = 0;
+	window->mark = false;
 	statusUpdate();
+}
+
+static void windowScroll(struct Window *window, int n) {
+	if (window->scroll == BufferCap) window->mark = true;
+	window->scroll += n;
+	if (window->scroll < WINDOW_LINES) window->scroll = WINDOW_LINES;
+	if (window->scroll > BufferCap) window->scroll = BufferCap;
+	if (window->scroll == BufferCap) unmark(window);
 }
 
 static int wordWidth(const char *str) {
@@ -388,11 +397,12 @@ static int wordWidth(const char *str) {
 	return width;
 }
 
-static void wordWrap(WINDOW *win, const char *str) {
+static int wordWrap(WINDOW *win, const char *str) {
 	int y, x, width;
 	getmaxyx(win, y, width);
 
 	size_t len;
+	int lines = 0;
 	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
@@ -409,6 +419,7 @@ static void wordWrap(WINDOW *win, const char *str) {
 			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
 			if (width - x - 1 <= wordWidth(word)) {
+				lines++;
 				waddch(win, '\n');
 				getyx(win, y, x);
 				wmove(win, y, align);
@@ -432,6 +443,7 @@ static void wordWrap(WINDOW *win, const char *str) {
 		waddnstr(win, str, len);
 		str += len;
 	}
+	return lines;
 }
 
 void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
@@ -439,15 +451,20 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 	time_t clock = (src ? *src : time(NULL));
 	bufferPush(&window->buffer, clock, str);
 
+	int lines = 1;
 	waddch(window->pad, '\n');
 	if (window->mark && heat > Cold) {
 		if (!window->unread++) {
+			lines++;
 			waddch(window->pad, '\n');
 		}
 		window->heat = heat;
 		statusUpdate();
 	}
-	wordWrap(window->pad, str);
+	lines += wordWrap(window->pad, str);
+	if (window->scroll < BufferCap) {
+		windowScroll(window, -lines);
+	}
 	if (heat > Warm) beep();
 }
 
@@ -573,7 +590,7 @@ static void windowShow(struct Window *window) {
 	windows.active = window;
 	windows.other->mark = true;
 	inputUpdate();
-	unmark();
+	unmark(windows.active);
 }
 
 void uiShowID(size_t id) {
@@ -645,11 +662,12 @@ static void showAuto(void) {
 }
 
 static void keyCode(int code) {
-	size_t id = windows.active->id;
+	struct Window *window = windows.active;
+	size_t id = window->id;
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
-		break; case KeyFocusIn:  unmark();
-		break; case KeyFocusOut: windows.active->mark = true;
+		break; case KeyFocusIn:  unmark(window);
+		break; case KeyFocusOut: window->mark = true;
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
@@ -659,15 +677,19 @@ static void keyCode(int code) {
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
-		break; case KeyMetaM: waddch(windows.active->pad, '\n');
+		break; case KeyMetaM: waddch(window->pad, '\n');
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
+		break; case KEY_DOWN: windowScroll(window, +1);
 		break; case KEY_END: edit(id, EditTail, 0);
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHead, 0);
 		break; case KEY_LEFT: edit(id, EditPrev, 0);
+		break; case KEY_NPAGE: windowScroll(window, +(WINDOW_LINES - 2));
+		break; case KEY_PPAGE: windowScroll(window, -(WINDOW_LINES - 2));
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
+		break; case KEY_UP: windowScroll(window, -1);
 		
 		break; default: {
 			if (code >= KeyMeta0 && code <= KeyMeta9) {
