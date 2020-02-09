@@ -71,6 +71,13 @@ static void commandMe(size_t id, char *params) {
 	commandPrivmsg(id, buf);
 }
 
+static void commandMsg(size_t id, char *params) {
+	(void)id;
+	char *nick = strsep(&params, " ");
+	if (!params) return;
+	ircFormat("PRIVMSG %s :%s\r\n", nick, params);
+}
+
 static void commandJoin(size_t id, char *params) {
 	size_t count = 1;
 	if (params) {
@@ -186,6 +193,7 @@ static const struct Handler {
 	{ "/help", commandHelp },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
+	{ "/msg", commandMsg },
 	{ "/names", commandNames },
 	{ "/nick", commandNick },
 	{ "/notice", commandNotice },
