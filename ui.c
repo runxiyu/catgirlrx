@@ -624,13 +624,13 @@ static void keyCode(int code) {
 
 		break; case KeyMetaM: waddch(windows.active->pad, '\n');
 
-		break; case KEY_BACKSPACE: edit(id, EditErase, 0);
-		break; case KEY_DC: edit(id, EditDelete, 0);
-		break; case KEY_END: edit(id, EditEnd, 0);
+		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
+		break; case KEY_DC: edit(id, EditDeleteNext, 0);
+		break; case KEY_END: edit(id, EditTail, 0);
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
-		break; case KEY_HOME: edit(id, EditHome, 0);
-		break; case KEY_LEFT: edit(id, EditLeft, 0);
-		break; case KEY_RIGHT: edit(id, EditRight, 0);
+		break; case KEY_HOME: edit(id, EditHead, 0);
+		break; case KEY_LEFT: edit(id, EditPrev, 0);
+		break; case KEY_RIGHT: edit(id, EditNext, 0);
 		
 		break; default: {
 			if (code >= KeyMeta0 && code <= KeyMeta9) {
@@ -643,17 +643,18 @@ static void keyCode(int code) {
 static void keyCtrl(wchar_t ch) {
 	size_t id = windows.active->id;
 	switch (ch ^ L'@') {
-		break; case L'?': edit(id, EditErase, 0);
-		break; case L'A': edit(id, EditHome, 0);
-		break; case L'B': edit(id, EditLeft, 0);
-		break; case L'D': edit(id, EditDelete, 0);
-		break; case L'E': edit(id, EditEnd, 0);
-		break; case L'F': edit(id, EditRight, 0);
-		break; case L'H': edit(id, EditErase, 0);
+		break; case L'?': edit(id, EditDeletePrev, 0);
+		break; case L'A': edit(id, EditHead, 0);
+		break; case L'B': edit(id, EditPrev, 0);
+		break; case L'D': edit(id, EditDeleteNext, 0);
+		break; case L'E': edit(id, EditTail, 0);
+		break; case L'F': edit(id, EditNext, 0);
+		break; case L'H': edit(id, EditDeletePrev, 0);
 		break; case L'I': edit(id, EditComplete, 0);
 		break; case L'J': edit(id, EditEnter, 0);
+		break; case L'K': edit(id, EditKillNext, 0);
 		break; case L'L': clearok(curscr, true);
-		break; case L'U': edit(id, EditKill, 0);
+		break; case L'U': edit(id, EditKillPrev, 0);
 	}
 }
 

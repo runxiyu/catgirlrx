@@ -133,14 +133,15 @@ static void tabReject(void) {
 void edit(size_t id, enum Edit op, wchar_t ch) {
 	size_t init = pos;
 	switch (op) {
-		break; case EditHome:  pos = 0;
-		break; case EditEnd:   pos = len;
-		break; case EditLeft:  if (pos) pos--;
-		break; case EditRight: if (pos < len) pos++;
+		break; case EditHead: pos = 0;
+		break; case EditTail: pos = len;
+		break; case EditPrev: if (pos) pos--;
+		break; case EditNext: if (pos < len) pos++;
 
-		break; case EditKill:   len = pos = 0;
-		break; case EditErase:  if (pos) delete(--pos, 1);
-		break; case EditDelete: delete(pos, 1);
+		break; case EditDeletePrev: if (pos) delete(--pos, 1);
+		break; case EditDeleteNext: delete(pos, 1);
+		break; case EditKillPrev: delete(0, pos); pos = 0;
+		break; case EditKillNext: delete(pos, len - pos);
 
 		break; case EditInsert: {
 			reserve(pos, 1);
