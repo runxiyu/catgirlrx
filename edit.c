@@ -137,6 +137,14 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 		break; case EditTail: pos = len;
 		break; case EditPrev: if (pos) pos--;
 		break; case EditNext: if (pos < len) pos++;
+		break; case EditPrevWord: {
+			if (pos) pos--;
+			while (pos && buf[pos - 1] != L' ') pos--;
+		}
+		break; case EditNextWord: {
+			if (pos < len) pos++;
+			while (pos < len && buf[pos] != L' ') pos++;
+		}
 
 		break; case EditDeletePrev: if (pos) delete(--pos, 1);
 		break; case EditDeleteNext: delete(pos, 1);

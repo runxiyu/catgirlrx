@@ -149,6 +149,8 @@ enum Edit {
 	EditTail,
 	EditPrev,
 	EditNext,
+	EditPrevWord,
+	EditNextWord,
 	EditKillPrev,
 	EditKillNext,
 	EditDeletePrev,

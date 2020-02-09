@@ -192,6 +192,8 @@ static void errExit(void) {
 	X(KeyMeta7, "\0337") \
 	X(KeyMeta8, "\0338") \
 	X(KeyMeta9, "\0339") \
+	X(KeyMetaB, "\033b") \
+	X(KeyMetaF, "\033f") \
 	X(KeyMetaM, "\33m") \
 	X(KeyFocusIn, "\33[I") \
 	X(KeyFocusOut, "\33[O") \
@@ -622,6 +624,8 @@ static void keyCode(int code) {
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
+		break; case KeyMetaB: edit(id, EditPrevWord, 0);
+		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaM: waddch(windows.active->pad, '\n');
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
