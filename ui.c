@@ -199,6 +199,7 @@ static void errExit(void) {
 	X(KeyMetaD, "\33d") \
 	X(KeyMetaF, "\33f") \
 	X(KeyMetaM, "\33m") \
+	X(KeyMetaSlash, "\33/") \
 	X(KeyFocusIn, "\33[I") \
 	X(KeyFocusOut, "\33[O") \
 	X(KeyPasteOn, "\33[200~") \
@@ -651,6 +652,8 @@ static void keyCode(int code) {
 		break; case KeyFocusOut: windows.active->mark = true;
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
+
+		break; case KeyMetaSlash: windowShow(windows.other);
 
 		break; case KeyMetaA: showAuto();
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
