@@ -578,7 +578,11 @@ void uiShowNum(size_t num) {
 static void windowClose(struct Window *window) {
 	if (window->id == Network) return;
 	if (windows.active == window) {
-		windowShow(window->prev ? window->prev : window->next);
+		if (windows.other && windows.other != window) {
+			windowShow(windows.other);
+		} else {
+			windowShow(window->prev ? window->prev : window->next);
+		}
 	}
 	if (windows.other == window) windows.other = NULL;
 	windowRemove(window);
