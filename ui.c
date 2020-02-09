@@ -644,7 +644,9 @@ static void keyCtrl(wchar_t ch) {
 	switch (ch ^ L'@') {
 		break; case L'?': edit(id, EditErase, 0);
 		break; case L'A': edit(id, EditHome, 0);
+		break; case L'B': edit(id, EditLeft, 0);
 		break; case L'E': edit(id, EditEnd, 0);
+		break; case L'F': edit(id, EditRight, 0);
 		break; case L'H': edit(id, EditErase, 0);
 		break; case L'I': edit(id, EditComplete, 0);
 		break; case L'J': edit(id, EditEnter, 0);
