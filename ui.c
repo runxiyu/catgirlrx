@@ -48,6 +48,7 @@
 
 static WINDOW *status;
 static WINDOW *input;
+static WINDOW *scrollBar;
 
 enum { BufferCap = 512 };
 struct Buffer {
@@ -117,6 +118,10 @@ static struct Window *windowFor(size_t id) {
 
 	windowAdd(window);
 	return window;
+}
+
+static bool windowScrolled(struct Window *window) {
+	return window->scroll < BufferCap;
 }
 
 static short colorPairs;
@@ -238,18 +243,27 @@ void uiInit(void) {
 	keypad(input, true);
 	nodelay(input, true);
 
+	scrollBar = newwin(1, COLS, LINES - 2, 0);
+	short fg = 8 + COLOR_BLACK;
+	wbkgd(scrollBar, '~' | colorAttr(fg) | COLOR_PAIR(colorPair(fg, -1)));
+
 	windows.active = windowFor(Network);
 	uiShow();
 }
 
 void uiDraw(void) {
 	wnoutrefresh(status);
+	int scrolled = windowScrolled(windows.active);
 	pnoutrefresh(
 		windows.active->pad,
-		windows.active->scroll - WINDOW_LINES, 0,
+		windows.active->scroll - WINDOW_LINES + scrolled, 0,
 		1, 0,
-		BOTTOM - 1, RIGHT
+		BOTTOM - 1 - scrolled, RIGHT
 	);
+	if (scrolled) {
+		touchwin(scrollBar);
+		wnoutrefresh(scrollBar);
+	}
 	int y, x;
 	getyx(input, y, x);
 	pnoutrefresh(
@@ -368,10 +382,11 @@ static void statusUpdate(void) {
 }
 
 static void unmark(struct Window *window) {
-	if (window->scroll < BufferCap) return;
-	window->heat = Cold;
-	window->unread = 0;
-	window->mark = false;
+	if (!windowScrolled(window)) {
+		window->heat = Cold;
+		window->unread = 0;
+		window->mark = false;
+	}
 	statusUpdate();
 }
 
@@ -462,7 +477,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
-	if (window->scroll < BufferCap) {
+	if (windowScrolled(window)) {
 		windowScroll(window, -lines);
 	}
 	if (heat > Warm) beep();
