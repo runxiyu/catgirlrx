@@ -146,10 +146,23 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 			while (pos < len && buf[pos] != L' ') pos++;
 		}
 
-		break; case EditDeletePrev: if (pos) delete(--pos, 1);
-		break; case EditDeleteNext: delete(pos, 1);
 		break; case EditDeleteHead: delete(0, pos); pos = 0;
 		break; case EditDeleteTail: delete(pos, len - pos);
+		break; case EditDeletePrev: if (pos) delete(--pos, 1);
+		break; case EditDeleteNext: delete(pos, 1);
+		break; case EditDeletePrevWord: {
+			if (!pos) break;
+			size_t word = pos - 1;
+			while (word && buf[word - 1] != L' ') word--;
+			delete(word, pos - word);
+			pos = word;
+		}
+		break; case EditDeleteNextWord: {
+			if (pos == len) break;
+			size_t word = pos + 1;
+			while (word < len && buf[word] != L' ') word++;
+			delete(pos, word - pos);
+		}
 
 		break; case EditInsert: {
 			reserve(pos, 1);

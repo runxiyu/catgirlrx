@@ -192,8 +192,9 @@ static void errExit(void) {
 	X(KeyMeta7, "\0337") \
 	X(KeyMeta8, "\0338") \
 	X(KeyMeta9, "\0339") \
-	X(KeyMetaB, "\033b") \
-	X(KeyMetaF, "\033f") \
+	X(KeyMetaB, "\33b") \
+	X(KeyMetaD, "\33d") \
+	X(KeyMetaF, "\33f") \
 	X(KeyMetaM, "\33m") \
 	X(KeyFocusIn, "\33[I") \
 	X(KeyFocusOut, "\33[O") \
@@ -625,6 +626,7 @@ static void keyCode(int code) {
 		break; case KeyPasteOff:; // TODO
 
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
+		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaM: waddch(windows.active->pad, '\n');
 
@@ -659,6 +661,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'K': edit(id, EditDeleteTail, 0);
 		break; case L'L': clearok(curscr, true);
 		break; case L'U': edit(id, EditDeleteHead, 0);
+		break; case L'W': edit(id, EditDeletePrevWord, 0);
 	}
 }
 
