@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #include "chat.h"
 
@@ -150,11 +151,11 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 		break; case EditNext: if (pos < len) pos++;
 		break; case EditPrevWord: {
 			if (pos) pos--;
-			while (pos && buf[pos - 1] != L' ') pos--;
+			while (pos && !iswspace(buf[pos - 1])) pos--;
 		}
 		break; case EditNextWord: {
 			if (pos < len) pos++;
-			while (pos < len && buf[pos] != L' ') pos++;
+			while (pos < len && !iswspace(buf[pos])) pos++;
 		}
 
 		break; case EditDeleteHead: delete(0, pos); pos = 0;
@@ -164,14 +165,14 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 		break; case EditDeletePrevWord: {
 			if (!pos) break;
 			size_t word = pos - 1;
-			while (word && buf[word - 1] != L' ') word--;
+			while (word && !iswspace(buf[word - 1])) word--;
 			delete(word, pos - word);
 			pos = word;
 		}
 		break; case EditDeleteNextWord: {
 			if (pos == len) break;
 			size_t word = pos + 1;
-			while (word < len && buf[word] != L' ') word++;
+			while (word < len && !iswspace(buf[word])) word++;
 			delete(pos, word - pos);
 		}
 		break; case EditPaste: {
