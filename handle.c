@@ -406,34 +406,25 @@ static const char *colorMentions(size_t id, struct Message *msg) {
 	}
 
 	static char buf[1024];
-	size_t len = 0;
+	FILE *str = fmemopen(buf, sizeof(buf), "w");
+	if (!str) err(EX_OSERR, "fmemopen");
+
 	while (*mention) {
 		size_t skip = strspn(mention, ", ");
-		int n = snprintf(
-			&buf[len], sizeof(buf) - len,
-			"%.*s", (int)skip, mention
-		);
-		assert(n >= 0 && len + n < sizeof(buf));
-		len += n;
+		fwrite(mention, skip, 1, str);
 		mention += skip;
 
-		size_t word = strcspn(mention, ", ");
-		char punct = mention[word];
-		mention[word] = '\0';
-
-		n = snprintf(
-			&buf[len], sizeof(buf) - len,
-			"\3%02d%s\3", completeColor(id, mention), mention
-		);
-		assert(n > 0 && len + n < sizeof(buf));
-		len += n;
-
-		mention[word] = punct;
-		mention += word;
+		size_t len = strcspn(mention, ", ");
+		char punct = mention[len];
+		mention[len] = '\0';
+		fprintf(str, "\3%02d%s\3", completeColor(id, mention), mention);
+		mention[len] = punct;
+		mention += len;
 	}
-	assert(len + 1 < sizeof(buf));
-	buf[len++] = final;
-	buf[len] = '\0';
+	fputc(final, str);
+
+	fclose(str);
+	buf[sizeof(buf) - 1] = '\0';
 	return buf;
 }
 
