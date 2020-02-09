@@ -157,6 +157,7 @@ static const char *EnterPasteMode = "\33[?2004h";
 static const char *ExitPasteMode  = "\33[?2004l";
 
 static bool hidden;
+static bool waiting;
 
 void uiShow(void) {
 	putp(EnterFocusMode);
@@ -204,6 +205,7 @@ static void errExit(void) {
 	X(KeyMetaB, "\33b") \
 	X(KeyMetaD, "\33d") \
 	X(KeyMetaF, "\33f") \
+	X(KeyMetaL, "\33l") \
 	X(KeyMetaM, "\33m") \
 	X(KeyMetaU, "\33u") \
 	X(KeyMetaSlash, "\33/") \
@@ -528,6 +530,37 @@ static void resize(void) {
 	statusUpdate();
 }
 
+static void bufferList(struct Buffer *buffer) {
+	uiHide();
+	waiting = true;
+	for (size_t i = 0; i < BufferCap; ++i) {
+		time_t time = buffer->times[(buffer->len + i) % BufferCap];
+		const char *line = buffer->lines[(buffer->len + i) % BufferCap];
+		if (!line) continue;
+
+		struct tm *tm = localtime(&time);
+		if (!tm) continue;
+		char buf[sizeof("[00:00:00]")];
+		strftime(buf, sizeof(buf), "[%T]", tm);
+		vid_attr(colorAttr(mapColor(Gray)), colorPair(mapColor(Gray), -1), NULL);
+		printf("%s\t", buf);
+
+		size_t len;
+		struct Style style = Reset;
+		while (*line) {
+			styleParse(&style, &line, &len);
+			vid_attr(
+				style.attr | colorAttr(mapColor(style.fg)),
+				colorPair(mapColor(style.fg), mapColor(style.bg)),
+				NULL
+			);
+			if (len) printf("%.*s", (int)len, line);
+			line += len;
+		}
+		printf("\n");
+	}
+}
+
 static void inputAdd(struct Style *style, const char *str) {
 	size_t len;
 	while (*str) {
@@ -702,6 +735,7 @@ static void keyCode(int code) {
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
+		break; case KeyMetaL: bufferList(&window->buffer);
 		break; case KeyMetaM: waddch(window->pad, '\n');
 		break; case KeyMetaU: windowScrollUnread(window);
 
@@ -760,7 +794,16 @@ static void keyStyle(wchar_t ch) {
 }
 
 void uiRead(void) {
-	if (hidden) return;
+	if (hidden) {
+		if (waiting) {
+			uiShow();
+			flushinp();
+			waiting = false;
+		} else {
+			return;
+		}
+	}
+
 	int ret;
 	wint_t ch;
 	static bool style;
