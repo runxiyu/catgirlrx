@@ -292,7 +292,6 @@ static void handleQuit(struct Message *msg) {
 
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
-	if (!replies.names) return;
 	size_t id = idFor(msg->params[2]);
 	char buf[1024];
 	size_t len = 0;
@@ -303,6 +302,7 @@ static void handleReplyNames(struct Message *msg) {
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
+		if (!replies.names) continue;
 		int n = snprintf(
 			&buf[len], sizeof(buf) - len,
 			"%s\3%02d%s\3", (len ? ", " : ""), color, nick
@@ -310,6 +310,7 @@ static void handleReplyNames(struct Message *msg) {
 		assert(n > 0 && len + n < sizeof(buf));
 		len += n;
 	}
+	if (!replies.names) return;
 	uiFormat(
 		id, Cold, tagTime(msg),
 		"In \3%02d%s\3 are %s",
