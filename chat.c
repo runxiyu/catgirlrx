@@ -191,6 +191,7 @@ int main(int argc, char *argv[]) {
 		if (signals[SIGINT] || signals[SIGTERM]) break;
 
 		if (signals[SIGCHLD]) {
+			signals[SIGCHLD] = 0;
 			int status;
 			while (0 < waitpid(-1, &status, WNOHANG)) {
 				if (WIFEXITED(status) && WEXITSTATUS(status)) {
@@ -206,6 +207,7 @@ int main(int argc, char *argv[]) {
 					);
 				}
 			}
+			uiShow();
 		}
 
 		if (signals[SIGWINCH]) {

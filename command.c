@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "chat.h"
 
@@ -158,6 +159,23 @@ static void commandCopy(size_t id, char *params) {
 	urlCopyMatch(id, params);
 }
 
+static void commandHelp(size_t id, char *params) {
+	(void)id;
+	uiHide();
+
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) return;
+
+	char buf[256];
+	snprintf(buf, sizeof(buf), "ip%s$", (params ? params : "COMMANDS"));
+	setenv("LESS", buf, 1);
+	execlp("man", "man", "1", "catgirl", NULL);
+	dup2(procPipe[1], STDERR_FILENO);
+	warn("man");
+	_exit(EX_UNAVAILABLE);
+}
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
@@ -165,6 +183,7 @@ static const struct Handler {
 	{ "/close", commandClose },
 	{ "/copy", commandCopy },
 	{ "/debug", commandDebug },
+	{ "/help", commandHelp },
 	{ "/join", commandJoin },
 	{ "/me", commandMe },
 	{ "/names", commandNames },

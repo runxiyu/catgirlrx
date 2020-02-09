@@ -156,13 +156,18 @@ static const char *ExitFocusMode  = "\33[?1004l";
 static const char *EnterPasteMode = "\33[?2004h";
 static const char *ExitPasteMode  = "\33[?2004l";
 
+static bool hidden;
+
 void uiShow(void) {
 	putp(EnterFocusMode);
 	putp(EnterPasteMode);
 	fflush(stdout);
+	hidden = false;
+	uiDraw();
 }
 
 void uiHide(void) {
+	hidden = true;
 	putp(ExitFocusMode);
 	putp(ExitPasteMode);
 	endwin();
@@ -250,6 +255,7 @@ void uiInit(void) {
 }
 
 void uiDraw(void) {
+	if (hidden) return;
 	wnoutrefresh(status);
 	struct Window *window = windows.active;
 	pnoutrefresh(
@@ -755,6 +761,7 @@ static void keyStyle(wchar_t ch) {
 }
 
 void uiRead(void) {
+	if (hidden) return;
 	int ret;
 	wint_t ch;
 	static bool style;
