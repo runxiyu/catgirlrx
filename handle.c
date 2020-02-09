@@ -157,7 +157,7 @@ static void handleErrorSASLFail(struct Message *msg) {
 static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
-	completeTouch(None, self.nick, Default);
+	completeTouch(Network, self.nick, Default);
 	if (self.join) {
 		size_t count = 1;
 		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
