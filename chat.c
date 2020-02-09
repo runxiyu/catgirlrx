@@ -16,6 +16,7 @@
 
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <locale.h>
 #include <poll.h>
 #include <signal.h>
@@ -163,6 +164,10 @@ int main(int argc, char *argv[]) {
 
 	int error = pipe(procPipe);
 	if (error) err(EX_OSERR, "pipe");
+
+	fcntl(irc, F_SETFD, FD_CLOEXEC);
+	fcntl(procPipe[0], F_SETFD, FD_CLOEXEC);
+	fcntl(procPipe[1], F_SETFD, FD_CLOEXEC);
 
 	struct pollfd fds[3] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
