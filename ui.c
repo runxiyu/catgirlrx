@@ -71,10 +71,11 @@ struct Window {
 	size_t id;
 	struct Buffer buffer;
 	WINDOW *pad;
-	enum Heat heat;
-	int unread;
-	int scroll;
 	bool mark;
+	enum Heat heat;
+	int unreadCount;
+	int unreadLines;
+	int scroll;
 	struct Window *prev;
 	struct Window *next;
 };
@@ -200,6 +201,7 @@ static void errExit(void) {
 	X(KeyMetaD, "\33d") \
 	X(KeyMetaF, "\33f") \
 	X(KeyMetaM, "\33m") \
+	X(KeyMetaU, "\33u") \
 	X(KeyMetaSlash, "\33/") \
 	X(KeyFocusIn, "\33[I") \
 	X(KeyFocusOut, "\33[O") \
@@ -347,7 +349,7 @@ static void statusUpdate(void) {
 	int num;
 	const struct Window *window;
 	for (num = 0, window = windows.head; window; ++num, window = window->next) {
-		if (!window->unread && window != windows.active) continue;
+		if (!window->unreadCount && window != windows.active) continue;
 		int unread;
 		char buf[256];
 		snprintf(
@@ -355,10 +357,10 @@ static void statusUpdate(void) {
 			idColors[window->id], (window == windows.active ? "\26" : ""),
 			num, idNames[window->id],
 			&unread, (window->heat > Warm ? White : idColors[window->id]),
-			window->unread,
+			window->unreadCount,
 			idColors[window->id]
 		);
-		if (!window->unread) buf[unread] = '\0';
+		if (!window->unreadCount) buf[unread] = '\0';
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
@@ -368,9 +370,9 @@ static void statusUpdate(void) {
 	snprintf(
 		buf, sizeof(buf), "%s %s%n (%d)",
 		self.network, idNames[windows.active->id],
-		&unread, windows.active->unread
+		&unread, windows.active->unreadCount
 	);
-	if (!windows.active->unread) buf[unread] = '\0';
+	if (!windows.active->unreadCount) buf[unread] = '\0';
 	putp(to_status_line);
 	putp(buf);
 	putp(from_status_line);
@@ -380,7 +382,7 @@ static void statusUpdate(void) {
 static void unmark(struct Window *window) {
 	if (!window->scroll) {
 		window->heat = Cold;
-		window->unread = 0;
+		window->unreadCount = 0;
 		window->mark = false;
 	}
 	statusUpdate();
@@ -394,6 +396,11 @@ static void windowScroll(struct Window *window, int n) {
 	}
 	if (window->scroll < 0) window->scroll = 0;
 	if (!window->scroll) unmark(window);
+}
+
+static void windowScrollUnread(struct Window *window) {
+	window->scroll = 0;
+	windowScroll(window, window->unreadLines - PAGE_LINES);
 }
 
 static int wordWidth(const char *str) {
@@ -466,8 +473,9 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 
 	int lines = 1;
 	waddch(window->pad, '\n');
+	if (window->mark && !window->unreadCount) window->unreadLines = 0;
 	if (window->mark && heat > Cold) {
-		if (!window->unread++) {
+		if (!window->unreadCount++) {
 			lines++;
 			waddch(window->pad, '\n');
 		}
@@ -475,6 +483,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
+	if (window->mark) window->unreadLines += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (heat > Warm) beep();
 }
@@ -689,6 +698,7 @@ static void keyCode(int code) {
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaM: waddch(window->pad, '\n');
+		break; case KeyMetaU: windowScrollUnread(window);
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
