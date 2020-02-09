@@ -223,6 +223,12 @@ void command(size_t id, char *input) {
 			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
 		);
 		if (handler) {
+			if (input) {
+				input += strspn(input, " ");
+				size_t len = strlen(input);
+				while (input[len - 1] == ' ') input[--len] = '\0';
+				if (!input[0]) input = NULL;
+			}
 			if (input && !input[0]) input = NULL;
 			handler->fn(id, input);
 		} else {
