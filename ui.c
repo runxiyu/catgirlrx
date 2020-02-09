@@ -507,48 +507,54 @@ static void inputAdd(struct Style *style, const char *str) {
 
 static void inputUpdate(void) {
 	size_t id = windows.active->id;
-	const char *nick = self.nick;
-	const char *head = editHead();
+	size_t pos;
+	char *buf = editBuffer(&pos);
+
 	const char *skip = NULL;
-	const char *pre = "";
-	const char *suf = " ";
-	struct Style style = { .fg = self.color, .bg = Default };
-	struct Style reset = Reset;
-	if (NULL != (skip = commandIsPrivmsg(id, head))) {
-		pre = "<";
-		suf = "> ";
-	} else if (NULL != (skip = commandIsNotice(id, head))) {
-		pre = "-";
-		suf = "- ";
-		reset.fg = LightGray;
-	} else if (NULL != (skip = commandIsAction(id, head))) {
-		style.attr |= A_ITALIC;
-		pre = "* ";
-		reset.attr |= A_ITALIC;
+	struct Style init = { .fg = self.color, .bg = Default };
+	struct Style rest = Reset;
+	const char *prefix = "";
+	const char *prompt = (self.nick ? self.nick : "");
+	const char *suffix = "";
+	if (NULL != (skip = commandIsPrivmsg(id, buf))) {
+		prefix = "<"; suffix = "> ";
+	} else if (NULL != (skip = commandIsNotice(id, buf))) {
+		prefix = "-"; suffix = "- ";
+		rest.fg = LightGray;
+	} else if (NULL != (skip = commandIsAction(id, buf))) {
+		init.attr |= A_ITALIC;
+		prefix = "* "; suffix = " ";
+		rest.attr |= A_ITALIC;
 	} else if (id == Debug) {
-		skip = head;
-		style.fg = Gray;
-		pre = "<<";
-		nick = NULL;
+		skip = buf;
+		init.fg = Gray;
+		prompt = "<< ";
+	} else {
+		prompt = "";
+	}
+	if (skip && skip > &buf[pos]) {
+		skip = NULL;
+		prefix = prompt = suffix = "";
 	}
 
 	int y, x;
 	wmove(input, 0, 0);
-	if (skip) {
-		wattr_set(
-			input,
-			style.attr | colorAttr(mapColor(style.fg)),
-			colorPair(mapColor(style.fg), mapColor(style.bg)),
-			NULL
-		);
-		waddstr(input, pre);
-		if (nick) waddstr(input, nick);
-		waddstr(input, suf);
-	}
-	style = reset;
-	inputAdd(&style, (skip ? skip : head));
+	wattr_set(
+		input,
+		init.attr | colorAttr(mapColor(init.fg)),
+		colorPair(mapColor(init.fg), mapColor(init.bg)),
+		NULL
+	);
+	waddstr(input, prefix);
+	waddstr(input, prompt);
+	waddstr(input, suffix);
+	struct Style style = rest;
+	char p = buf[pos];
+	buf[pos] = '\0';
+	inputAdd(&style, (skip ? skip : buf));
 	getyx(input, y, x);
-	inputAdd(&style, editTail());
+	buf[pos] = p;
+	inputAdd(&style, &buf[pos]);
 	wclrtoeol(input);
 	wmove(input, y, x);
 }

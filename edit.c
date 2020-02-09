@@ -27,21 +27,22 @@ static wchar_t buf[Cap];
 static size_t len;
 static size_t pos;
 
-char *editHead(void) {
+char *editBuffer(size_t *mbsPos) {
 	static char mbs[MB_LEN_MAX * Cap];
-	const wchar_t *ptr = buf;
-	size_t n = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs) - 1, NULL);
-	assert(n != (size_t)-1);
-	mbs[n] = '\0';
-	return mbs;
-}
 
-char *editTail(void) {
-	static char mbs[MB_LEN_MAX * Cap];
-	const wchar_t *ptr = &buf[pos];
-	size_t n = wcsnrtombs(mbs, &ptr, len - pos, sizeof(mbs) - 1, NULL);
+	const wchar_t *ptr = buf;
+	size_t mbsLen = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs) - 1, NULL);
+	assert(mbsLen != (size_t)-1);
+	if (mbsPos) *mbsPos = mbsLen;
+
+	ptr = &buf[pos];
+	size_t n = wcsnrtombs(
+		&mbs[mbsLen], &ptr, len - pos, sizeof(mbs) - mbsLen - 1, NULL
+	);
 	assert(n != (size_t)-1);
-	mbs[n] = '\0';
+	mbsLen += n;
+
+	mbs[mbsLen] = '\0';
 	return mbs;
 }
 
@@ -78,7 +79,7 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 		}
 		break; case EditEnter: {
 			pos = 0;
-			command(id, editTail());
+			command(id, editBuffer(NULL));
 			len = 0;
 		}
 	}

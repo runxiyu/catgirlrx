@@ -156,8 +156,7 @@ enum Edit {
 	EditEnter,
 };
 void edit(size_t id, enum Edit op, wchar_t ch);
-char *editHead(void);
-char *editTail(void);
+char *editBuffer(size_t *pos);
 
 const char *complete(size_t id, const char *prefix);
 void completeAccept(void);
