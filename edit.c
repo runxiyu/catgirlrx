@@ -60,7 +60,78 @@ static void delete(size_t index, size_t count) {
 	len -= count;
 }
 
+static struct {
+	size_t pos;
+	size_t pre;
+	size_t len;
+} tab;
+
+static void tabComplete(size_t id) {
+	if (!tab.len) {
+		tab.pos = pos;
+		while (tab.pos && buf[tab.pos - 1] != L' ') tab.pos--;
+		if (tab.pos == pos) return;
+		tab.pre = pos - tab.pos;
+		tab.len = tab.pre;
+	}
+
+	char mbs[MB_LEN_MAX * tab.pre + 1];
+	const wchar_t *ptr = &buf[tab.pos];
+	size_t n = wcsnrtombs(mbs, &ptr, tab.pre, sizeof(mbs) - 1, NULL);
+	assert(n != (size_t)-1);
+	mbs[n] = '\0';
+
+	const char *comp = complete(id, mbs);
+	if (!comp) comp = complete(id, mbs);
+	if (!comp) {
+		tab.len = 0;
+		return;
+	}
+
+	wchar_t wcs[strlen(comp) + 1];
+	n = mbstowcs(wcs, comp, sizeof(wcs));
+	assert(n != (size_t)-1);
+	if (tab.pos + n + 2 > Cap) {
+		completeReject();
+		tab.len = 0;
+		return;
+	}
+
+	delete(tab.pos, tab.len);
+	if (wcs[0] != L'/' && !tab.pos) {
+		tab.len = n + 2;
+		reserve(tab.pos, tab.len);
+		buf[tab.pos + n + 0] = L':';
+		buf[tab.pos + n + 1] = L' ';
+	} else if (
+		tab.pos >= 2 && (buf[tab.pos - 2] == L':' || buf[tab.pos - 2] == L',')
+	) {
+		tab.len = n + 2;
+		reserve(tab.pos, tab.len);
+		buf[tab.pos - 2] = L',';
+		buf[tab.pos + n + 0] = L':';
+		buf[tab.pos + n + 1] = L' ';
+	} else {
+		tab.len = n + 1;
+		reserve(tab.pos, tab.len);
+		buf[tab.pos + n] = L' ';
+	}
+	memcpy(&buf[tab.pos], wcs, sizeof(*wcs) * n);
+	pos = tab.pos + tab.len;
+}
+
+static void tabAccept(void) {
+	completeAccept();
+	tab.len = 0;
+}
+
+static void tabReject(void) {
+	completeReject();
+	tab.len = 0;
+}
+
 void edit(size_t id, enum Edit op, wchar_t ch) {
+	size_t init = pos;
 	switch (op) {
 		break; case EditHome:  pos = 0;
 		break; case EditEnd:   pos = len;
@@ -75,12 +146,20 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 			if (pos < Cap) buf[pos++] = ch;
 		}
 		break; case EditComplete: {
-			// TODO
+			tabComplete(id);
+			return;
 		}
 		break; case EditEnter: {
-			pos = 0;
+			tabAccept();
 			command(id, editBuffer(NULL));
-			len = 0;
+			len = pos = 0;
+			return;
 		}
+	}
+
+	if (pos < init) {
+		tabReject();
+	} else {
+		tabAccept();
 	}
 }
