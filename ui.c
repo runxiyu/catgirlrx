@@ -166,12 +166,14 @@ void uiHide(void) {
 	endwin();
 }
 
-static void disableFlowControl(void) {
+// Gain use of C-q, C-s, C-z, C-y, C-o.
+static void acquireKeys(void) {
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
 	if (error) err(EX_OSERR, "tcgetattr");
 	term.c_iflag &= ~IXON;
 	term.c_cc[VSUSP] = _POSIX_VDISABLE;
+	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
 	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
 	if (error) err(EX_OSERR, "tcsetattr");
@@ -212,7 +214,7 @@ void uiInit(void) {
 	initscr();
 	cbreak();
 	noecho();
-	disableFlowControl();
+	acquireKeys();
 	def_prog_mode();
 	atexit(errExit);
 	colorInit();
@@ -662,6 +664,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'L': clearok(curscr, true);
 		break; case L'U': edit(id, EditDeleteHead, 0);
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
+		break; case L'Y': edit(id, EditPaste, 0);
 	}
 }
 

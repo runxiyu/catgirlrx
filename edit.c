@@ -16,6 +16,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
@@ -46,14 +47,24 @@ char *editBuffer(size_t *mbsPos) {
 	return mbs;
 }
 
-static void reserve(size_t index, size_t count) {
-	if (len + count > Cap) return;
+static struct {
+	wchar_t buf[Cap];
+	size_t len;
+} cut;
+
+static bool reserve(size_t index, size_t count) {
+	if (len + count > Cap) return false;
 	memmove(&buf[index + count], &buf[index], sizeof(*buf) * (len - index));
 	len += count;
+	return true;
 }
 
 static void delete(size_t index, size_t count) {
 	if (index + count > len) return;
+	if (count > 1) {
+		memcpy(cut.buf, &buf[index], sizeof(*buf) * count);
+		cut.len = count;
+	}
 	memmove(
 		&buf[index], &buf[index + count], sizeof(*buf) * (len - index - count)
 	);
@@ -163,10 +174,17 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 			while (word < len && buf[word] != L' ') word++;
 			delete(pos, word - pos);
 		}
+		break; case EditPaste: {
+			if (reserve(pos, cut.len)) {
+				memcpy(&buf[pos], cut.buf, sizeof(*buf) * cut.len);
+				pos += cut.len;
+			}
+		}
 
 		break; case EditInsert: {
-			reserve(pos, 1);
-			if (pos < Cap) buf[pos++] = ch;
+			if (reserve(pos, 1)) {
+				buf[pos++] = ch;
+			}
 		}
 		break; case EditComplete: {
 			tabComplete(id);

@@ -157,6 +157,7 @@ enum Edit {
 	EditDeleteNext,
 	EditDeletePrevWord,
 	EditDeleteNextWord,
+	EditPaste,
 	EditInsert,
 	EditComplete,
 	EditEnter,
