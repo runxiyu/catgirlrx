@@ -214,10 +214,17 @@ static void handleJoin(struct Message *msg) {
 		uiShowID(id);
 	}
 	completeTouch(id, msg->nick, hash(msg->user));
+	if (msg->params[2] && !strcasecmp(msg->params[2], msg->nick)) {
+		msg->params[2] = NULL;
+	}
 	uiFormat(
 		id, Cold, tagTime(msg),
-		"\3%02d%s\3\tarrives in \3%02d%s\3",
-		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+		"\3%02d%s\3\t%s%s%sarrives in \3%02d%s\3",
+		hash(msg->user), msg->nick,
+		(msg->params[2] ? "(" : ""),
+		(msg->params[2] ? msg->params[2] : ""),
+		(msg->params[2] ? ") " : ""),
+		hash(msg->params[0]), msg->params[0]
 	);
 }
 

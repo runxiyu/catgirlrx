@@ -59,6 +59,7 @@ static inline size_t idFor(const char *name) {
 }
 
 #define ENUM_CAP \
+	X("extended-join", CapExtendedJoin) \
 	X("sasl", CapSASL) \
 	X("server-time", CapServerTime) \
 	X("userhost-in-names", CapUserhostInNames)
