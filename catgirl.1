@@ -9,6 +9,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl ev
+.Op Fl O Ar open
 .Op Fl a Ar auth
 .Op Fl c Ar cert
 .Op Fl h Ar host
@@ -46,6 +47,13 @@ following their corresponding flags.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
+.It Fl O Ar util , Cm open = Ar util
+Set the command used by
+.Ic /open .
+The default is the first available of
+.Xr open 1 ,
+.Xr xdg-open 1 .
+.
 .It Fl a Ar user Ns : Ns Ar pass , Cm sasl-plain = Ar user Ns : Ns Ar pass
 Authenticate as
 .Ar user

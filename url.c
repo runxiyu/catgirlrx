@@ -95,7 +95,8 @@ void urlScan(size_t id, const char *nick, const char *mesg) {
 	}
 }
 
-static const char *OpenBins[] = { "open", "xdg-open" };
+const char *urlOpenUtil;
+static const char *OpenUtils[] = { "open", "xdg-open" };
 
 static void urlOpen(const char *url) {
 	pid_t pid = fork();
@@ -105,10 +106,15 @@ static void urlOpen(const char *url) {
 	close(STDIN_FILENO);
 	dup2(procPipe[1], STDOUT_FILENO);
 	dup2(procPipe[1], STDERR_FILENO);
-	for (size_t i = 0; i < ARRAY_LEN(OpenBins); ++i) {
-		execlp(OpenBins[i], OpenBins[i], url, NULL);
+	if (urlOpenUtil) {
+		execlp(urlOpenUtil, urlOpenUtil, url, NULL);
+		warn("%s", urlOpenUtil);
+		_exit(EX_CONFIG);
+	}
+	for (size_t i = 0; i < ARRAY_LEN(OpenUtils); ++i) {
+		execlp(OpenUtils[i], OpenUtils[i], url, NULL);
 		if (errno != ENOENT) {
-			warn("%s", OpenBins[i]);
+			warn("%s", OpenUtils[i]);
 			_exit(EX_CONFIG);
 		}
 	}

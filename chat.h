@@ -169,6 +169,7 @@ void completeClear(size_t id);
 size_t completeID(const char *str);
 enum Color completeColor(size_t id, const char *str);
 
+extern const char *urlOpenUtil;
 void urlScan(size_t id, const char *nick, const char *mesg);
 void urlOpenCount(size_t id, size_t count);
 void urlOpenMatch(size_t id, const char *str);

@@ -81,9 +81,10 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!a:c:eh:j:k:n:p:r:u:vw:";
+	const char *Opts = "!O:a:c:eh:j:k:n:p:r:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
+		{ "open", required_argument, NULL, 'O' },
 		{ "sasl-plain", required_argument, NULL, 'a' },
 		{ "cert", required_argument, NULL, 'c' },
 		{ "sasl-external", no_argument, NULL, 'e' },
@@ -103,6 +104,7 @@ int main(int argc, char *argv[]) {
 	while (0 < (opt = getopt_config(argc, argv, Opts, LongOpts, NULL))) {
 		switch (opt) {
 			break; case '!': insecure = true;
+			break; case 'O': urlOpenUtil = optarg;
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
