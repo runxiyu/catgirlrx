@@ -133,11 +133,11 @@ static void colorInit(void) {
 }
 
 static attr_t colorAttr(short fg) {
-	return (fg >= COLORS ? A_BOLD : A_NORMAL);
+	return (fg >= COLORS && fg < 16 ? A_BOLD : A_NORMAL);
 }
 
 static short colorPair(short fg, short bg) {
-	if (bg == -1) return 1 + fg;
+	if (bg == -1 && fg < 16) return 1 + fg;
 	fg %= COLORS;
 	bg %= COLORS;
 	for (short pair = 17; pair < colorPairs; ++pair) {
@@ -286,27 +286,32 @@ struct Style {
 };
 static const struct Style Reset = { A_NORMAL, Default, Default };
 
-static short mapColor(enum Color color) {
-	switch (color) {
-		break; case White:      return 8 + COLOR_WHITE;
-		break; case Black:      return 0 + COLOR_BLACK;
-		break; case Blue:       return 0 + COLOR_BLUE;
-		break; case Green:      return 0 + COLOR_GREEN;
-		break; case Red:        return 8 + COLOR_RED;
-		break; case Brown:      return 0 + COLOR_RED;
-		break; case Magenta:    return 0 + COLOR_MAGENTA;
-		break; case Orange:     return 0 + COLOR_YELLOW;
-		break; case Yellow:     return 8 + COLOR_YELLOW;
-		break; case LightGreen: return 8 + COLOR_GREEN;
-		break; case Cyan:       return 0 + COLOR_CYAN;
-		break; case LightCyan:  return 8 + COLOR_CYAN;
-		break; case LightBlue:  return 8 + COLOR_BLUE;
-		break; case Pink:       return 8 + COLOR_MAGENTA;
-		break; case Gray:       return 8 + COLOR_BLACK;
-		break; case LightGray:  return 0 + COLOR_WHITE;
-		break; default:         return -1;
-	}
-}
+static const short Colors[100] = {
+	[Default]    = -1,
+	[White]      = 8 + COLOR_WHITE,
+	[Black]      = 0 + COLOR_BLACK,
+	[Blue]       = 0 + COLOR_BLUE,
+	[Green]      = 0 + COLOR_GREEN,
+	[Red]        = 8 + COLOR_RED,
+	[Brown]      = 0 + COLOR_RED,
+	[Magenta]    = 0 + COLOR_MAGENTA,
+	[Orange]     = 0 + COLOR_YELLOW,
+	[Yellow]     = 8 + COLOR_YELLOW,
+	[LightGreen] = 8 + COLOR_GREEN,
+	[Cyan]       = 0 + COLOR_CYAN,
+	[LightCyan]  = 8 + COLOR_CYAN,
+	[LightBlue]  = 8 + COLOR_BLUE,
+	[Pink]       = 8 + COLOR_MAGENTA,
+	[Gray]       = 8 + COLOR_BLACK,
+	[LightGray]  = 0 + COLOR_WHITE,
+	52, 94, 100, 58, 22, 29, 23, 24, 17, 54, 53, 89,
+	88, 130, 142, 64, 28, 35, 30, 25, 18, 91, 90, 125,
+	124, 166, 184, 106, 34, 49, 37, 33, 19, 129, 127, 161,
+	196, 208, 226, 154, 46, 86, 51, 75, 21, 171, 201, 198,
+	203, 215, 227, 191, 83, 122, 87, 111, 63, 177, 207, 205,
+	217, 223, 229, 193, 157, 158, 159, 153, 147, 183, 219, 212,
+	16, 233, 235, 237, 239, 241, 244, 247, 250, 254, 231,
+};
 
 enum { B = '\2', C = '\3', O = '\17', R = '\26', I = '\35', U = '\37' };
 
@@ -342,8 +347,8 @@ static void statusAdd(const char *str) {
 		styleParse(&style, &str, &len);
 		wattr_set(
 			status,
-			style.attr | colorAttr(mapColor(style.fg)),
-			colorPair(mapColor(style.fg), mapColor(style.bg)),
+			style.attr | colorAttr(Colors[style.fg]),
+			colorPair(Colors[style.fg], Colors[style.bg]),
 			NULL
 		);
 		waddnstr(status, str, len);
@@ -471,8 +476,8 @@ static int wordWrap(WINDOW *win, const char *str) {
 
 		wattr_set(
 			win,
-			style.attr | colorAttr(mapColor(style.fg)),
-			colorPair(mapColor(style.fg), mapColor(style.bg)),
+			style.attr | colorAttr(Colors[style.fg]),
+			colorPair(Colors[style.fg], Colors[style.bg]),
 			NULL
 		);
 		waddnstr(win, str, len);
@@ -555,7 +560,7 @@ static void bufferList(struct Buffer *buffer) {
 		if (!tm) continue;
 		char buf[sizeof("[00:00:00]")];
 		strftime(buf, sizeof(buf), "[%T]", tm);
-		vid_attr(colorAttr(mapColor(Gray)), colorPair(mapColor(Gray), -1), NULL);
+		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
 		printf("%s\t", buf);
 
 		size_t len;
@@ -563,8 +568,8 @@ static void bufferList(struct Buffer *buffer) {
 		while (*line) {
 			styleParse(&style, &line, &len);
 			vid_attr(
-				style.attr | colorAttr(mapColor(style.fg)),
-				colorPair(mapColor(style.fg), mapColor(style.bg)),
+				style.attr | colorAttr(Colors[style.fg]),
+				colorPair(Colors[style.fg], Colors[style.bg]),
 				NULL
 			);
 			if (len) printf("%.*s", (int)len, line);
@@ -591,8 +596,8 @@ static void inputAdd(struct Style *style, const char *str) {
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
 		wattr_set(
 			input,
-			style->attr | colorAttr(mapColor(style->fg)),
-			colorPair(mapColor(style->fg), mapColor(style->bg)),
+			style->attr | colorAttr(Colors[style->fg]),
+			colorPair(Colors[style->fg], Colors[style->bg]),
 			NULL
 		);
 		waddnstr(input, str, len);
@@ -636,8 +641,8 @@ static void inputUpdate(void) {
 	wmove(input, 0, 0);
 	wattr_set(
 		input,
-		init.attr | colorAttr(mapColor(init.fg)),
-		colorPair(mapColor(init.fg), mapColor(init.bg)),
+		init.attr | colorAttr(Colors[init.fg]),
+		colorPair(Colors[init.fg], Colors[init.bg]),
 		NULL
 	);
 	waddstr(input, prefix);
