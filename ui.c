@@ -497,7 +497,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
-	if (window->mark) window->unreadLines += lines;
+	window->unreadLines += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (heat > Warm) beep();
 }
