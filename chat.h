@@ -199,16 +199,7 @@ static inline enum Color hash(const char *str) {
 		hash ^= *str;
 		hash *= 0x27220A95;
 	}
-	static const enum Color colors[] = {
-		Blue, Green, Red, Brown, Magenta, Orange, Yellow,
-		LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
-		16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-		28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-		40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-		52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-		64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
-	};
-	return colors[hash % ARRAY_LEN(colors)];
+	return 2 + hash % 74;
 }
 
 #define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
