@@ -415,7 +415,7 @@ static void windowScroll(struct Window *window, int n) {
 
 static void windowScrollUnread(struct Window *window) {
 	window->scroll = 0;
-	windowScroll(window, window->unreadLines - PAGE_LINES);
+	windowScroll(window, window->unreadLines - PAGE_LINES + 1);
 }
 
 static int wordWidth(const char *str) {
@@ -516,13 +516,18 @@ void uiFormat(
 
 static void reflow(struct Window *window) {
 	werase(window->pad);
-	wmove(window->pad, BufferCap - 1, 0);
+	wmove(window->pad, WindowLines - 1, 0);
+	window->unreadLines = 0;
 	struct Buffer *buffer = &window->buffer;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		char *line = buffer->lines[(buffer->len + i) % BufferCap];
 		if (!line) continue;
 		waddch(window->pad, '\n');
-		wordWrap(window->pad, line);
+		if (i >= (size_t)(BufferCap - window->unreadCount)) {
+			window->unreadLines += 1 + wordWrap(window->pad, line);
+		} else {
+			wordWrap(window->pad, line);
+		}
 	}
 }
 
