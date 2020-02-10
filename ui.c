@@ -697,12 +697,10 @@ void uiCloseNum(size_t num) {
 }
 
 static void showAuto(void) {
-	static bool origin;
-	if (!origin) {
-		windows.other = windows.active;
-		origin = true;
+	static struct Window *other;
+	if (windows.other != other) {
+		other = windows.active;
 	}
-	struct Window *other = windows.other;
 	for (struct Window *window = windows.head; window; window = window->next) {
 		if (window->heat < Hot) continue;
 		windowShow(window);
@@ -716,7 +714,6 @@ static void showAuto(void) {
 		return;
 	}
 	windowShow(windows.other);
-	origin = false;
 }
 
 static void keyCode(int code) {
