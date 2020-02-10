@@ -71,11 +71,11 @@ struct Window {
 	size_t id;
 	struct Buffer buffer;
 	WINDOW *pad;
+	int scroll;
 	bool mark;
 	enum Heat heat;
 	int unreadCount;
 	int unreadLines;
-	int scroll;
 	struct Window *prev;
 	struct Window *next;
 };
@@ -114,7 +114,7 @@ static struct Window *windowFor(size_t id) {
 	window->pad = newpad(WindowLines, COLS);
 	if (!window->pad) err(EX_OSERR, "newpad");
 	scrollok(window->pad, true);
-	wmove(window->pad, BufferCap - 1, 0);
+	wmove(window->pad, WindowLines - 1, 0);
 	window->mark = true;
 
 	windowAdd(window);
@@ -356,7 +356,7 @@ static void statusUpdate(void) {
 	int num;
 	const struct Window *window;
 	for (num = 0, window = windows.head; window; ++num, window = window->next) {
-		if (!window->unreadCount && window != windows.active) continue;
+		if (!window->heat && window != windows.active) continue;
 		int unread;
 		char buf[256];
 		snprintf(
@@ -367,7 +367,7 @@ static void statusUpdate(void) {
 			window->unreadCount,
 			idColors[window->id]
 		);
-		if (!window->unreadCount) buf[unread] = '\0';
+		if (!window->mark || !window->unreadCount) buf[unread] = '\0';
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
@@ -379,30 +379,38 @@ static void statusUpdate(void) {
 		self.network, idNames[windows.active->id],
 		&unread, windows.active->unreadCount
 	);
-	if (!windows.active->unreadCount) buf[unread] = '\0';
+	if (!windows.active->mark || !windows.active->unreadCount) {
+		buf[unread] = '\0';
+	}
 	putp(to_status_line);
 	putp(buf);
 	putp(from_status_line);
 	fflush(stdout);
 }
 
+static void mark(struct Window *window) {
+	if (window->scroll) return;
+	window->mark = true;
+	window->unreadCount = 0;
+	window->unreadLines = 0;
+}
+
 static void unmark(struct Window *window) {
 	if (!window->scroll) {
-		window->heat = Cold;
-		window->unreadCount = 0;
 		window->mark = false;
+		window->heat = Cold;
 	}
 	statusUpdate();
 }
 
 static void windowScroll(struct Window *window, int n) {
-	if (!window->scroll) window->mark = true;
+	mark(window);
 	window->scroll += n;
 	if (window->scroll > WindowLines - PAGE_LINES) {
 		window->scroll = WindowLines - PAGE_LINES;
 	}
 	if (window->scroll < 0) window->scroll = 0;
-	if (!window->scroll) unmark(window);
+	unmark(window);
 }
 
 static void windowScrollUnread(struct Window *window) {
@@ -480,7 +488,6 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 
 	int lines = 1;
 	waddch(window->pad, '\n');
-	if (window->mark && !window->unreadCount) window->unreadLines = 0;
 	if (window->mark && heat > Cold) {
 		if (!window->unreadCount++) {
 			lines++;
@@ -646,9 +653,9 @@ static void windowShow(struct Window *window) {
 	touchwin(window->pad);
 	windows.other = windows.active;
 	windows.active = window;
-	windows.other->mark = true;
-	inputUpdate();
+	mark(windows.other);
 	unmark(windows.active);
+	inputUpdate();
 }
 
 void uiShowID(size_t id) {
@@ -722,7 +729,7 @@ static void keyCode(int code) {
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
 		break; case KeyFocusIn:  unmark(window);
-		break; case KeyFocusOut: window->mark = true;
+		break; case KeyFocusOut: mark(window);
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
