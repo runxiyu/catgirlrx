@@ -133,13 +133,15 @@ static void colorInit(void) {
 }
 
 static attr_t colorAttr(short fg) {
-	return (fg >= COLORS && fg < 16 ? A_BOLD : A_NORMAL);
+	if (fg != COLOR_BLACK && fg % COLORS == COLOR_BLACK) return A_BOLD;
+	if (COLORS > 8) return A_NORMAL;
+	return (fg / COLORS & 1 ? A_BOLD : A_NORMAL);
 }
 
 static short colorPair(short fg, short bg) {
-	if (bg == -1 && fg < 16) return 1 + fg;
 	fg %= COLORS;
 	bg %= COLORS;
+	if (bg == -1 && fg < 16) return 1 + fg;
 	for (short pair = 17; pair < colorPairs; ++pair) {
 		short f, b;
 		pair_content(pair, &f, &b);
