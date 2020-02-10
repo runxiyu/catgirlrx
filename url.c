@@ -43,7 +43,7 @@ static const char *Pattern = {
 	"telnet|"
 	"vnc"
 	")"
-	":[^[:space:]>\"]+"
+	":([^[:space:]>\"()]|[(][^)]*[)])+"
 };
 static regex_t Regex;
 
