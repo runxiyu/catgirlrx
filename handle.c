@@ -490,19 +490,16 @@ static bool isMention(const struct Message *msg) {
 }
 
 static const char *colorMentions(size_t id, struct Message *msg) {
-	char *mention;
-	char final;
-	if (strchr(msg->params[1], ':')) {
-		mention = strsep(&msg->params[1], ":");
-		final = ':';
-	} else if (strchr(msg->params[1], ' ')) {
-		mention = strsep(&msg->params[1], " ");
-		final = ' ';
-	} else {
-		mention = msg->params[1];
-		msg->params[1] = "";
-		final = '\0';
+	char *split = strchr(msg->params[1], ':');
+	if (!split) split = strchr(msg->params[1], ' ');
+	if (!split) split = &msg->params[1][strlen(msg->params[1])];
+	for (char *ch = msg->params[1]; ch < split; ++ch) {
+		if (iscntrl(*ch)) return "";
 	}
+	char delimit = *split;
+	char *mention = msg->params[1];
+	msg->params[1] = (delimit ? &split[1] : split);
+	*split = '\0';
 
 	static char buf[1024];
 	FILE *str = fmemopen(buf, sizeof(buf), "w");
@@ -520,7 +517,7 @@ static const char *colorMentions(size_t id, struct Message *msg) {
 		mention[len] = punct;
 		mention += len;
 	}
-	fputc(final, str);
+	fputc(delimit, str);
 
 	fclose(str);
 	buf[sizeof(buf) - 1] = '\0';
