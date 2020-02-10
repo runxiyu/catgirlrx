@@ -1,4 +1,4 @@
-.Dd February  9, 2020
+.Dd February 10, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -10,6 +10,7 @@
 .Nm
 .Op Fl ev
 .Op Fl C Ar copy
+.Op Fl H Ar hash
 .Op Fl O Ar open
 .Op Fl a Ar auth
 .Op Fl c Ar cert
@@ -56,6 +57,10 @@ The default is the first available of
 .Xr wl-copy 1 ,
 .Xr xclip 1 ,
 .Xr xsel 1 .
+.
+.It Fl H Ar hash , Cm hash = Ar hash
+Set the initial value of
+the nick color hash function.
 .
 .It Fl O Ar util , Cm open = Ar util
 Set the utility used by

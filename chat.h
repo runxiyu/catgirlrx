@@ -190,9 +190,10 @@ int getopt_config(
 	const char *optstring, const struct option *longopts, int *longindex
 );
 
+extern uint32_t hashInit;
 static inline enum Color hash(const char *str) {
 	if (*str == '~') str++;
-	uint32_t hash = 0;
+	uint32_t hash = hashInit;
 	for (; *str; ++str) {
 		hash = (hash << 5) | (hash >> 27);
 		hash ^= *str;

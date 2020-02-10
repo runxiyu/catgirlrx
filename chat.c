@@ -21,6 +21,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,8 @@ enum Color idColors[IDCap] = {
 size_t idNext = Network + 1;
 
 struct Self self = { .color = Default };
+
+uint32_t hashInit;
 
 int procPipe[2] = { -1, -1 };
 
@@ -81,10 +84,11 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:O:a:c:eh:j:k:n:p:r:u:vw:";
+	const char *Opts = "!C:H:O:a:c:eh:j:k:n:p:r:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
+		{ "hash", required_argument, NULL, 'H' },
 		{ "open", required_argument, NULL, 'O' },
 		{ "sasl-plain", required_argument, NULL, 'a' },
 		{ "cert", required_argument, NULL, 'c' },
@@ -106,6 +110,7 @@ int main(int argc, char *argv[]) {
 		switch (opt) {
 			break; case '!': insecure = true;
 			break; case 'C': urlCopyUtil = optarg;
+			break; case 'H': hashInit = strtoul(optarg, NULL, 0);
 			break; case 'O': urlOpenUtil = optarg;
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
