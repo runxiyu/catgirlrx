@@ -527,6 +527,7 @@ static void reflow(struct Window *window) {
 }
 
 static void resize(void) {
+	mvwin(marker, LINES - 2, 0);
 	int height, width;
 	getmaxyx(windows.active->pad, height, width);
 	if (width == COLS) return;
