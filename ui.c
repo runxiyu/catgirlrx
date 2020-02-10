@@ -359,38 +359,45 @@ static void statusAdd(const char *str) {
 }
 
 static void statusUpdate(void) {
+	int otherUnread = 0;
+	enum Heat otherHeat = Cold;
 	wmove(status, 0, 0);
+
 	int num;
 	const struct Window *window;
 	for (num = 0, window = windows.head; window; ++num, window = window->next) {
 		if (!window->heat && window != windows.active) continue;
-		int unread;
+		if (window != windows.active) {
+			otherUnread += window->unreadCount;
+			if (window->heat > otherHeat) otherHeat = window->heat;
+		}
+		int trunc;
 		char buf[256];
 		snprintf(
 			buf, sizeof(buf), "\3%d%s %d %s %n(\3%02d%d\3%d) ",
 			idColors[window->id], (window == windows.active ? "\26" : ""),
 			num, idNames[window->id],
-			&unread, (window->heat > Warm ? White : idColors[window->id]),
+			&trunc, (window->heat > Warm ? White : idColors[window->id]),
 			window->unreadCount,
 			idColors[window->id]
 		);
-		if (!window->mark || !window->unreadCount) buf[unread] = '\0';
+		if (!window->mark || !window->unreadCount) buf[trunc] = '\0';
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
+	if (!to_status_line) return;
 
-	int unread;
-	char buf[256];
-	snprintf(
-		buf, sizeof(buf), "%s %s%n (%d)",
-		self.network, idNames[windows.active->id],
-		&unread, windows.active->unreadCount
-	);
-	if (!windows.active->mark || !windows.active->unreadCount) {
-		buf[unread] = '\0';
-	}
+	window = windows.active;
 	putp(to_status_line);
-	putp(buf);
+	printf("%s %s", self.network, idNames[window->id]);
+	if (window->mark && window->unreadCount) {
+		printf(
+			" (%d%s)", window->unreadCount, (window->heat > Warm ? "!" : "")
+		);
+	}
+	if (otherUnread) {
+		printf(" (+%d%s)", otherUnread, (otherHeat > Warm ? "!" : ""));
+	}
 	putp(from_status_line);
 	fflush(stdout);
 }
