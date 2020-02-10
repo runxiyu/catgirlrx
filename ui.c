@@ -493,7 +493,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 			lines++;
 			waddch(window->pad, '\n');
 		}
-		window->heat = heat;
+		if (window->heat < heat) window->heat = heat;
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
