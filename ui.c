@@ -454,7 +454,7 @@ static int wordWrap(WINDOW *win, const char *str) {
 			getyx(win, y, x);
 			const char *word = &str[strspn(str, " ")];
 			if (width - x - 1 <= wordWidth(word)) {
-				lines++;
+				lines += 1 + (align + wordWidth(word)) / width;
 				waddch(win, '\n');
 				getyx(win, y, x);
 				wmove(win, y, align);
