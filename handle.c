@@ -306,6 +306,9 @@ static void handleNick(struct Message *msg) {
 	}
 	size_t id;
 	while (None != (id = completeID(msg->nick))) {
+		if (!strcmp(idNames[id], msg->nick)) {
+			set(&idNames[id], msg->params[0]);
+		}
 		uiFormat(
 			id, Cold, tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3",
