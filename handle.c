@@ -529,7 +529,10 @@ static bool isMention(const struct Message *msg) {
 
 static const char *colorMentions(size_t id, struct Message *msg) {
 	char *split = strchr(msg->params[1], ':');
-	if (!split) split = strchr(msg->params[1], ' ');
+	if (!split) {
+		split = strchr(msg->params[1], ' ');
+		if (split) split = strchr(&split[1], ' ');
+	}
 	if (!split) split = &msg->params[1][strlen(msg->params[1])];
 	for (char *ch = msg->params[1]; ch < split; ++ch) {
 		if (iscntrl(*ch)) return "";
