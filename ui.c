@@ -885,20 +885,17 @@ void uiRead(void) {
 	inputUpdate();
 }
 
-static const size_t Signatures[] = {
+static const time_t Signatures[] = {
 	0x6C72696774616301,
 };
 
-static size_t signatureVersion(size_t signature) {
+static size_t signatureVersion(time_t signature) {
 	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
 		if (signature == Signatures[i]) return i;
 	}
-	err(EX_DATAERR, "unknown file signature %zX", signature);
+	err(EX_DATAERR, "unknown file signature %jX", (uintmax_t)signature);
 }
 
-static int writeSize(FILE *file, size_t value) {
-	return (fwrite(&value, sizeof(value), 1, file) ? 0 : -1);
-}
 static int writeTime(FILE *file, time_t time) {
 	return (fwrite(&time, sizeof(time), 1, file) ? 0 : -1);
 }
@@ -910,7 +907,7 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeSize(file, Signatures[0])) return -1;
+	if (writeTime(file, Signatures[0])) return -1;
 	const struct Window *window;
 	for (window = windows.head; window; window = window->next) {
 		if (writeString(file, idNames[window->id])) return -1;
@@ -926,13 +923,6 @@ int uiSave(const char *name) {
 	return fclose(file);
 }
 
-static size_t readSize(FILE *file) {
-	size_t value;
-	fread(&value, sizeof(value), 1, file);
-	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
-	return value;
-}
 static time_t readTime(FILE *file) {
 	time_t time;
 	fread(&time, sizeof(time), 1, file);
@@ -956,7 +946,13 @@ void uiLoad(const char *name) {
 		return;
 	}
 
-	size_t signature = readSize(file);
+	time_t signature;
+	fread(&signature, sizeof(signature), 1, file);
+	if (ferror(file)) err(EX_IOERR, "fread");
+	if (feof(file)) {
+		fclose(file);
+		return;
+	}
 	signatureVersion(signature);
 
 	char *buf = NULL;
