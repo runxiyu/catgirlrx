@@ -1,6 +1,21 @@
 #!/bin/sh
 set -eu
 
+case "$(uname)" in
+	(FreeBSD)
+		if ! pkg info -e libressl; then
+			echo 'LibreSSL required'
+			exit 1
+		fi
+		prefix=$(pkg query '%p' libressl)
+		cat >config.mk <<-EOF
+		CFLAGS += -I${prefix}/include
+		LDFLAGS += -L${prefix}/lib
+		EOF
+		exit
+		;;
+esac
+
 libs='libcrypto libtls ncursesw'
 pkg-config --print-errors $libs
 
