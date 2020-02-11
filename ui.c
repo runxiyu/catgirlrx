@@ -293,8 +293,12 @@ void uiDraw(void) {
 		BOTTOM, RIGHT
 	);
 	doupdate();
-
 	if (!to_status_line) return;
+
+	static char prevTitle[sizeof(title)];
+	if (!strcmp(title, prevTitle)) return;
+	strcpy(prevTitle, title);
+
 	putp(to_status_line);
 	putp(title);
 	putp(from_status_line);
