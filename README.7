@@ -1,0 +1,126 @@
+.Dd February 11, 2020
+.Dt README 7
+.Os "Causal Agency"
+.
+.Sh NAME
+.Nm catgirl
+.Nd IRC client
+.
+.Sh DESCRIPTION
+.Xr catgirl 1
+is a TLS-only terminal IRC client.
+.
+.Ss Notable Features
+.Bl -bullet
+.It
+Tab complete:
+most recently seen or mentioned nicks
+are completed first.
+Commas are inserted between multple nicks.
+.It
+Indicators:
+the prompt clearly shows whether input
+will be interpreted as a command
+or sent as a message.
+An indicator appears when scrolled up
+in the chat history.
+.It
+Nick coloring:
+color generation based on usernames
+remains stable across nick changes.
+Mentions of users in messages are colored.
+.It
+URL detection:
+recent URLs from a particular user
+or matching a substring
+can be opened or copied.
+.It
+History:
+window contents can be saved
+and restored on startup.
+.El
+.
+.Ss Non-features
+.Bl -bullet
+.It
+Dynamic configuration:
+all configuration happens
+in a simple text file
+or on the command line.
+.It
+Multi-network:
+a terminal multiplexer such as
+.Xr screen 1
+or
+.Xr tmux 1
+(or just your regular terminal emulator tabs)
+can be used to connect
+.Nm
+to multiple networks.
+.It
+Reconnection:
+when the connection to the server is lost,
+.Nm
+exits.
+It can be run in a loop
+or connected to a bouncer,
+such as
+.Lk https://git.causal.agency/pounce "pounce" .
+.It
+Cleartext IRC:
+TLS is now ubiquitous
+and certificates are easy to obtain.
+.El
+.
+.Sh INSTALLING
+.Nm
+requires LibreSSL
+.Pq Fl ltls
+and ncurses
+.Pq Fl lncursesw .
+It primarily targets
+.Fx
+and macOS,
+as well as Linux.
+.Bd -literal -offset indent
+\&./configure
+make all
+sudo make install PREFIX=/usr/local
+.Ed
+.
+.Sh FILES
+.Bl -tag -width "complete.c" -compact
+.It Pa chat.h
+global state and declarations
+.It Pa chat.c
+startup and event loop
+.It Pa irc.c
+IRC connection and parsing
+.It Pa ui.c
+curses interface
+.It Pa handle.c
+IRC message handling
+.It Pa command.c
+input command handling
+.It Pa edit.c
+line editing
+.It Pa complete.c
+tab complete
+.It Pa url.c
+URL detection
+.It Pa config.c
+configuration parsing
+.It Pa xdg.c
+XDG base directories
+.El
+.
+.Sh CONTRIBUTING
+The upstream URL of this project is
+.Aq Lk https://git.causal.agency/catgirl .
+I'm happy to receive contributions in any form at
+.Aq Mt june@causal.agency .
+For sending patches by email, see
+.Aq Lk https://git-send-email.io .
+.
+.Sh SEE ALSO
+.Xr catgirl 1

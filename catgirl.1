@@ -1,0 +1,497 @@
+.Dd February 10, 2020
+.Dt CATGIRL 1
+.Os
+.
+.Sh NAME
+.Nm catgirl
+.Nd IRC client
+.
+.Sh SYNOPSIS
+.Nm
+.Op Fl ev
+.Op Fl C Ar copy
+.Op Fl H Ar hash
+.Op Fl O Ar open
+.Op Fl a Ar auth
+.Op Fl c Ar cert
+.Op Fl h Ar host
+.Op Fl j Ar join
+.Op Fl k Ar priv
+.Op Fl n Ar nick
+.Op Fl p Ar port
+.Op Fl r Ar real
+.Op Fl s Ar save
+.Op Fl u Ar user
+.Op Fl w Ar pass
+.Op Ar config ...
+.
+.Sh DESCRIPTION
+The
+.Nm
+program is a TLS-only
+curses IRC client.
+.
+.Pp
+Options can be loaded from files
+listed on the command line.
+Files are searched for in
+.Pa $XDG_CONFIG_DIRS/catgirl
+unless the path starts with
+.Ql /
+or
+.Ql \&. .
+Each option is placed on a line,
+and lines beginning with
+.Ql #
+are ignored.
+The options are listed below
+following their corresponding flags.
+.
+.Pp
+The arguments are as follows:
+.Bl -tag -width Ds
+.It Fl C Ar util , Cm copy = Ar util
+Set the utility used by
+.Ic /copy .
+The default is the first available of
+.Xr pbcopy 1 ,
+.Xr wl-copy 1 ,
+.Xr xclip 1 ,
+.Xr xsel 1 .
+.
+.It Fl H Ar hash , Cm hash = Ar hash
+Set the initial value of
+the nick color hash function.
+.
+.It Fl O Ar util , Cm open = Ar util
+Set the utility used by
+.Ic /open .
+The default is the first available of
+.Xr open 1 ,
+.Xr xdg-open 1 .
+.
+.It Fl a Ar user Ns : Ns Ar pass , Cm sasl-plain = Ar user Ns : Ns Ar pass
+Authenticate as
+.Ar user
+with
+.Ar pass
+using SASL PLAIN.
+Since this requires the account password
+in plain text,
+it is recommended to use SASL EXTERNAL instead with
+.Fl e .
+.
+.It Fl c Ar path , Cm cert = Ar path
+Load the TLS client certificate from
+.Ar path .
+If the private key is in a separate file,
+it is loaded with
+.Fl k .
+With
+.Fl e ,
+authenticate using SASL EXTERNAL.
+.
+.It Fl e , Cm sasl-external
+Authenticate using SASL EXTERNAL,
+also known as CertFP.
+The TLS client certificate is loaded with
+.Fl c .
+.
+.It Fl h Ar host , Cm host = Ar host
+Connect to
+.Ar host .
+.
+.It Fl j Ar join , Cm join = Ar join
+Join the comma-separated list of channels
+.Ar join .
+.
+.It Fl k Ar path , Cm priv = Ar priv
+Load the TLS client private key from
+.Ar path .
+.
+.It Fl n Ar nick , Cm nick = Ar nick
+Set nickname to
+.Ar nick .
+The default nickname is the user's name.
+.
+.It Fl p Ar port , Cm port = Ar port
+Connect to
+.Ar port .
+The default port is 6697.
+.
+.It Fl r Ar real , Cm real = Ar real
+Set realname to
+.Ar real .
+The default realname is the same as the nickname.
+.
+.It Fl s Ar name , Cm save = Ar name
+Load and save the contents of windows from
+.Ar name
+in
+.Pa $XDG_DATA_DIRS/catgirl ,
+or an absolute or relative path if
+.Ar name
+starts with
+.Ql /
+or
+.Ql \&. .
+.
+.It Fl u Ar user , Cm user = Ar user
+Set username to
+.Ar user .
+The default username is the same as the nickname.
+.
+.It Fl v , Cm debug
+Log raw IRC messages to the
+.Sy <debug>
+window
+as well as standard error
+if it is not a terminal.
+.
+.It Fl w Ar pass , Cm pass = Ar pass
+Log in with the server password
+.Ar pass .
+.El
+.
+.Sh COMMANDS
+Any unique prefix can be used to abbreviate a command.
+For example,
+.Ic /join
+can be typed
+.Ic /j .
+.
+.Ss Chat Commands
+.Bl -tag -width Ds
+.It Ic /join Ar channel
+Join a channel.
+.It Ic /me Op Ar action
+Send an action message.
+.It Ic /msg Ar nick message
+Send a private message.
+.It Ic /names
+List users in the channel.
+.It Ic /nick Ar nick
+Change nicknames.
+.It Ic /notice Ar message
+Send a notice.
+.It Ic /part Op Ar message
+Leave the channel.
+.It Ic /query Ar nick
+Start a private conversation.
+.It Ic /quit Op Ar message
+Quit IRC.
+.It Ic /quote Ar command
+Send a raw IRC command.
+.It Ic /topic Op Ar topic
+Show or set the topic of the channel.
+.It Ic /whois Ar nick
+Query information about a user.
+.El
+.
+.Ss UI Commands
+.Bl -tag -width Ds
+.It Ic /close Op Ar name | num
+Close the named, numbered or current window.
+.It Ic /copy Op Ar nick | substring
+Copy the most recent URL from
+.Ar nick
+or matching
+.Ar substring .
+.It Ic /debug
+Toggle logging in the
+.Sy <debug>
+window.
+.It Ic /help Op Ar search
+View this manual.
+Type
+.Ic q
+to return to
+.Nm .
+.It Ic /open Op Ar count
+Open each of
+.Ar count
+most recent URLs.
+.It Ic /open Ar nick | substring
+Open the most recent URL from
+.Ar nick
+or matching
+.Ar substring .
+.It Ic /window Ar name
+Switch to window by name.
+.It Ic /window Ar num , Ic / Ns Ar num
+Switch to window by number.
+.El
+.
+.Sh KEY BINDINGS
+The
+.Nm
+interface provides
+.Xr emacs 1 Ns -like
+line editing
+as well as keys for IRC formatting.
+The prefixes
+.Ic C-
+and
+.Ic M-
+represent the control and meta (alt)
+modifiers, respectively.
+.
+.Ss Line Editing
+.Bl -tag -width Ds -compact
+.It Ic C-a
+Move to beginning of line.
+.It Ic C-b
+Move left.
+.It Ic C-d
+Delete next character.
+.It Ic C-e
+Move to end of line.
+.It Ic C-f
+Move right.
+.It Ic C-k
+Delete to end of line.
+.It Ic C-u
+Delete to beginning of line.
+.It Ic C-w
+Delete previous word.
+.It Ic C-y
+Paste previously deleted text.
+.It Ic M-b
+Move to previous word.
+.It Ic M-d
+Delete next word.
+.It Ic M-f
+Move to next word.
+.It Ic Tab
+Complete nick, channel or command.
+.El
+.
+.Ss Window Keys
+.Bl -tag -width Ds -compact
+.It Ic C-l
+Redraw the UI.
+.It Ic C-n
+Switch to next window.
+.It Ic C-o
+Switch to previously selected window.
+.It Ic C-p
+Switch to previous window.
+.It Ic M-/
+Switch to previously selected window.
+.It Ic M-a
+Cycle through unread windows.
+.It Ic M-l
+List the contents of the window
+without word-wrapping.
+Press
+.Ic Enter
+to return to
+.Nm .
+.It Ic M-m
+Insert a blank line in the window.
+.It Ic M- Ns Ar n
+Switch to window by number 0\(en9.
+.It Ic M-u
+Scroll to first unread line.
+.El
+.
+.Ss IRC Formatting
+.Bl -tag -width Ds -compact
+.It Ic C-z b
+Toggle bold.
+.It Ic C-z c
+Set or reset color.
+.It Ic C-z i
+Toggle italics.
+.It Ic C-z o
+Reset formatting.
+.It Ic C-z r
+Toggle reverse color.
+.It Ic C-z u
+Toggle underline.
+.El
+.
+.Pp
+To set colors, follow
+.Ic C-z c
+by one or two digits for the foreground color,
+optionally followed by a comma
+and one or two digits for the background color.
+To reset color, follow
+.Ic C-z c
+by a non-digit.
+.
+.Pp
+The color numbers are as follows:
+.Pp
+.Bl -column "99" "orange (dark yellow)" "15" "pink (light magenta)"
+.It \ 0 Ta white Ta \ 8 Ta yellow
+.It \ 1 Ta black Ta \ 9 Ta light green
+.It \ 2 Ta blue Ta 10 Ta cyan
+.It \ 3 Ta green Ta 11 Ta light cyan
+.It \ 4 Ta red Ta 12 Ta light blue
+.It \ 5 Ta brown (dark red) Ta 13 Ta pink (light magenta)
+.It \ 6 Ta magenta Ta 14 Ta gray
+.It \ 7 Ta orange (dark yellow) Ta 15 Ta light gray
+.It 99 Ta default
+.El
+.
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa $XDG_CONFIG_DIRS/catgirl
+Configuration files are searched for first in
+.Ev $XDG_CONFIG_HOME ,
+usually
+.Pa ~/.config ,
+followed by the colon-separated list of paths
+.Ev $XDG_CONFIG_DIRS ,
+usually
+.Pa /etc/xdg .
+.It Pa ~/.config/catgirl
+The most likely location of configuration files.
+.
+.It Pa $XDG_DATA_DIRS/catgirl
+Save files are searched for first in
+.Ev $XDG_DATA_HOME ,
+usually
+.Pa ~/.local/share ,
+followed by the colon-separated list of paths
+.Ev $XDG_DATA_DIRS ,
+usually
+.Pa /usr/local/share:/usr/share .
+.It Pa ~/.local/share/catgirl
+The most likely location of save files.
+.El
+.
+.Sh EXAMPLES
+Command line:
+.Bd -literal -offset indent
+catgirl -h chat.freenode.net -j '#ascii.town'
+.Ed
+.Pp
+Configuration file:
+.Bd -literal -offset indent
+host = chat.freenode.net
+join = #ascii.town
+.Ed
+.
+.Sh STANDARDS
+.Bl -item
+.It
+.Rs
+.%A Kiyoshi Aman
+.%T IRCv3.1 extended-join Extension
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/extensions/extended-join-3.1
+.Re
+.
+.It
+.Rs
+.%A Waldo Bastian
+.%A Ryan Lortie
+.%A Lennart Poettering
+.%T XDG Base Directory Specification
+.%D November 24, 2010
+.%U https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+.Re
+.
+.It
+.Rs
+.%A Kyle Fuller
+.%A St\('ephan Kochen
+.%A Alexey Sokolov
+.%A James Wheare
+.%T IRCv3.2 server-time Extension
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/extensions/server-time-3.2
+.Re
+.
+.It
+.Rs
+.%A Lee Hardy
+.%A Perry Lorier
+.%A Kevin L. Mitchell
+.%A William Pitcock
+.%T IRCv3.1 Client Capability Negotiation
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/core/capability-negotiation-3.1.html
+.Re
+.
+.It
+.Rs
+.%A S. Josefsson
+.%T The Base16, Base32, and Base64 Data Encodings
+.%I IETF
+.%N RFC 4648
+.%D October 2006
+.%U https://tools.ietf.org/html/rfc4648
+.Re
+.
+.It
+.Rs
+.%A C. Kalt
+.%T Internet Relay Chat: Client Protocol
+.%I IETF
+.%N RFC 2812
+.%D April 2000
+.%U https://tools.ietf.org/html/rfc2812
+.Re
+.
+.It
+.Rs
+.%A Mantas Mikul\[u0117]nas
+.%T IRCv3.2 userhost-in-names Extension
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/extensions/userhost-in-names-3.2
+.Re
+.
+.It
+.Rs
+.%A Daniel Oaks
+.%T IRC Formatting
+.%I ircdocs
+.%U https://modern.ircdocs.horse/formatting.html
+.Re
+.
+.It
+.Rs
+.%A William Pitcock
+.%A Jilles Tjoelker
+.%T IRCv3.1 SASL Authentication
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/extensions/sasl-3.1.html
+.Re
+.
+.It
+.Rs
+.%A Alexey Sokolov
+.%A St\('ephan Kochen
+.%A Kyle Fuller
+.%A Kiyoshi Aman
+.%A James Wheare
+.%T IRCv3 Message Tags
+.%I IRCv3 Working Group
+.%U https://ircv3.net/specs/extensions/message-tags
+.Re
+.
+.It
+.Rs
+.%A K. Zeilenga, Ed.
+.%T The PLAIN Simple Authentication and Security Layer (SASL) Mechanism
+.%I IETF
+.%N RFC 4616
+.%D August 2006
+.%U https://tools.ietf.org/html/rfc4616
+.Re
+.El
+.
+.Sh AUTHORS
+.An June Bug Aq Mt june@causal.agency
+.
+.Sh BUGS
+Send mail to
+.Aq Mt june@causal.agency
+or join
+.Li #ascii.town
+on
+.Li chat.freenode.net .
