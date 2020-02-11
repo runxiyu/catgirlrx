@@ -26,6 +26,8 @@
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
 
+#define XDG_SUBDIR "catgirl"
+
 typedef unsigned char byte;
 
 int procPipe[2];
@@ -144,6 +146,8 @@ void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
 	size_t id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
+void uiLoad(const char *name);
+int uiSave(const char *name);
 
 enum Edit {
 	EditHead,

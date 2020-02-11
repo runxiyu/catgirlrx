@@ -24,8 +24,6 @@
 
 #include "chat.h"
 
-#define CONFIG_DIR "catgirl"
-
 FILE *configOpen(const char *path, const char *mode) {
 	if (path[0] == '/' || path[0] == '.') goto local;
 
@@ -35,10 +33,10 @@ FILE *configOpen(const char *path, const char *mode) {
 
 	char buf[PATH_MAX];
 	if (configHome) {
-		snprintf(buf, sizeof(buf), "%s/" CONFIG_DIR "/%s", configHome, path);
+		snprintf(buf, sizeof(buf), "%s/" XDG_SUBDIR "/%s", configHome, path);
 	} else {
 		if (!home) goto local;
-		snprintf(buf, sizeof(buf), "%s/.config/" CONFIG_DIR "/%s", home, path);
+		snprintf(buf, sizeof(buf), "%s/.config/" XDG_SUBDIR "/%s", home, path);
 	}
 	FILE *file = fopen(buf, mode);
 	if (file) return file;
@@ -48,7 +46,7 @@ FILE *configOpen(const char *path, const char *mode) {
 	while (*configDirs) {
 		size_t len = strcspn(configDirs, ":");
 		snprintf(
-			buf, sizeof(buf), "%.*s/" CONFIG_DIR "/%s",
+			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
 			(int)len, configDirs, path
 		);
 		file = fopen(buf, mode);

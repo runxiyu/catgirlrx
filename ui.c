@@ -20,11 +20,14 @@
 #include <ctype.h>
 #include <curses.h>
 #include <err.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sysexits.h>
 #include <term.h>
 #include <termios.h>
@@ -64,6 +67,13 @@ static void bufferPush(struct Buffer *buffer, time_t time, const char *line) {
 	buffer->times[i] = time;
 	buffer->lines[i] = strdup(line);
 	if (!buffer->lines[i]) err(EX_OSERR, "strdup");
+}
+
+static time_t bufferTime(const struct Buffer *buffer, size_t i) {
+	return buffer->times[(buffer->len + i) % BufferCap];
+}
+static const char *bufferLine(const struct Buffer *buffer, size_t i) {
+	return buffer->lines[(buffer->len + i) % BufferCap];
 }
 
 enum { WindowLines = BufferCap };
@@ -532,9 +542,8 @@ static void reflow(struct Window *window) {
 	werase(window->pad);
 	wmove(window->pad, WindowLines - 1, 0);
 	window->unreadLines = 0;
-	struct Buffer *buffer = &window->buffer;
 	for (size_t i = 0; i < BufferCap; ++i) {
-		char *line = buffer->lines[(buffer->len + i) % BufferCap];
+		const char *line = bufferLine(&window->buffer, i);
 		if (!line) continue;
 		waddch(window->pad, '\n');
 		if (i >= (size_t)(BufferCap - window->unreadCount)) {
@@ -557,12 +566,12 @@ static void resize(void) {
 	statusUpdate();
 }
 
-static void bufferList(struct Buffer *buffer) {
+static void bufferList(const struct Buffer *buffer) {
 	uiHide();
 	waiting = true;
 	for (size_t i = 0; i < BufferCap; ++i) {
-		time_t time = buffer->times[(buffer->len + i) % BufferCap];
-		const char *line = buffer->lines[(buffer->len + i) % BufferCap];
+		time_t time = bufferTime(buffer, i);
+		const char *line = bufferLine(buffer, i);
 		if (!line) continue;
 
 		struct tm *tm = localtime(&time);
@@ -847,4 +856,161 @@ void uiRead(void) {
 		style = false;
 	}
 	inputUpdate();
+}
+
+static FILE *dataOpen(const char *path, const char *mode) {
+	if (path[0] == '/' || path[0] == '.') goto local;
+
+	const char *home = getenv("HOME");
+	const char *dataHome = getenv("XDG_DATA_HOME");
+	const char *dataDirs = getenv("XDG_DATA_DIRS");
+
+	char homePath[PATH_MAX];
+	if (dataHome) {
+		snprintf(
+			homePath, sizeof(homePath),
+			"%s/" XDG_SUBDIR "/%s", dataHome, path
+		);
+	} else {
+		if (!home) goto local;
+		snprintf(
+			homePath, sizeof(homePath),
+			"%s/.local/share/" XDG_SUBDIR "/%s", home, path
+		);
+	}
+	FILE *file = fopen(homePath, mode);
+	if (file) return file;
+	if (errno != ENOENT) {
+		warn("%s", homePath);
+		return NULL;
+	}
+
+	char buf[PATH_MAX];
+	if (!dataDirs) dataDirs = "/usr/local/share:/usr/share";
+	while (*dataDirs) {
+		size_t len = strcspn(dataDirs, ":");
+		snprintf(
+			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
+			(int)len, dataDirs, path
+		);
+		file = fopen(buf, mode);
+		if (file) return file;
+		if (errno != ENOENT) {
+			warn("%s", buf);
+			return NULL;
+		}
+		dataDirs += len;
+		if (*dataDirs) dataDirs++;
+	}
+
+	if (mode[0] != 'r') {
+		char *base = strrchr(homePath, '/');
+		*base = '\0';
+		int error = mkdir(homePath, S_IRWXU);
+		if (error && errno != EEXIST) {
+			warn("%s", homePath);
+			return NULL;
+		}
+		*base = '/';
+		file = fopen(homePath, mode);
+		if (!file) warn("%s", homePath);
+		return file;
+	}
+
+local:
+	file = fopen(path, mode);
+	if (!file) warn("%s", path);
+	return file;
+}
+
+static const size_t Signatures[] = {
+	0x6C72696774616301,
+};
+
+static size_t signatureVersion(size_t signature) {
+	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
+		if (signature == Signatures[i]) return i;
+	}
+	err(EX_DATAERR, "unknown file signature %zX", signature);
+}
+
+static int writeSize(FILE *file, size_t value) {
+	return (fwrite(&value, sizeof(value), 1, file) ? 0 : -1);
+}
+static int writeTime(FILE *file, time_t time) {
+	return (fwrite(&time, sizeof(time), 1, file) ? 0 : -1);
+}
+static int writeString(FILE *file, const char *str) {
+	return (fwrite(str, strlen(str) + 1, 1, file) ? 0 : -1);
+}
+
+int uiSave(const char *name) {
+	FILE *file = dataOpen(name, "w");
+	if (!file) return -1;
+
+	if (writeSize(file, Signatures[0])) return -1;
+	const struct Window *window;
+	for (window = windows.head; window; window = window->next) {
+		if (writeString(file, idNames[window->id])) return -1;
+		for (size_t i = 0; i < BufferCap; ++i) {
+			time_t time = bufferTime(&window->buffer, i);
+			const char *line = bufferLine(&window->buffer, i);
+			if (!line) continue;
+			if (writeTime(file, time)) return -1;
+			if (writeString(file, line)) return -1;
+		}
+		if (writeTime(file, 0)) return -1;
+	}
+	return fclose(file);
+}
+
+static size_t readSize(FILE *file) {
+	size_t value;
+	fread(&value, sizeof(value), 1, file);
+	if (ferror(file)) err(EX_IOERR, "fread");
+	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
+	return value;
+}
+static time_t readTime(FILE *file) {
+	time_t time;
+	fread(&time, sizeof(time), 1, file);
+	if (ferror(file)) err(EX_IOERR, "fread");
+	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
+	return time;
+}
+static ssize_t readString(FILE *file, char **buf, size_t *cap) {
+	ssize_t len = getdelim(buf, cap, '\0', file);
+	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	return len;
+}
+
+void uiLoad(const char *name) {
+	FILE *file = dataOpen(name, "r");
+	if (!file) {
+		if (errno != ENOENT) exit(EX_NOINPUT);
+		file = dataOpen(name, "w");
+		if (!file) exit(EX_CANTCREAT);
+		fclose(file);
+		return;
+	}
+
+	size_t signature = readSize(file);
+	signatureVersion(signature);
+
+	char *buf = NULL;
+	size_t cap = 0;
+	while (0 < readString(file, &buf, &cap)) {
+		struct Window *window = windowFor(idFor(buf));
+		for (;;) {
+			time_t time = readTime(file);
+			if (!time) break;
+			readString(file, &buf, &cap);
+			bufferPush(&window->buffer, time, buf);
+		}
+		reflow(window);
+		// TODO: Place some marker of end of save.
+	}
+
+	free(buf);
+	fclose(file);
 }

@@ -20,6 +20,7 @@
 .Op Fl n Ar nick
 .Op Fl p Ar port
 .Op Fl r Ar real
+.Op Fl s Ar save
 .Op Fl u Ar user
 .Op Fl w Ar pass
 .Op Ar config ...
@@ -122,6 +123,18 @@ The default port is 6697.
 Set realname to
 .Ar real .
 The default realname is the same as the nickname.
+.
+.It Fl s Ar name , Cm save = Ar name
+Load and save the contents of windows from
+.Ar name
+in
+.Pa $XDG_DATA_DIRS/catgirl ,
+or an absolute or relative path if
+.Ar name
+starts with
+.Ql /
+or
+.Ql \&. .
 .
 .It Fl u Ar user , Cm user = Ar user
 Set username to
@@ -324,7 +337,7 @@ The color numbers are as follows:
 .Sh FILES
 .Bl -tag -width Ds
 .It Pa $XDG_CONFIG_DIRS/catgirl
-Configuration files are search for first in
+Configuration files are searched for first in
 .Ev $XDG_CONFIG_HOME ,
 usually
 .Pa ~/.config ,
@@ -334,6 +347,18 @@ usually
 .Pa /etc/xdg .
 .It Pa ~/.config/catgirl
 The most likely location of configuration files.
+.
+.It Pa $XDG_DATA_DIRS/catgirl
+Save files are searched for first in
+.Ev $XDG_DATA_HOME ,
+usually
+.Pa ~/.local/share ,
+followed by the colon-separated list of paths
+.Ev $XDG_DATA_DIRS ,
+usually
+.Pa /usr/local/share:/usr/share .
+.It Pa ~/.local/share/catgirl
+The most likely location of save files.
 .El
 .
 .Sh EXAMPLES

@@ -47,6 +47,15 @@ size_t idNext = Network + 1;
 
 struct Self self = { .color = Default };
 
+static const char *save;
+static void exitSave(void) {
+	int error = uiSave(save);
+	if (error) {
+		warn("%s", save);
+		_exit(EX_IOERR);
+	}
+}
+
 uint32_t hashInit;
 
 int procPipe[2] = { -1, -1 };
@@ -84,7 +93,7 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:O:a:c:eh:j:k:n:p:r:u:vw:";
+	const char *Opts = "!C:H:O:a:c:eh:j:k:n:p:r:s:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
@@ -99,6 +108,7 @@ int main(int argc, char *argv[]) {
 		{ "nick", required_argument, NULL, 'n' },
 		{ "port", required_argument, NULL, 'p' },
 		{ "real", required_argument, NULL, 'r' },
+		{ "save", required_argument, NULL, 's' },
 		{ "user", required_argument, NULL, 'u' },
 		{ "debug", no_argument, NULL, 'v' },
 		{ "pass", required_argument, NULL, 'w' },
@@ -121,6 +131,7 @@ int main(int argc, char *argv[]) {
 			break; case 'n': nick = optarg;
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
+			break; case 's': save = optarg;
 			break; case 'u': user = optarg;
 			break; case 'v': self.debug = true;
 			break; case 'w': pass = optarg;
@@ -154,6 +165,10 @@ int main(int argc, char *argv[]) {
 	if (privFile) fclose(privFile);
 
 	uiInit();
+	if (save) {
+		uiLoad(save);
+		atexit(exitSave);
+	}
 	uiShowID(Network);
 	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
