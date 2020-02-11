@@ -124,7 +124,7 @@ size_t completeID(const char *str) {
 
 void completeReplace(size_t id, const char *old, const char *new) {
 	struct Node *next = NULL;
-	for (struct Node *node = head; node; node = node->next) {
+	for (struct Node *node = head; node; node = next) {
 		next = node->next;
 		if (id && node->id != id) continue;
 		if (strcmp(node->str, old)) continue;
