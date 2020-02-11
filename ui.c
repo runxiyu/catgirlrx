@@ -21,6 +21,7 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -184,12 +185,13 @@ void uiHide(void) {
 	endwin();
 }
 
-// Gain use of C-q, C-s, C-z, C-y, C-o.
+// Gain use of C-q, C-s, C-c, C-z, C-y, C-o.
 static void acquireKeys(void) {
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
 	if (error) err(EX_OSERR, "tcgetattr");
 	term.c_iflag &= ~IXON;
+	term.c_cc[VINTR] = _POSIX_VDISABLE;
 	term.c_cc[VSUSP] = _POSIX_VDISABLE;
 	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
@@ -805,6 +807,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'?': edit(id, EditDeletePrev, 0);
 		break; case L'A': edit(id, EditHead, 0);
 		break; case L'B': edit(id, EditPrev, 0);
+		break; case L'C': raise(SIGINT);
 		break; case L'D': edit(id, EditDeleteNext, 0);
 		break; case L'E': edit(id, EditTail, 0);
 		break; case L'F': edit(id, EditNext, 0);
