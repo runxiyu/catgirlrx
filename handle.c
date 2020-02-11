@@ -407,9 +407,15 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 	if (!replies.whois) return;
 	unsigned long idle = strtoul(msg->params[2], NULL, 10);
 	const char *unit = "second";
-	if (idle / 60) { idle /= 60; unit = "minute"; }
-	if (idle / 60) { idle /= 60; unit = "hour"; }
-	if (idle / 24) { idle /= 24; unit = "day"; }
+	if (idle / 60) {
+		idle /= 60; unit = "minute";
+		if (idle / 60) {
+			idle /= 60; unit = "hour";
+			if (idle / 24) {
+				idle /= 24; unit = "day";
+			}
+		}
+	}
 	time_t signon = (msg->params[3] ? strtoul(msg->params[3], NULL, 10) : 0);
 	uiFormat(
 		Network, Warm, tagTime(msg),
