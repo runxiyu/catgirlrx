@@ -554,7 +554,12 @@ static const char *colorMentions(size_t id, struct Message *msg) {
 		size_t len = strcspn(mention, ",<> ");
 		char punct = mention[len];
 		mention[len] = '\0';
-		fprintf(str, "\3%02d%s\3", completeColor(id, mention), mention);
+		enum Color color = completeColor(id, mention);
+		if (color != Default) {
+			fprintf(str, "\3%02d%s\3", color, mention);
+		} else {
+			fprintf(str, "%s", mention);
+		}
 		mention[len] = punct;
 		mention += len;
 	}
