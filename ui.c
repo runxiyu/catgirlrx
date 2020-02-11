@@ -38,6 +38,7 @@
 
 // Annoying stuff from <term.h>:
 #undef lines
+#undef tab
 
 #ifndef A_ITALIC
 #define A_ITALIC A_NORMAL
@@ -577,12 +578,20 @@ static void bufferList(const struct Buffer *buffer) {
 		char buf[sizeof("[00:00:00]")];
 		strftime(buf, sizeof(buf), "[%T]", tm);
 		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
-		printf("%s\t", buf);
+		printf("%s ", buf);
 
 		size_t len;
+		bool align = false;
 		struct Style style = Reset;
 		while (*line) {
+			if (*line == '\t') {
+				printf("%c", (align ? '\t' : ' '));
+				align = true;
+				line++;
+			}
 			styleParse(&style, &line, &len);
+			size_t tab = strcspn(line, "\t");
+			if (tab < len) len = tab;
 			vid_attr(
 				style.attr | colorAttr(Colors[style.fg]),
 				colorPair(Colors[style.fg], Colors[style.bg]),
