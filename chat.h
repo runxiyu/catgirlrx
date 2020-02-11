@@ -58,6 +58,18 @@ static inline size_t idFor(const char *name) {
 	return idNext++;
 }
 
+extern uint32_t hashInit;
+static inline enum Color hash(const char *str) {
+	if (*str == '~') str++;
+	uint32_t hash = hashInit;
+	for (; *str; ++str) {
+		hash = (hash << 5) | (hash >> 27);
+		hash ^= *str;
+		hash *= 0x27220A95;
+	}
+	return 2 + hash % 74;
+}
+
 #define ENUM_CAP \
 	X("extended-join", CapExtendedJoin) \
 	X("sasl", CapSASL) \
@@ -194,18 +206,6 @@ int getopt_config(
 	int argc, char *const *argv,
 	const char *optstring, const struct option *longopts, int *longindex
 );
-
-extern uint32_t hashInit;
-static inline enum Color hash(const char *str) {
-	if (*str == '~') str++;
-	uint32_t hash = hashInit;
-	for (; *str; ++str) {
-		hash = (hash << 5) | (hash >> 27);
-		hash ^= *str;
-		hash *= 0x27220A95;
-	}
-	return 2 + hash % 74;
-}
 
 // Defined in libcrypto if missing from libc:
 void explicit_bzero(void *b, size_t len);
