@@ -314,7 +314,7 @@ struct Style {
 };
 static const struct Style Reset = { A_NORMAL, Default, Default };
 
-static const short Colors[100] = {
+static const short Colors[ColorCap] = {
 	[Default]    = -1,
 	[White]      = 8 + COLOR_WHITE,
 	[Black]      = 0 + COLOR_BLACK,

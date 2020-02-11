@@ -34,6 +34,7 @@ enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
 	Default = 99,
+	ColorCap,
 };
 
 enum { None, Debug, Network, IDCap = 256 };
