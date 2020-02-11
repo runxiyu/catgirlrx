@@ -120,6 +120,7 @@ void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 
 extern struct Replies {
+	size_t join;
 	size_t topic;
 	size_t names;
 	size_t whois;

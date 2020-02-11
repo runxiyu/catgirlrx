@@ -164,6 +164,7 @@ static void handleReplyWelcome(struct Message *msg) {
 			if (*ch == ',') count++;
 		}
 		ircFormat("JOIN %s\r\n", self.join);
+		replies.join += count;
 		replies.topic += count;
 		replies.names += count;
 	}
@@ -211,7 +212,10 @@ static void handleJoin(struct Message *msg) {
 		}
 		idColors[id] = hash(msg->params[0]);
 		completeTouch(None, msg->params[0], idColors[id]);
-		uiShowID(id);
+		if (replies.join) {
+			uiShowID(id);
+			replies.join--;
+		}
 	}
 	completeTouch(id, msg->nick, hash(msg->user));
 	if (msg->params[2] && !strcasecmp(msg->params[2], msg->nick)) {

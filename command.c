@@ -86,6 +86,7 @@ static void commandJoin(size_t id, char *params) {
 		}
 	}
 	ircFormat("JOIN %s\r\n", (params ? params : idNames[id]));
+	replies.join += count;
 	replies.topic += count;
 	replies.names += count;
 }
