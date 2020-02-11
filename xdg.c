@@ -24,6 +24,8 @@
 
 #include "chat.h"
 
+#define SUBDIR "catgirl"
+
 FILE *configOpen(const char *path, const char *mode) {
 	if (path[0] == '/' || path[0] == '.') goto local;
 
@@ -33,10 +35,10 @@ FILE *configOpen(const char *path, const char *mode) {
 
 	char buf[PATH_MAX];
 	if (configHome) {
-		snprintf(buf, sizeof(buf), "%s/" XDG_SUBDIR "/%s", configHome, path);
+		snprintf(buf, sizeof(buf), "%s/" SUBDIR "/%s", configHome, path);
 	} else {
 		if (!home) goto local;
-		snprintf(buf, sizeof(buf), "%s/.config/" XDG_SUBDIR "/%s", home, path);
+		snprintf(buf, sizeof(buf), "%s/.config/" SUBDIR "/%s", home, path);
 	}
 	FILE *file = fopen(buf, mode);
 	if (file) return file;
@@ -49,7 +51,7 @@ FILE *configOpen(const char *path, const char *mode) {
 	while (*configDirs) {
 		size_t len = strcspn(configDirs, ":");
 		snprintf(
-			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
+			buf, sizeof(buf), "%.*s/" SUBDIR "/%s",
 			(int)len, configDirs, path
 		);
 		file = fopen(buf, mode);
@@ -79,13 +81,13 @@ FILE *dataOpen(const char *path, const char *mode) {
 	if (dataHome) {
 		snprintf(
 			homePath, sizeof(homePath),
-			"%s/" XDG_SUBDIR "/%s", dataHome, path
+			"%s/" SUBDIR "/%s", dataHome, path
 		);
 	} else {
 		if (!home) goto local;
 		snprintf(
 			homePath, sizeof(homePath),
-			"%s/.local/share/" XDG_SUBDIR "/%s", home, path
+			"%s/.local/share/" SUBDIR "/%s", home, path
 		);
 	}
 	FILE *file = fopen(homePath, mode);
@@ -100,7 +102,7 @@ FILE *dataOpen(const char *path, const char *mode) {
 	while (*dataDirs) {
 		size_t len = strcspn(dataDirs, ":");
 		snprintf(
-			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
+			buf, sizeof(buf), "%.*s/" SUBDIR "/%s",
 			(int)len, dataDirs, path
 		);
 		file = fopen(buf, mode);

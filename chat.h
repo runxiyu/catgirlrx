@@ -26,8 +26,6 @@
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
 
-#define XDG_SUBDIR "catgirl"
-
 typedef unsigned char byte;
 
 int procPipe[2];
