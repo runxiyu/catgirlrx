@@ -657,7 +657,7 @@ static void inputUpdate(void) {
 	struct Style init = { .fg = self.color, .bg = Default };
 	struct Style rest = Reset;
 	const char *prefix = "";
-	const char *prompt = (self.nick ? self.nick : "");
+	const char *prompt = self.nick;
 	const char *suffix = "";
 	if (NULL != (skip = commandIsPrivmsg(id, buf))) {
 		prefix = "<"; suffix = "> ";

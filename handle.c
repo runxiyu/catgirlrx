@@ -87,8 +87,8 @@ static const time_t *tagTime(const struct Message *msg) {
 typedef void Handler(struct Message *msg);
 
 static void handleErrorNicknameInUse(struct Message *msg) {
-	if (self.nick) return;
 	require(msg, false, 2);
+	if (strcmp(self.nick, "*")) return;
 	ircFormat("NICK :%s_\r\n", msg->params[1]);
 }
 
@@ -234,7 +234,7 @@ static void handleReplyMOTD(struct Message *msg) {
 static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	size_t id = idFor(msg->params[0]);
-	if (self.nick && !strcmp(msg->nick, self.nick)) {
+	if (!strcmp(msg->nick, self.nick)) {
 		if (!self.user) {
 			set(&self.user, msg->user);
 			self.color = hash(msg->user);
@@ -264,7 +264,7 @@ static void handleJoin(struct Message *msg) {
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
 	size_t id = idFor(msg->params[0]);
-	if (self.nick && !strcmp(msg->nick, self.nick)) {
+	if (!strcmp(msg->nick, self.nick)) {
 		completeClear(id);
 	}
 	completeRemove(id, msg->nick);
@@ -281,7 +281,7 @@ static void handlePart(struct Message *msg) {
 static void handleKick(struct Message *msg) {
 	require(msg, true, 2);
 	size_t id = idFor(msg->params[0]);
-	bool kicked = self.nick && !strcmp(msg->params[1], self.nick);
+	bool kicked = !strcmp(msg->params[1], self.nick);
 	completeTouch(id, msg->nick, hash(msg->user));
 	urlScan(id, msg->nick, msg->params[2]);
 	uiFormat(
@@ -300,7 +300,7 @@ static void handleKick(struct Message *msg) {
 
 static void handleNick(struct Message *msg) {
 	require(msg, true, 1);
-	if (self.nick && !strcmp(msg->nick, self.nick)) {
+	if (!strcmp(msg->nick, self.nick)) {
 		set(&self.nick, msg->params[0]);
 		uiRead(); // Update prompt.
 	}
@@ -499,7 +499,7 @@ static void handleReplyWhoisGeneric(struct Message *msg) {
 static void handleReplyEndOfWhois(struct Message *msg) {
 	require(msg, false, 2);
 	if (!replies.whois) return;
-	if (!self.nick || strcmp(msg->params[1], self.nick)) {
+	if (strcmp(msg->params[1], self.nick)) {
 		completeRemove(Network, msg->params[1]);
 	}
 	replies.whois--;
@@ -514,7 +514,6 @@ static bool isAction(struct Message *msg) {
 }
 
 static bool isMention(const struct Message *msg) {
-	if (!self.nick) return false;
 	size_t len = strlen(self.nick);
 	const char *match = msg->params[1];
 	while (NULL != (match = strcasestr(match, self.nick))) {
@@ -567,7 +566,7 @@ static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
 	bool query = !strchr(self.chanTypes, msg->params[0][0]);
 	bool network = strchr(msg->nick, '.');
-	bool mine = self.nick && !strcmp(msg->nick, self.nick);
+	bool mine = !strcmp(msg->nick, self.nick);
 	size_t id;
 	if (query && network) {
 		id = Network;
@@ -586,9 +585,8 @@ static void handlePrivmsg(struct Message *msg) {
 	if (notice) {
 		uiFormat(
 			id, Warm, tagTime(msg),
-			"%s\3%d-%s-\17\3%d\t%s",
-			(mention ? "\26" : ""), hash(msg->user), msg->nick,
-			LightGray, msg->params[1]
+			"\3%d-%s-\3%d\t%s",
+			hash(msg->user), msg->nick, LightGray, msg->params[1]
 		);
 	} else if (action) {
 		uiFormat(
