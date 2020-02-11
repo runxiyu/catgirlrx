@@ -75,7 +75,7 @@ static void commandMsg(size_t id, char *params) {
 	(void)id;
 	char *nick = strsep(&params, " ");
 	if (!params) return;
-	ircFormat("PRIVMSG %s :%s\r\n", nick, params);
+	commandPrivmsg(idFor(nick), params);
 }
 
 static void commandJoin(size_t id, char *params) {
