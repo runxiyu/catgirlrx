@@ -24,42 +24,6 @@
 
 #include "chat.h"
 
-FILE *configOpen(const char *path, const char *mode) {
-	if (path[0] == '/' || path[0] == '.') goto local;
-
-	const char *home = getenv("HOME");
-	const char *configHome = getenv("XDG_CONFIG_HOME");
-	const char *configDirs = getenv("XDG_CONFIG_DIRS");
-
-	char buf[PATH_MAX];
-	if (configHome) {
-		snprintf(buf, sizeof(buf), "%s/" XDG_SUBDIR "/%s", configHome, path);
-	} else {
-		if (!home) goto local;
-		snprintf(buf, sizeof(buf), "%s/.config/" XDG_SUBDIR "/%s", home, path);
-	}
-	FILE *file = fopen(buf, mode);
-	if (file) return file;
-	if (errno != ENOENT) return NULL;
-
-	if (!configDirs) configDirs = "/etc/xdg";
-	while (*configDirs) {
-		size_t len = strcspn(configDirs, ":");
-		snprintf(
-			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
-			(int)len, configDirs, path
-		);
-		file = fopen(buf, mode);
-		if (file) return file;
-		if (errno != ENOENT) return NULL;
-		configDirs += len;
-		if (*configDirs) configDirs++;
-	}
-
-local:
-	return fopen(path, mode);
-}
-
 #define WS "\t "
 
 static const char *path;
@@ -92,10 +56,7 @@ int getopt_config(
 				num = 0;
 				path = argv[optind++];
 				file = configOpen(path, "r");
-				if (!file) {
-					warn("%s", path);
-					return clean('?');
-				}
+				if (!file) return clean('?');
 			} else {
 				return clean(-1);
 			}

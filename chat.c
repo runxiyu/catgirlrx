@@ -154,11 +154,11 @@ int main(int argc, char *argv[]) {
 	FILE *privFile = NULL;
 	if (cert) {
 		certFile = configOpen(cert, "r");
-		if (!certFile) err(EX_NOINPUT, "%s", cert);
+		if (!certFile) return EX_NOINPUT;
 	}
 	if (priv) {
 		privFile = configOpen(priv, "r");
-		if (!privFile) err(EX_NOINPUT, "%s", priv);
+		if (!privFile) return EX_NOINPUT;
 	}
 	ircConfig(insecure, certFile, privFile);
 	if (certFile) fclose(certFile);

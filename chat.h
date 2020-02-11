@@ -189,6 +189,8 @@ void urlOpenMatch(size_t id, const char *str);
 void urlCopyMatch(size_t id, const char *str);
 
 FILE *configOpen(const char *path, const char *mode);
+FILE *dataOpen(const char *path, const char *mode);
+
 int getopt_config(
 	int argc, char *const *argv,
 	const char *optstring, const struct option *longopts, int *longindex

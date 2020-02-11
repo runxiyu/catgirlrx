@@ -21,13 +21,11 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
-#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sysexits.h>
 #include <term.h>
 #include <termios.h>
@@ -856,71 +854,6 @@ void uiRead(void) {
 		style = false;
 	}
 	inputUpdate();
-}
-
-static FILE *dataOpen(const char *path, const char *mode) {
-	if (path[0] == '/' || path[0] == '.') goto local;
-
-	const char *home = getenv("HOME");
-	const char *dataHome = getenv("XDG_DATA_HOME");
-	const char *dataDirs = getenv("XDG_DATA_DIRS");
-
-	char homePath[PATH_MAX];
-	if (dataHome) {
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/" XDG_SUBDIR "/%s", dataHome, path
-		);
-	} else {
-		if (!home) goto local;
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/.local/share/" XDG_SUBDIR "/%s", home, path
-		);
-	}
-	FILE *file = fopen(homePath, mode);
-	if (file) return file;
-	if (errno != ENOENT) {
-		warn("%s", homePath);
-		return NULL;
-	}
-
-	char buf[PATH_MAX];
-	if (!dataDirs) dataDirs = "/usr/local/share:/usr/share";
-	while (*dataDirs) {
-		size_t len = strcspn(dataDirs, ":");
-		snprintf(
-			buf, sizeof(buf), "%.*s/" XDG_SUBDIR "/%s",
-			(int)len, dataDirs, path
-		);
-		file = fopen(buf, mode);
-		if (file) return file;
-		if (errno != ENOENT) {
-			warn("%s", buf);
-			return NULL;
-		}
-		dataDirs += len;
-		if (*dataDirs) dataDirs++;
-	}
-
-	if (mode[0] != 'r') {
-		char *base = strrchr(homePath, '/');
-		*base = '\0';
-		int error = mkdir(homePath, S_IRWXU);
-		if (error && errno != EEXIST) {
-			warn("%s", homePath);
-			return NULL;
-		}
-		*base = '/';
-		file = fopen(homePath, mode);
-		if (!file) warn("%s", homePath);
-		return file;
-	}
-
-local:
-	file = fopen(path, mode);
-	if (!file) warn("%s", path);
-	return file;
 }
 
 static const size_t Signatures[] = {
