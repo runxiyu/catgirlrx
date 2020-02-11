@@ -1008,7 +1008,7 @@ void uiLoad(const char *name) {
 			bufferPush(&window->buffer, time, buf);
 		}
 		reflow(window);
-		// TODO: Place some marker of end of save.
+		waddch(window->pad, '\n');
 	}
 
 	free(buf);
