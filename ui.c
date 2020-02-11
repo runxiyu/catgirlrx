@@ -168,23 +168,6 @@ static const char *ExitFocusMode  = "\33[?1004l";
 static const char *EnterPasteMode = "\33[?2004h";
 static const char *ExitPasteMode  = "\33[?2004l";
 
-static bool hidden;
-static bool waiting;
-
-void uiShow(void) {
-	putp(EnterFocusMode);
-	putp(EnterPasteMode);
-	fflush(stdout);
-	hidden = false;
-}
-
-void uiHide(void) {
-	hidden = true;
-	putp(ExitFocusMode);
-	putp(ExitPasteMode);
-	endwin();
-}
-
 // Gain use of C-q, C-s, C-c, C-z, C-y, C-o.
 static void acquireKeys(void) {
 	struct termios term;
@@ -268,7 +251,11 @@ void uiInit(void) {
 	uiShow();
 }
 
+static bool hidden;
+static bool waiting;
+
 static char title[256];
+static char prevTitle[sizeof(title)];
 
 void uiDraw(void) {
 	if (hidden) return;
@@ -293,16 +280,29 @@ void uiDraw(void) {
 		BOTTOM, RIGHT
 	);
 	doupdate();
-	if (!to_status_line) return;
 
-	static char prevTitle[sizeof(title)];
+	if (!to_status_line) return;
 	if (!strcmp(title, prevTitle)) return;
 	strcpy(prevTitle, title);
-
 	putp(to_status_line);
 	putp(title);
 	putp(from_status_line);
 	fflush(stdout);
+}
+
+void uiShow(void) {
+	prevTitle[0] = '\0';
+	putp(EnterFocusMode);
+	putp(EnterPasteMode);
+	fflush(stdout);
+	hidden = false;
+}
+
+void uiHide(void) {
+	hidden = true;
+	putp(ExitFocusMode);
+	putp(ExitPasteMode);
+	endwin();
 }
 
 struct Style {
