@@ -805,6 +805,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'K': edit(id, EditDeleteTail, 0);
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': windowShow(windows.active->next);
+		break; case L'O': windowShow(windows.other);
 		break; case L'P': windowShow(windows.active->prev);
 		break; case L'U': edit(id, EditDeleteHead, 0);
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
