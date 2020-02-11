@@ -268,6 +268,8 @@ void uiInit(void) {
 	uiShow();
 }
 
+static char title[256];
+
 void uiDraw(void) {
 	if (hidden) return;
 	wnoutrefresh(status);
@@ -291,6 +293,12 @@ void uiDraw(void) {
 		BOTTOM, RIGHT
 	);
 	doupdate();
+
+	if (!to_status_line) return;
+	putp(to_status_line);
+	putp(title);
+	putp(from_status_line);
+	fflush(stdout);
 }
 
 struct Style {
@@ -396,21 +404,21 @@ static void statusUpdate(void) {
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
-	if (!to_status_line) return;
 
 	window = windows.active;
-	putp(to_status_line);
-	printf("%s %s", self.network, idNames[window->id]);
+	snprintf(title, sizeof(title), "%s %s", self.network, idNames[window->id]);
 	if (window->mark && window->unreadCount) {
-		printf(
+		snprintf(
+			&title[strlen(title)], sizeof(title) - strlen(title),
 			" (%d%s)", window->unreadCount, (window->heat > Warm ? "!" : "")
 		);
 	}
 	if (otherUnread) {
-		printf(" (+%d%s)", otherUnread, (otherHeat > Warm ? "!" : ""));
+		snprintf(
+			&title[strlen(title)], sizeof(title) - strlen(title),
+			" (+%d%s)", otherUnread, (otherHeat > Warm ? "!" : "")
+		);
 	}
-	putp(from_status_line);
-	fflush(stdout);
 }
 
 static void mark(struct Window *window) {
