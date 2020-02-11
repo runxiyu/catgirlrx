@@ -510,11 +510,11 @@ static const char *colorMentions(size_t id, struct Message *msg) {
 	if (!str) err(EX_OSERR, "fmemopen");
 
 	while (*mention) {
-		size_t skip = strspn(mention, ", ");
+		size_t skip = strspn(mention, ",<> ");
 		fwrite(mention, skip, 1, str);
 		mention += skip;
 
-		size_t len = strcspn(mention, ", ");
+		size_t len = strcspn(mention, ",<> ");
 		char punct = mention[len];
 		mention[len] = '\0';
 		fprintf(str, "\3%02d%s\3", completeColor(id, mention), mention);
