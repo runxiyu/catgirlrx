@@ -176,7 +176,9 @@ static void acquireKeys(void) {
 	term.c_iflag &= ~IXON;
 	term.c_cc[VINTR] = _POSIX_VDISABLE;
 	term.c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
 	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
 	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
 	if (error) err(EX_OSERR, "tcsetattr");
