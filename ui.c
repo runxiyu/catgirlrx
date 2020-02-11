@@ -281,6 +281,7 @@ void uiDraw(void) {
 		BOTTOM, 0,
 		BOTTOM, RIGHT
 	);
+	(void)y;
 	doupdate();
 
 	if (!to_status_line) return;
@@ -578,6 +579,7 @@ static void resize(void) {
 		wresize(window->pad, BufferCap, COLS);
 		reflow(window);
 	}
+	(void)height;
 	statusUpdate();
 }
 
