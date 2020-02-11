@@ -843,7 +843,7 @@ static void keyCtrl(wchar_t ch) {
 
 static void keyStyle(wchar_t ch) {
 	size_t id = windows.active->id;
-	switch (iswcntrl(ch) ? ch ^ L'@' : towupper(ch)) {
+	switch (iswcntrl(ch) ? ch ^ L'@' : (wchar_t)towupper(ch)) {
 		break; case L'B': edit(id, EditInsert, B);
 		break; case L'C': edit(id, EditInsert, C);
 		break; case L'I': edit(id, EditInsert, I);
