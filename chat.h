@@ -207,34 +207,6 @@ static inline enum Color hash(const char *str) {
 	return 2 + hash % 74;
 }
 
-#define BASE64_SIZE(len) (1 + ((len) + 2) / 3 * 4)
-static const char Base64[64] = {
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-};
-static inline void base64(char *dst, const byte *src, size_t len) {
-	size_t i = 0;
-	while (len > 2) {
-		dst[i++] = Base64[0x3F & (src[0] >> 2)];
-		dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
-		dst[i++] = Base64[0x3F & (src[1] << 2 | src[2] >> 6)];
-		dst[i++] = Base64[0x3F & src[2]];
-		src += 3;
-		len -= 3;
-	}
-	if (len) {
-		dst[i++] = Base64[0x3F & (src[0] >> 2)];
-		if (len > 1) {
-			dst[i++] = Base64[0x3F & (src[0] << 4 | src[1] >> 4)];
-			dst[i++] = Base64[0x3F & (src[1] << 2)];
-		} else {
-			dst[i++] = Base64[0x3F & (src[0] << 4)];
-			dst[i++] = '=';
-		}
-		dst[i++] = '=';
-	}
-	dst[i] = '\0';
-}
-
 // Defined in libcrypto if missing from libc:
 void explicit_bzero(void *b, size_t len);
 #ifndef strlcat
