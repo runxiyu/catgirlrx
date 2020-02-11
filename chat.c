@@ -247,5 +247,13 @@ int main(int argc, char *argv[]) {
 	} else {
 		ircFormat("QUIT\r\n");
 	}
+	struct Message msg = {
+		.nick = self.nick,
+		.user = self.user,
+		.cmd = "QUIT",
+		.params[0] = self.quit,
+	};
+	handle(msg);
+
 	uiHide();
 }
