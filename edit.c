@@ -185,10 +185,9 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 		break; case EditTranspose: {
 			if (!pos || len < 2) break;
 			if (pos == len) pos--;
-			wchar_t t = buf[pos];
-			buf[pos] = buf[pos - 1];
-			buf[pos - 1] = t;
-			pos++;
+			wchar_t t = buf[pos - 1];
+			buf[pos - 1] = buf[pos];
+			buf[pos++] = t;
 		}
 
 		break; case EditInsert: {
