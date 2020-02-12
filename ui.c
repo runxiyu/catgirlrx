@@ -844,9 +844,10 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'N': windowShow(windows.active->next);
 		break; case L'O': windowShow(windows.other);
 		break; case L'P': windowShow(windows.active->prev);
+		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
-		break; case L'W': edit(id, EditDeletePrevWord, 0);
 		break; case L'V': windowScroll(windows.active, -(PAGE_LINES - 2));
+		break; case L'W': edit(id, EditDeletePrevWord, 0);
 		break; case L'Y': edit(id, EditPaste, 0);
 	}
 }
