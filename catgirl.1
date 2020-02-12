@@ -12,6 +12,7 @@
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl O Ar open
+.Op Fl S Ar bind
 .Op Fl a Ar auth
 .Op Fl c Ar cert
 .Op Fl h Ar host
@@ -84,6 +85,11 @@ Disable the
 .Ic /query ,
 .Ic /quote
 commands.
+.
+.It Fl S Ar host , Cm bind = Ar host
+Bind to source address
+.Ar host
+when connecting to the server.
 .
 .It Fl a Ar user Ns : Ns Ar pass , Cm sasl-plain = Ar user Ns : Ns Ar pass
 Authenticate as

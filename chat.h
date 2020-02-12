@@ -125,7 +125,7 @@ struct Message {
 };
 
 void ircConfig(bool insecure, FILE *cert, FILE *priv);
-int ircConnect(const char *host, const char *port);
+int ircConnect(const char *bind, const char *host, const char *port);
 void ircRecv(void);
 void ircSend(const char *ptr, size_t len);
 void ircFormat(const char *format, ...)

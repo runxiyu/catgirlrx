@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
 
 	bool insecure = false;
+	const char *bind = NULL;
 	const char *host = NULL;
 	const char *port = "6697";
 	const char *cert = NULL;
@@ -93,13 +94,14 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:O:Ra:c:eh:j:k:n:p:r:s:u:vw:";
+	const char *Opts = "!C:H:O:RS:a:c:eh:j:k:n:p:r:s:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
 		{ "hash", required_argument, NULL, 'H' },
 		{ "open", required_argument, NULL, 'O' },
 		{ "restrict", no_argument, NULL, 'R' },
+		{ "bind", required_argument, NULL, 'S' },
 		{ "sasl-plain", required_argument, NULL, 'a' },
 		{ "cert", required_argument, NULL, 'c' },
 		{ "sasl-external", no_argument, NULL, 'e' },
@@ -124,6 +126,7 @@ int main(int argc, char *argv[]) {
 			break; case 'H': hashInit = strtoul(optarg, NULL, 0);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
+			break; case 'S': bind = optarg;
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
@@ -182,7 +185,7 @@ int main(int argc, char *argv[]) {
 	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
 	
-	int irc = ircConnect(host, port);
+	int irc = ircConnect(bind, host, port);
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
