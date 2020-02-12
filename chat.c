@@ -120,9 +120,9 @@ int main(int argc, char *argv[]) {
 	while (0 < (opt = getopt_config(argc, argv, Opts, LongOpts, NULL))) {
 		switch (opt) {
 			break; case '!': insecure = true;
-			break; case 'C': urlCopyUtil = optarg;
+			break; case 'C': utilPush(&urlCopyUtil, optarg);
 			break; case 'H': hashInit = strtoul(optarg, NULL, 0);
-			break; case 'O': urlOpenUtil = optarg;
+			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;

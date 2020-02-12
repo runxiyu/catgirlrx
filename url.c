@@ -95,8 +95,11 @@ void urlScan(size_t id, const char *nick, const char *mesg) {
 	}
 }
 
-const char *urlOpenUtil;
-static const char *OpenUtils[] = { "open", "xdg-open" };
+struct Util urlOpenUtil;
+static const struct Util OpenUtils[] = {
+	{ 1, { "open" } },
+	{ 1, { "xdg-open" } },
+};
 
 static void urlOpen(const char *url) {
 	pid_t pid = fork();
@@ -106,15 +109,19 @@ static void urlOpen(const char *url) {
 	close(STDIN_FILENO);
 	dup2(procPipe[1], STDOUT_FILENO);
 	dup2(procPipe[1], STDERR_FILENO);
-	if (urlOpenUtil) {
-		execlp(urlOpenUtil, urlOpenUtil, url, NULL);
-		warn("%s", urlOpenUtil);
+	if (urlOpenUtil.argc) {
+		struct Util util = urlOpenUtil;
+		utilPush(&util, url);
+		execvp(util.argv[0], (char *const *)util.argv);
+		warn("%s", util.argv[0]);
 		_exit(EX_CONFIG);
 	}
 	for (size_t i = 0; i < ARRAY_LEN(OpenUtils); ++i) {
-		execlp(OpenUtils[i], OpenUtils[i], url, NULL);
+		struct Util util = OpenUtils[i];
+		utilPush(&util, url);
+		execvp(util.argv[0], (char *const *)util.argv);
 		if (errno != ENOENT) {
-			warn("%s", OpenUtils[i]);
+			warn("%s", util.argv[0]);
 			_exit(EX_CONFIG);
 		}
 	}
@@ -122,8 +129,13 @@ static void urlOpen(const char *url) {
 	_exit(EX_CONFIG);
 }
 
-const char *urlCopyUtil;
-static const char *CopyUtils[] = { "pbcopy", "wl-copy", "xclip", "xsel" };
+struct Util urlCopyUtil;
+static const struct Util CopyUtils[] = {
+	{ 1, { "pbcopy" } },
+	{ 1, { "wl-copy" } },
+	{ 3, { "xclip", "-selection", "clipboard" } },
+	{ 3, { "xsel", "-i", "-b" } },
+};
 
 static void urlCopy(const char *url) {
 	int rw[2];
@@ -147,15 +159,15 @@ static void urlCopy(const char *url) {
 	dup2(procPipe[1], STDOUT_FILENO);
 	dup2(procPipe[1], STDERR_FILENO);
 	close(rw[0]);
-	if (urlCopyUtil) {
-		execlp(urlCopyUtil, urlCopyUtil, NULL);
-		warn("%s", urlCopyUtil);
+	if (urlCopyUtil.argc) {
+		execvp(urlCopyUtil.argv[0], (char *const *)urlCopyUtil.argv);
+		warn("%s", urlCopyUtil.argv[0]);
 		_exit(EX_CONFIG);
 	}
 	for (size_t i = 0; i < ARRAY_LEN(CopyUtils); ++i) {
-		execlp(CopyUtils[i], CopyUtils[i], NULL);
+		execvp(CopyUtils[i].argv[0], (char *const *)CopyUtils[i].argv);
 		if (errno != ENOENT) {
-			warn("%s", CopyUtils[i]);
+			warn("%s", CopyUtils[i].argv[0]);
 			_exit(EX_CONFIG);
 		}
 	}

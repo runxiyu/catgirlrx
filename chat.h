@@ -194,8 +194,22 @@ void completeClear(size_t id);
 size_t completeID(const char *str);
 enum Color completeColor(size_t id, const char *str);
 
-extern const char *urlOpenUtil;
-extern const char *urlCopyUtil;
+enum { UtilCap = 16 };
+struct Util {
+	size_t argc;
+	const char *argv[UtilCap];
+};
+
+static inline void utilPush(struct Util *util, const char *arg) {
+	if (1 + util->argc < UtilCap) {
+		util->argv[util->argc++] = arg;
+	} else {
+		errx(EX_CONFIG, "too many utility arguments");
+	}
+}
+
+extern struct Util urlOpenUtil;
+extern struct Util urlCopyUtil;
 void urlScan(size_t id, const char *nick, const char *mesg);
 void urlOpenCount(size_t id, size_t count);
 void urlOpenMatch(size_t id, const char *str);
