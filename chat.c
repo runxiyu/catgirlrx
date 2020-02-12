@@ -171,6 +171,12 @@ int main(int argc, char *argv[]) {
 		atexit(exitSave);
 	}
 	uiShowID(Network);
+	uiFormat(
+		Network, Cold, NULL,
+		"\3%dcatgirl\3\tis GPLv3 fwee softwawe ^w^  "
+		"code is avaiwable fwom https://git.causal.agency/catgirl",
+		Pink
+	);
 	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
 	
