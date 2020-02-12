@@ -1,4 +1,4 @@
-.Dd February 10, 2020
+.Dd February 11, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl ev
+.Op Fl Rev
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl O Ar open
@@ -69,6 +69,17 @@ Set the utility used by
 The default is the first available of
 .Xr open 1 ,
 .Xr xdg-open 1 .
+.
+.It Fl R , Cm restrict
+Disable the
+.Ic /copy ,
+.Ic /debug ,
+.Ic /join ,
+.Ic /msg ,
+.Ic /open ,
+.Ic /query ,
+.Ic /quote
+commands.
 .
 .It Fl a Ar user Ns : Ns Ar pass , Cm sasl-plain = Ar user Ns : Ns Ar pass
 Authenticate as

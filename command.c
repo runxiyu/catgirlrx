@@ -194,25 +194,26 @@ static void commandHelp(size_t id, char *params) {
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
+	bool restricted;
 } Commands[] = {
-	{ "/close", commandClose },
-	{ "/copy", commandCopy },
-	{ "/debug", commandDebug },
-	{ "/help", commandHelp },
-	{ "/join", commandJoin },
-	{ "/me", commandMe },
-	{ "/msg", commandMsg },
-	{ "/names", commandNames },
-	{ "/nick", commandNick },
-	{ "/notice", commandNotice },
-	{ "/open", commandOpen },
-	{ "/part", commandPart },
-	{ "/query", commandQuery },
-	{ "/quit", commandQuit },
-	{ "/quote", commandQuote },
-	{ "/topic", commandTopic },
-	{ "/whois", commandWhois },
-	{ "/window", commandWindow },
+	{ "/close", .fn = commandClose },
+	{ "/copy", .fn = commandCopy, .restricted = true },
+	{ "/debug", .fn = commandDebug, .restricted = true },
+	{ "/help", .fn = commandHelp },
+	{ "/join", .fn = commandJoin, .restricted = true },
+	{ "/me", .fn = commandMe },
+	{ "/msg", .fn = commandMsg, .restricted = true },
+	{ "/names", .fn = commandNames },
+	{ "/nick", .fn = commandNick },
+	{ "/notice", .fn = commandNotice },
+	{ "/open", .fn = commandOpen, .restricted = true },
+	{ "/part", .fn = commandPart },
+	{ "/query", .fn = commandQuery, .restricted = true },
+	{ "/quit", .fn = commandQuit },
+	{ "/quote", .fn = commandQuote, .restricted = true },
+	{ "/topic", .fn = commandTopic },
+	{ "/whois", .fn = commandWhois },
+	{ "/window", .fn = commandWindow },
 };
 
 static int compar(const void *cmd, const void *_handler) {
@@ -258,6 +259,9 @@ void command(size_t id, char *input) {
 		const struct Handler *handler = bsearch(
 			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
 		);
+		if (self.restricted && handler && handler->restricted) {
+			handler = NULL;
+		}
 		if (handler) {
 			if (input) {
 				input += strspn(input, " ");

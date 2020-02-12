@@ -85,6 +85,7 @@ enum Cap {
 
 extern struct Self {
 	bool debug;
+	bool restricted;
 	char *plain;
 	const char *join;
 	enum Cap caps;
