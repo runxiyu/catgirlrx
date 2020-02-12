@@ -185,6 +185,8 @@ static void acquireKeys(void) {
 }
 
 static void errExit(void) {
+	putp(ExitFocusMode);
+	putp(ExitPasteMode);
 	reset_shell_mode();
 }
 
