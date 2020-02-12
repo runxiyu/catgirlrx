@@ -24,3 +24,11 @@ CFLAGS += $(pkg-config --cflags $libs)
 LDFLAGS += $(pkg-config --libs-only-L $libs)
 LDLIBS = $(pkg-config --libs-only-l $libs)
 EOF
+
+case "$(uname)" in
+	(Linux)
+		if ! grep -q -e '-D_GNU_SOURCE' config.mk; then
+			echo 'CFLAGS += -D_GNU_SOURCE' >> config.mk
+		fi
+		;;
+esac
