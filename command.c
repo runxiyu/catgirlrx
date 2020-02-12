@@ -125,6 +125,16 @@ static void commandNames(size_t id, char *params) {
 	replies.names++;
 }
 
+static void commandList(size_t id, char *params) {
+	(void)id;
+	if (params) {
+		ircFormat("LIST :%s\r\n", params);
+	} else {
+		ircFormat("LIST\r\n");
+	}
+	replies.list++;
+}
+
 static void commandWhois(size_t id, char *params) {
 	(void)id;
 	if (!params) return;
@@ -201,6 +211,7 @@ static const struct Handler {
 	{ "/debug", .fn = commandDebug, .restricted = true },
 	{ "/help", .fn = commandHelp },
 	{ "/join", .fn = commandJoin, .restricted = true },
+	{ "/list", .fn = commandList },
 	{ "/me", .fn = commandMe },
 	{ "/msg", .fn = commandMsg, .restricted = true },
 	{ "/names", .fn = commandNames },

@@ -411,6 +411,24 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleReplyList(struct Message *msg) {
+	require(msg, false, 4);
+	if (!replies.list) return;
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"In \3%02d%s\3 are %ld under the banner: %s",
+		hash(msg->params[1]), msg->params[1],
+		strtol(msg->params[2], NULL, 10),
+		msg->params[3]
+	);
+}
+
+static void handleReplyListEnd(struct Message *msg) {
+	(void)msg;
+	if (!replies.list) return;
+	replies.list--;
+}
+
 static void handleReplyWhoisUser(struct Message *msg) {
 	require(msg, false, 6);
 	if (!replies.whois) return;
@@ -657,6 +675,8 @@ static const struct Handler {
 	{ "317", handleReplyWhoisIdle },
 	{ "318", handleReplyEndOfWhois },
 	{ "319", handleReplyWhoisChannels },
+	{ "322", handleReplyList },
+	{ "323", handleReplyListEnd },
 	{ "330", handleReplyWhoisGeneric },
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
