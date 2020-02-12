@@ -136,6 +136,7 @@ static short colorPairs;
 static void colorInit(void) {
 	start_color();
 	use_default_colors();
+	if (!COLORS) return;
 	for (short pair = 0; pair < 16; ++pair) {
 		init_pair(1 + pair, pair % COLORS, -1);
 	}
@@ -143,12 +144,14 @@ static void colorInit(void) {
 }
 
 static attr_t colorAttr(short fg) {
+	if (!COLORS) return (fg > 0 ? A_BOLD : A_NORMAL);
 	if (fg != COLOR_BLACK && fg % COLORS == COLOR_BLACK) return A_BOLD;
 	if (COLORS > 8) return A_NORMAL;
 	return (fg / COLORS & 1 ? A_BOLD : A_NORMAL);
 }
 
 static short colorPair(short fg, short bg) {
+	if (!COLORS) return 0;
 	fg %= COLORS;
 	bg %= COLORS;
 	if (bg == -1 && fg < 16) return 1 + fg;
