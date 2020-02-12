@@ -508,6 +508,22 @@ static void handleReplyEndOfWhois(struct Message *msg) {
 	replies.whois--;
 }
 
+static void handleReplyAway(struct Message *msg) {
+	require(msg, false, 3);
+	// Might be part of a WHOIS response.
+	size_t id;
+	if (completeColor(Network, msg->params[1]) != Default) {
+		id = Network;
+	} else {
+		id = idFor(msg->params[1]);
+	}
+	uiFormat(
+		id, Warm, tagTime(msg),
+		"\3%02d%s\3\tis away: %s",
+		completeColor(id, msg->params[1]), msg->params[1], msg->params[2]
+	);
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -633,6 +649,7 @@ static const struct Handler {
 	{ "001", handleReplyWelcome },
 	{ "005", handleReplyISupport },
 	{ "276", handleReplyWhoisGeneric },
+	{ "301", handleReplyAway },
 	{ "307", handleReplyWhoisGeneric },
 	{ "311", handleReplyWhoisUser },
 	{ "312", handleReplyWhoisServer },
