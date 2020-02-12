@@ -39,3 +39,47 @@ install: catgirl catgirl.1
 
 uninstall:
 	rm -f ${PREFIX}/bin/catgirl ${MANDIR}/man1/catgirl.1.gz
+
+CHROOT_USER = chat
+CHROOT_GROUP = ${CHROOT_USER}
+
+chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
+	install -d -o root -g wheel \
+		root \
+		root/bin \
+		root/etc/ssl \
+		root/home \
+		root/lib \
+		root/libexec \
+		root/usr/bin \
+		root/usr/share/man \
+		root/usr/share/misc
+	install -d -o ${CHROOT_USER} -g ${CHROOT_GROUP} \
+		root/home/${CHROOT_USER} \
+		root/home/${CHROOT_USER}/.local/share
+	cp -fp /libexec/ld-elf.so.1 root/libexec
+	cp -fp \
+		/lib/libc.so.7 \
+		/lib/libncursesw.so.8 \
+		/lib/libthr.so.3 \
+		/lib/libz.so.6 \
+		/usr/local/lib/libcrypto.so.45 \
+		/usr/local/lib/libssl.so.47 \
+		/usr/local/lib/libtls.so.19 \
+		root/lib
+	chflags noschg root/libexec/* root/lib/*
+	cp -fp /etc/hosts /etc/resolv.conf root/etc
+	cp -fp /etc/ssl/cert.pem root/etc/ssl
+	cp -af /usr/share/locale root/usr/share
+	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
+	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
+	${MAKE} install PREFIX=root/usr
+	install scripts/chroot-prompt.sh root/usr/bin/catgirl-prompt
+	install scripts/chroot-man.sh root/usr/bin/man
+	tar -c -f chroot.tar -C root bin etc home lib libexec usr
+
+install-chroot: chroot.tar
+	tar -x -f chroot.tar -C /home/${CHROOT_USER}
+
+clean-chroot:
+	rm -fr chroot.tar root
