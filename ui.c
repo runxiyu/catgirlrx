@@ -171,7 +171,7 @@ static const char *ExitFocusMode  = "\33[?1004l";
 static const char *EnterPasteMode = "\33[?2004h";
 static const char *ExitPasteMode  = "\33[?2004l";
 
-// Gain use of C-q, C-s, C-c, C-z, C-y, C-o.
+// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
 static void acquireKeys(void) {
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
@@ -182,6 +182,7 @@ static void acquireKeys(void) {
 #ifdef VDSUSP
 	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
 #endif
+	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
 	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
 	if (error) err(EX_OSERR, "tcsetattr");
@@ -211,6 +212,7 @@ static void errExit(void) {
 	X(KeyMetaL, "\33l") \
 	X(KeyMetaM, "\33m") \
 	X(KeyMetaU, "\33u") \
+	X(KeyMetaV, "\33v") \
 	X(KeyMetaSlash, "\33/") \
 	X(KeyFocusIn, "\33[I") \
 	X(KeyFocusOut, "\33[O") \
@@ -802,6 +804,7 @@ static void keyCode(int code) {
 		break; case KeyMetaL: bufferList(&window->buffer);
 		break; case KeyMetaM: waddch(window->pad, '\n');
 		break; case KeyMetaU: windowScrollUnread(window);
+		break; case KeyMetaV: windowScroll(window, +(PAGE_LINES - 2));
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
@@ -843,6 +846,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'P': windowShow(windows.active->prev);
 		break; case L'U': edit(id, EditDeleteHead, 0);
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
+		break; case L'V': windowScroll(windows.active, -(PAGE_LINES - 2));
 		break; case L'Y': edit(id, EditPaste, 0);
 	}
 }
