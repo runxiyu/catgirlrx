@@ -25,11 +25,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sysexits.h>
 #include <unistd.h>
 
 #include "chat.h"
+
+#ifndef OPENSSL_BIN
+#define OPENSSL_BIN "openssl"
+#endif
+
+static void genCert(const char *path) {
+	const char *name = strrchr(path, '/');
+	name = (name ? &name[1] : path);
+	char subj[256];
+	snprintf(subj, sizeof(subj), "/CN=%.*s", (int)strcspn(name, "."), name);
+	umask(0066);
+	execlp(
+		OPENSSL_BIN, "openssl", "req",
+		"-x509", "-new", "-newkey", "rsa:4096", "-sha256", "-days", "3650",
+		"-nodes", "-subj", subj, "-out", path, "-keyout", path,
+		NULL
+	);
+	err(EX_UNAVAILABLE, "openssl");
+}
 
 char *idNames[IDCap] = {
 	[None] = "<none>",
@@ -94,7 +114,7 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:N:O:RS:a:c:eh:j:k:n:p:r:s:u:vw:";
+	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:j:k:n:p:r:s:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
@@ -132,6 +152,7 @@ int main(int argc, char *argv[]) {
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
+			break; case 'g': genCert(optarg);
 			break; case 'h': host = optarg;
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;

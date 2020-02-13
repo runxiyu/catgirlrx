@@ -10,6 +10,7 @@ case "$(uname)" in
 		prefix=$(pkg query '%p' libressl)
 		cat >config.mk <<-EOF
 		CFLAGS += -I${prefix}/include
+		CFLAGS += -D'OPENSSL_BIN="${prefix}/bin/openssl"'
 		LDFLAGS += -L${prefix}/lib
 		EOF
 		exit
@@ -21,6 +22,7 @@ pkg-config --print-errors $libs
 
 cat >config.mk <<EOF
 CFLAGS += $(pkg-config --cflags $libs)
+CFLAGS += -D'OPENSSL_BIN="$(pkg-config --variable=prefix openssl)/bin/openssl"'
 LDFLAGS += $(pkg-config --libs-only-L $libs)
 LDLIBS = $(pkg-config --libs-only-l $libs)
 EOF

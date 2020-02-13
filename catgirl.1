@@ -27,6 +27,9 @@
 .Op Fl w Ar pass
 .Op Ar config ...
 .
+.Nm
+.Fl g Ar cert
+.
 .Sh DESCRIPTION
 The
 .Nm
@@ -122,12 +125,22 @@ it is loaded with
 With
 .Fl e ,
 authenticate using SASL EXTERNAL.
+Certificates can be generated with
+.Fl g .
 .
 .It Fl e , Cm sasl-external
 Authenticate using SASL EXTERNAL,
 also known as CertFP.
 The TLS client certificate is loaded with
 .Fl c .
+For more information, see
+.Sx Configuring CertFP .
+.
+.It Fl g Ar path
+Generate a TLS client certificate using
+.Xr openssl 1
+and write it to
+.Ar path .
 .
 .It Fl h Ar host , Cm host = Ar host
 Connect to
@@ -183,6 +196,38 @@ if it is not a terminal.
 .It Fl w Ar pass , Cm pass = Ar pass
 Log in with the server password
 .Ar pass .
+.El
+.
+.Ss Configuring CertFP
+.Bl -enum
+.It
+Generate a new TLS client certificate:
+.Bd -literal -offset indent
+catgirl -g ~/.config/catgirl/example.pem
+.Ed
+.It
+Connect to the server using the certificate:
+.Bd -literal -offset indent
+cert = example.pem
+# or: catgirl -c example.pem
+.Ed
+.It
+Identify with services or use
+.Cm sasl-plain ,
+then add the certificate fingerprint
+to your account:
+.Bd -literal -offset indent
+/msg NickServ CERT ADD
+.Ed
+.It
+Enable SASL EXTERNAL
+to require successful authentication
+when connecting:
+.Bd -literal -offset indent
+cert = example.pem
+sasl-external
+# or: catgirl -e -c example.pem
+.Ed
 .El
 .
 .Sh COMMANDS
