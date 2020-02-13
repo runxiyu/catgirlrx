@@ -169,6 +169,7 @@ void uiHide(void);
 void uiDraw(void);
 void uiShowID(size_t id);
 void uiShowNum(size_t num);
+void uiMoveID(size_t id, size_t num);
 void uiCloseID(size_t id);
 void uiCloseNum(size_t id);
 void uiRead(void);

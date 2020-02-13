@@ -86,38 +86,52 @@ struct Window {
 	enum Heat heat;
 	int unreadCount;
 	int unreadLines;
-	struct Window *prev;
-	struct Window *next;
 };
 
 static struct {
-	struct Window *active;
-	struct Window *other;
-	struct Window *head;
-	struct Window *tail;
+	size_t show;
+	size_t swap;
+	struct Window *ptrs[IDCap];
+	size_t len;
 } windows;
 
-static void windowAdd(struct Window *window) {
-	if (windows.tail) windows.tail->next = window;
-	window->prev = windows.tail;
-	window->next = NULL;
-	windows.tail = window;
-	if (!windows.head) windows.head = window;
+static size_t windowPush(struct Window *window) {
+	assert(windows.len < IDCap);
+	windows.ptrs[windows.len] = window;
+	return windows.len++;
 }
 
-static void windowRemove(struct Window *window) {
-	if (window->prev) window->prev->next = window->next;
-	if (window->next) window->next->prev = window->prev;
-	if (windows.head == window) windows.head = window->next;
-	if (windows.tail == window) windows.tail = window->prev;
+static size_t windowInsert(size_t num, struct Window *window) {
+	assert(windows.len < IDCap);
+	assert(num <= windows.len);
+	memmove(
+		&windows.ptrs[num + 1],
+		&windows.ptrs[num],
+		sizeof(*windows.ptrs) * (windows.len - num)
+	);
+	windows.ptrs[num] = window;
+	windows.len++;
+	return num;
 }
 
-static struct Window *windowFor(size_t id) {
-	struct Window *window;
-	for (window = windows.head; window; window = window->next) {
-		if (window->id == id) return window;
+static struct Window *windowRemove(size_t num) {
+	assert(num < windows.len);
+	struct Window *window = windows.ptrs[num];
+	windows.len--;
+	memmove(
+		&windows.ptrs[num],
+		&windows.ptrs[num + 1],
+		sizeof(*windows.ptrs) * (windows.len - num)
+	);
+	return window;
+}
+
+static size_t windowFor(size_t id) {
+	for (size_t num = 0; num < windows.len; ++num) {
+		if (windows.ptrs[num]->id == id) return num;
 	}
-	window = calloc(1, sizeof(*window));
+
+	struct Window *window = calloc(1, sizeof(*window));
 	if (!window) err(EX_OSERR, "malloc");
 
 	window->id = id;
@@ -127,8 +141,15 @@ static struct Window *windowFor(size_t id) {
 	wmove(window->pad, WindowLines - 1, 0);
 	window->mark = true;
 
-	windowAdd(window);
-	return window;
+	return windowPush(window);
+}
+
+static void windowFree(struct Window *window) {
+	for (size_t i = 0; i < BufferCap; ++i) {
+		free(window->buffer.lines[i]);
+	}
+	delwin(window->pad);
+	free(window);
 }
 
 static short colorPairs;
@@ -256,7 +277,7 @@ void uiInit(void) {
 	keypad(input, true);
 	nodelay(input, true);
 
-	windows.active = windowFor(Network);
+	windowFor(Network);
 	uiShow();
 }
 
@@ -269,7 +290,7 @@ static char prevTitle[sizeof(title)];
 void uiDraw(void) {
 	if (hidden) return;
 	wnoutrefresh(status);
-	struct Window *window = windows.active;
+	const struct Window *window = windows.ptrs[windows.show];
 	pnoutrefresh(
 		window->pad,
 		WindowLines - window->scroll - PAGE_LINES + !!window->scroll, 0,
@@ -381,19 +402,18 @@ static void statusUpdate(void) {
 	enum Heat otherHeat = Cold;
 	wmove(status, 0, 0);
 
-	int num;
-	const struct Window *window;
-	for (num = 0, window = windows.head; window; ++num, window = window->next) {
-		if (!window->heat && window != windows.active) continue;
-		if (window != windows.active) {
+	for (size_t num = 0; num < windows.len; ++num) {
+		const struct Window *window = windows.ptrs[num];
+		if (!window->heat && num != windows.show) continue;
+		if (num != windows.show) {
 			otherUnread += window->unreadCount;
 			if (window->heat > otherHeat) otherHeat = window->heat;
 		}
 		int trunc;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), "\3%d%s %d %s %n(\3%02d%d\3%d) ",
-			idColors[window->id], (window == windows.active ? "\26" : ""),
+			buf, sizeof(buf), "\3%d%s %zu %s %n(\3%02d%d\3%d) ",
+			idColors[window->id], (num == windows.show ? "\26" : ""),
 			num, idNames[window->id],
 			&trunc, (window->heat > Warm ? White : idColors[window->id]),
 			window->unreadCount,
@@ -404,7 +424,7 @@ static void statusUpdate(void) {
 	}
 	wclrtoeol(status);
 
-	window = windows.active;
+	const struct Window *window = windows.ptrs[windows.show];
 	snprintf(title, sizeof(title), "%s %s", self.network, idNames[window->id]);
 	if (window->mark && window->unreadCount) {
 		snprintf(
@@ -441,11 +461,11 @@ void uiShow(void) {
 	putp(EnterPasteMode);
 	fflush(stdout);
 	hidden = false;
-	unmark(windows.active);
+	unmark(windows.ptrs[windows.show]);
 }
 
 void uiHide(void) {
-	mark(windows.active);
+	mark(windows.ptrs[windows.show]);
 	hidden = true;
 	putp(ExitFocusMode);
 	putp(ExitPasteMode);
@@ -560,7 +580,7 @@ static void notify(size_t id, const char *str) {
 }
 
 void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
-	struct Window *window = windowFor(id);
+	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t clock = (src ? *src : time(NULL));
 	bufferPush(&window->buffer, clock, str);
 
@@ -614,11 +634,11 @@ static void reflow(struct Window *window) {
 static void resize(void) {
 	mvwin(marker, LINES - 2, 0);
 	int height, width;
-	getmaxyx(windows.active->pad, height, width);
+	getmaxyx(windows.ptrs[0]->pad, height, width);
 	if (width == COLS) return;
-	for (struct Window *window = windows.head; window; window = window->next) {
-		wresize(window->pad, BufferCap, COLS);
-		reflow(window);
+	for (size_t num = 0; num < windows.len; ++num) {
+		wresize(windows.ptrs[num]->pad, BufferCap, COLS);
+		reflow(windows.ptrs[num]);
 	}
 	(void)height;
 	statusUpdate();
@@ -690,7 +710,7 @@ static void inputAdd(struct Style *style, const char *str) {
 }
 
 static void inputUpdate(void) {
-	size_t id = windows.active->id;
+	size_t id = windows.ptrs[windows.show]->id;
 	size_t pos;
 	char *buf = editBuffer(&pos);
 
@@ -743,13 +763,12 @@ static void inputUpdate(void) {
 	wmove(input, y, x);
 }
 
-static void windowShow(struct Window *window) {
-	if (!window) return;
-	touchwin(window->pad);
-	windows.other = windows.active;
-	windows.active = window;
-	mark(windows.other);
-	unmark(windows.active);
+static void windowShow(size_t num) {
+	touchwin(windows.ptrs[num]->pad);
+	windows.swap = windows.show;
+	windows.show = num;
+	mark(windows.ptrs[windows.swap]);
+	unmark(windows.ptrs[windows.show]);
 	inputUpdate();
 }
 
@@ -758,31 +777,29 @@ void uiShowID(size_t id) {
 }
 
 void uiShowNum(size_t num) {
-	struct Window *window = windows.head;
-	for (size_t i = 0; i < num; ++i) {
-		window = window->next;
-		if (!window) return;
-	}
-	windowShow(window);
+	if (num < windows.len) windowShow(num);
 }
 
-static void windowClose(struct Window *window) {
-	if (window->id == Network) return;
+void uiMoveID(size_t id, size_t num) {
+	struct Window *window = windowRemove(windowFor(id));
+	if (num < windows.len) {
+		windowShow(windowInsert(num, window));
+	} else {
+		windowShow(windowPush(window));
+	}
+}
+
+static void windowClose(size_t num) {
+	if (windows.ptrs[num]->id == Network) return;
+	struct Window *window = windowRemove(num);
 	completeClear(window->id);
-	if (windows.active == window) {
-		if (windows.other && windows.other != window) {
-			windowShow(windows.other);
-		} else {
-			windowShow(window->prev ? window->prev : window->next);
-		}
+	windowFree(window);
+	if (windows.swap >= num) windows.swap--;
+	if (windows.show == num) {
+		windowShow(windows.swap);
+	} else if (windows.show > num) {
+		windows.show--;
 	}
-	if (windows.other == window) windows.other = NULL;
-	windowRemove(window);
-	for (size_t i = 0; i < BufferCap; ++i) {
-		free(window->buffer.lines[i]);
-	}
-	delwin(window->pad);
-	free(window);
 	statusUpdate();
 }
 
@@ -791,36 +808,31 @@ void uiCloseID(size_t id) {
 }
 
 void uiCloseNum(size_t num) {
-	struct Window *window = windows.head;
-	for (size_t i = 0; i < num; ++i) {
-		window = window->next;
-		if (!window) return;
-	}
-	windowClose(window);
+	if (num < windows.len) windowClose(num);
 }
 
 static void showAuto(void) {
-	static struct Window *other;
-	if (windows.other != other) {
-		other = windows.active;
+	static size_t swap;
+	if (windows.swap != swap) {
+		swap = windows.show;
 	}
-	for (struct Window *window = windows.head; window; window = window->next) {
-		if (window->heat < Hot) continue;
-		windowShow(window);
-		windows.other = other;
+	for (size_t num = 0; num < windows.len; ++num) {
+		if (windows.ptrs[num]->heat < Hot) continue;
+		windowShow(num);
+		windows.swap = swap;
 		return;
 	}
-	for (struct Window *window = windows.head; window; window = window->next) {
-		if (window->heat < Warm) continue;
-		windowShow(window);
-		windows.other = other;
+	for (size_t num = 0; num < windows.len; ++num) {
+		if (windows.ptrs[num]->heat < Warm) continue;
+		windowShow(num);
+		windows.swap = swap;
 		return;
 	}
-	windowShow(windows.other);
+	windowShow(windows.swap);
 }
 
 static void keyCode(int code) {
-	struct Window *window = windows.active;
+	struct Window *window = windows.ptrs[windows.show];
 	size_t id = window->id;
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
@@ -829,7 +841,7 @@ static void keyCode(int code) {
 		break; case KeyPasteOn:; // TODO
 		break; case KeyPasteOff:; // TODO
 
-		break; case KeyMetaSlash: windowShow(windows.other);
+		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaA: showAuto();
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
@@ -861,7 +873,8 @@ static void keyCode(int code) {
 }
 
 static void keyCtrl(wchar_t ch) {
-	size_t id = windows.active->id;
+	struct Window *window = windows.ptrs[windows.show];
+	size_t id = window->id;
 	switch (ch ^ L'@') {
 		break; case L'?': edit(id, EditDeletePrev, 0);
 		break; case L'A': edit(id, EditHead, 0);
@@ -875,19 +888,19 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'J': edit(id, EditEnter, 0);
 		break; case L'K': edit(id, EditDeleteTail, 0);
 		break; case L'L': clearok(curscr, true);
-		break; case L'N': windowShow(windows.active->next);
-		break; case L'O': windowShow(windows.other);
-		break; case L'P': windowShow(windows.active->prev);
+		break; case L'N': uiShowNum(windows.show + 1);
+		break; case L'O': windowShow(windows.swap);
+		break; case L'P': uiShowNum(windows.show - 1);
 		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
-		break; case L'V': windowScroll(windows.active, -(PAGE_LINES - 2));
+		break; case L'V': windowScroll(window, -(PAGE_LINES - 2));
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
 		break; case L'Y': edit(id, EditPaste, 0);
 	}
 }
 
 static void keyStyle(wchar_t ch) {
-	size_t id = windows.active->id;
+	size_t id = windows.ptrs[windows.show]->id;
 	switch (iswcntrl(ch) ? ch ^ L'@' : (wchar_t)towupper(ch)) {
 		break; case L'B': edit(id, EditInsert, B);
 		break; case L'C': edit(id, EditInsert, C);
@@ -923,7 +936,7 @@ void uiRead(void) {
 		} else if (iswcntrl(ch)) {
 			keyCtrl(ch);
 		} else {
-			edit(windows.active->id, EditInsert, ch);
+			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
 		}
 		style = false;
 	}
@@ -953,8 +966,8 @@ int uiSave(const char *name) {
 	if (!file) return -1;
 
 	if (writeTime(file, Signatures[0])) return -1;
-	const struct Window *window;
-	for (window = windows.head; window; window = window->next) {
+	for (size_t num = 0; num < windows.len; ++num) {
+		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			time_t time = bufferTime(&window->buffer, i);
@@ -1003,7 +1016,7 @@ void uiLoad(const char *name) {
 	char *buf = NULL;
 	size_t cap = 0;
 	while (0 < readString(file, &buf, &cap)) {
-		struct Window *window = windowFor(idFor(buf));
+		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
 		for (;;) {
 			time_t time = readTime(file);
 			if (!time) break;

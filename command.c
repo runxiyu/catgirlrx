@@ -159,6 +159,17 @@ static void commandWindow(size_t id, char *params) {
 	}
 }
 
+static void commandMove(size_t id, char *params) {
+	if (!params) return;
+	char *name = strsep(&params, " ");
+	if (params) {
+		id = idFind(name);
+		if (id) uiMoveID(id, strtoul(params, NULL, 10));
+	} else {
+		uiMoveID(id, strtoul(name, NULL, 10));
+	}
+}
+
 static void commandClose(size_t id, char *params) {
 	if (!params) {
 		uiCloseID(id);
@@ -213,6 +224,7 @@ static const struct Handler {
 	{ "/join", .fn = commandJoin, .restricted = true },
 	{ "/list", .fn = commandList },
 	{ "/me", .fn = commandMe },
+	{ "/move", .fn = commandMove },
 	{ "/msg", .fn = commandMsg, .restricted = true },
 	{ "/names", .fn = commandNames },
 	{ "/nick", .fn = commandNick },
