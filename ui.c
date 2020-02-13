@@ -300,21 +300,6 @@ void uiDraw(void) {
 	fflush(stdout);
 }
 
-void uiShow(void) {
-	prevTitle[0] = '\0';
-	putp(EnterFocusMode);
-	putp(EnterPasteMode);
-	fflush(stdout);
-	hidden = false;
-}
-
-void uiHide(void) {
-	hidden = true;
-	putp(ExitFocusMode);
-	putp(ExitPasteMode);
-	endwin();
-}
-
 struct Style {
 	attr_t attr;
 	enum Color fg, bg;
@@ -448,6 +433,23 @@ static void unmark(struct Window *window) {
 		window->heat = Cold;
 	}
 	statusUpdate();
+}
+
+void uiShow(void) {
+	prevTitle[0] = '\0';
+	putp(EnterFocusMode);
+	putp(EnterPasteMode);
+	fflush(stdout);
+	hidden = false;
+	unmark(windows.active);
+}
+
+void uiHide(void) {
+	mark(windows.active);
+	hidden = true;
+	putp(ExitFocusMode);
+	putp(ExitPasteMode);
+	endwin();
 }
 
 static void windowScroll(struct Window *window, int n) {
