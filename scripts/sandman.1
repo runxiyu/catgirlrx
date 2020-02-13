@@ -1,0 +1,36 @@
+.Dd February 12, 2020
+.Dt SANDMAN 1
+.Os
+.
+.Sh NAME
+.Nm sandman
+.Nd sleep wrapper
+.
+.Sh SYNOPSIS
+.Nm
+.Op Fl t Ar secs
+.Ar command ...
+.
+.Sh DESCRIPTION
+The
+.Nm
+utility wraps a
+.Ar command ,
+sending it
+.Dv SIGHUP
+when the system goes to sleep,
+and restarting it
+when the system wakes.
+.
+.Pp
+The arguments are as follows:
+.Bl -tag -width Ds
+.It Fl t Ar secs
+Wait for
+.Ar secs
+before restarting the process.
+The default is 8 seconds.
+.El
+.
+.Sh AUTHORS
+.An June Bug Aq Mt june@causal.agency

@@ -99,6 +99,19 @@ For example,
 PKG_CONFIG_PATH=/opt/libressl/lib/pkgconfig ./configure
 .Ed
 .
+.Pp
+The
+.Nm sandman
+wrapper is provided for macOS
+to stop and start
+.Nm
+on system sleep and wake.
+Install it as follows:
+.Bd -literal -offset indent
+make scripts/sandman
+sudo make install-sandman
+.Ed
+.
 .Sh FILES
 .Bl -tag -width "complete.c" -compact
 .It Pa chat.h
@@ -127,6 +140,8 @@ XDG base directories
 .
 .Pp
 .Bl -tag -width "scripts/notify-send.scpt" -compact
+.It Pa scripts/sandman.m
+sleep/wake wrapper for macOS
 .It Pa scripts/notify-send.scpt
 .Xr notify-send 1
 in AppleScript
