@@ -1,4 +1,4 @@
-.Dd February 11, 2020
+.Dd February 12, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -11,6 +11,7 @@
 .Op Fl Rev
 .Op Fl C Ar copy
 .Op Fl H Ar hash
+.Op Fl N Ar send
 .Op Fl O Ar open
 .Op Fl S Ar bind
 .Op Fl a Ar auth
@@ -65,6 +66,16 @@ The default is the first available of
 .It Fl H Ar hash , Cm hash = Ar hash
 Set the initial value of
 the nick color hash function.
+.
+.It Fl N Ar util , Cm notify = Ar util
+Send notifications using a utility.
+Use more than once to add arguments to
+.Ar util .
+Two additional arguments are passed to
+.Ar util :
+a title and a description,
+appropriate for
+.Xr notify-send 1 .
 .
 .It Fl O Ar util , Cm open = Ar util
 Set the utility used by

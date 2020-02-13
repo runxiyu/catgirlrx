@@ -530,6 +530,35 @@ static int wordWrap(WINDOW *win, const char *str) {
 	return lines;
 }
 
+struct Util uiNotifyUtil;
+static void notify(size_t id, const char *str) {
+	if (!uiNotifyUtil.argc) return;
+
+	struct Util util = uiNotifyUtil;
+	utilPush(&util, idNames[id]);
+	size_t len = 0;
+	char buf[1024] = "";
+	while (*str && len < sizeof(buf)) {
+		size_t run;
+		struct Style style = Reset;
+		styleParse(&style, &str, &run);
+		len += snprintf(&buf[len], sizeof(buf) - len, "%.*s", (int)run, str);
+		str += run;
+	}
+	utilPush(&util, buf);
+
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) return;
+
+	close(STDIN_FILENO);
+	dup2(procPipe[1], STDOUT_FILENO);
+	dup2(procPipe[1], STDERR_FILENO);
+	execvp(util.argv[0], (char *const *)util.argv);
+	warn("%s", util.argv[0]);
+	_exit(EX_CONFIG);
+}
+
 void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windowFor(id);
 	time_t clock = (src ? *src : time(NULL));
@@ -548,7 +577,10 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 	lines += wordWrap(window->pad, str);
 	window->unreadLines += lines;
 	if (window->scroll) windowScroll(window, lines);
-	if (heat > Warm) beep();
+	if (window->mark && heat > Warm) {
+		beep();
+		notify(id, str);
+	}
 }
 
 void uiFormat(

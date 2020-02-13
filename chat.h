@@ -146,7 +146,22 @@ const char *commandIsNotice(size_t id, const char *input);
 const char *commandIsAction(size_t id, const char *input);
 void commandComplete(void);
 
+enum { UtilCap = 16 };
+struct Util {
+	size_t argc;
+	const char *argv[UtilCap];
+};
+
+static inline void utilPush(struct Util *util, const char *arg) {
+	if (1 + util->argc < UtilCap) {
+		util->argv[util->argc++] = arg;
+	} else {
+		errx(EX_CONFIG, "too many utility arguments");
+	}
+}
+
 enum Heat { Cold, Warm, Hot };
+extern struct Util uiNotifyUtil;
 void uiInit(void);
 void uiShow(void);
 void uiHide(void);
@@ -195,20 +210,6 @@ void completeRemove(size_t id, const char *str);
 void completeClear(size_t id);
 size_t completeID(const char *str);
 enum Color completeColor(size_t id, const char *str);
-
-enum { UtilCap = 16 };
-struct Util {
-	size_t argc;
-	const char *argv[UtilCap];
-};
-
-static inline void utilPush(struct Util *util, const char *arg) {
-	if (1 + util->argc < UtilCap) {
-		util->argv[util->argc++] = arg;
-	} else {
-		errx(EX_CONFIG, "too many utility arguments");
-	}
-}
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;
