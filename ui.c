@@ -797,6 +797,7 @@ static void windowClose(size_t num) {
 	if (windows.swap >= num) windows.swap--;
 	if (windows.show == num) {
 		windowShow(windows.swap);
+		windows.swap = windows.show;
 	} else if (windows.show > num) {
 		windows.show--;
 	}
