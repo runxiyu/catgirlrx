@@ -94,7 +94,14 @@ static void handleErrorNicknameInUse(struct Message *msg) {
 
 static void handleErrorErroneousNickname(struct Message *msg) {
 	require(msg, false, 3);
-	errx(EX_CONFIG, "%s: %s", msg->params[1], msg->params[2]);
+	if (!strcmp(self.nick, "*")) {
+		errx(EX_CONFIG, "%s: %s", msg->params[1], msg->params[2]);
+	} else {
+		uiFormat(
+			Network, Warm, tagTime(msg),
+			"%s: %s", msg->params[2], msg->params[1]
+		);
+	}
 }
 
 static void handleCap(struct Message *msg) {
