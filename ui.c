@@ -675,7 +675,7 @@ static void inputUpdate(void) {
 		init.attr |= A_ITALIC;
 		prefix = "* "; suffix = " ";
 		rest.attr |= A_ITALIC;
-	} else if (id == Debug) {
+	} else if (id == Debug && buf[0] != '/') {
 		skip = buf;
 		init.fg = Gray;
 		prompt = "<< ";
