@@ -273,3 +273,9 @@ void ircRecv(void) {
 	len -= line - buf;
 	memmove(buf, line, len);
 }
+
+void ircClose(void) {
+	int error = tls_close(client);
+	if (error) errx(EX_IOERR, "tls_close: %s", tls_error(client));
+	tls_free(client);
+}

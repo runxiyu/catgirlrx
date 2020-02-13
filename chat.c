@@ -269,5 +269,6 @@ int main(int argc, char *argv[]) {
 	};
 	handle(msg);
 
+	ircClose();
 	uiHide();
 }

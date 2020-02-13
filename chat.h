@@ -130,6 +130,7 @@ void ircRecv(void);
 void ircSend(const char *ptr, size_t len);
 void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
+void ircClose(void);
 
 extern struct Replies {
 	size_t join;
