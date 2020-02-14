@@ -456,6 +456,7 @@ static void unmark(struct Window *window) {
 }
 
 void uiShow(void) {
+	if (!hidden) return;
 	prevTitle[0] = '\0';
 	putp(EnterFocusMode);
 	putp(EnterPasteMode);
@@ -465,6 +466,7 @@ void uiShow(void) {
 }
 
 void uiHide(void) {
+	if (hidden) return;
 	mark(windows.ptrs[windows.show]);
 	hidden = true;
 	putp(ExitFocusMode);
