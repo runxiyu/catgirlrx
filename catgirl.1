@@ -431,6 +431,20 @@ The color numbers are as follows:
 .It 99 Ta default Ta Ta
 .El
 .
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev SHELL
+The path executed by
+.Ic /exec
+with
+.Fl c Ar command .
+If unset,
+.Pa /bin/sh
+is used.
+.It Ev USER
+The default nickname.
+.El
+.
 .Sh FILES
 .Bl -tag -width Ds
 .It Pa $XDG_CONFIG_DIRS/catgirl
