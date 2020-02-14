@@ -281,7 +281,7 @@ void uiInit(void) {
 	uiShow();
 }
 
-static bool hidden;
+static bool hidden = true;
 static bool waiting;
 
 static char title[256];
