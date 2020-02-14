@@ -107,8 +107,8 @@ static void urlOpen(const char *url) {
 	if (pid) return;
 
 	close(STDIN_FILENO);
-	dup2(procPipe[1], STDOUT_FILENO);
-	dup2(procPipe[1], STDERR_FILENO);
+	dup2(utilPipe[1], STDOUT_FILENO);
+	dup2(utilPipe[1], STDERR_FILENO);
 	if (urlOpenUtil.argc) {
 		struct Util util = urlOpenUtil;
 		utilPush(&util, url);
@@ -156,8 +156,8 @@ static void urlCopy(const char *url) {
 	}
 
 	dup2(rw[0], STDIN_FILENO);
-	dup2(procPipe[1], STDOUT_FILENO);
-	dup2(procPipe[1], STDERR_FILENO);
+	dup2(utilPipe[1], STDOUT_FILENO);
+	dup2(utilPipe[1], STDERR_FILENO);
 	close(rw[0]);
 	if (urlCopyUtil.argc) {
 		execvp(urlCopyUtil.argv[0], (char *const *)urlCopyUtil.argv);

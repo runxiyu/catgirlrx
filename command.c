@@ -207,7 +207,7 @@ static void commandHelp(size_t id, char *params) {
 	snprintf(buf, sizeof(buf), "ip%s$", (params ? params : "COMMANDS"));
 	setenv("LESS", buf, 1);
 	execlp("man", "man", "1", "catgirl", NULL);
-	dup2(procPipe[1], STDERR_FILENO);
+	dup2(utilPipe[1], STDERR_FILENO);
 	warn("man");
 	_exit(EX_UNAVAILABLE);
 }

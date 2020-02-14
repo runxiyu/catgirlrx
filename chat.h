@@ -28,8 +28,6 @@
 
 typedef unsigned char byte;
 
-int procPipe[2];
-
 enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
@@ -146,6 +144,8 @@ const char *commandIsPrivmsg(size_t id, const char *input);
 const char *commandIsNotice(size_t id, const char *input);
 const char *commandIsAction(size_t id, const char *input);
 void commandComplete(void);
+
+int utilPipe[2];
 
 enum { UtilCap = 16 };
 struct Util {

@@ -572,8 +572,8 @@ static void notify(size_t id, const char *str) {
 	if (pid) return;
 
 	close(STDIN_FILENO);
-	dup2(procPipe[1], STDOUT_FILENO);
-	dup2(procPipe[1], STDERR_FILENO);
+	dup2(utilPipe[1], STDOUT_FILENO);
+	dup2(utilPipe[1], STDERR_FILENO);
 	execvp(util.argv[0], (char *const *)util.argv);
 	warn("%s", util.argv[0]);
 	_exit(EX_CONFIG);

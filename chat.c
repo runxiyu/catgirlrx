@@ -78,11 +78,11 @@ static void exitSave(void) {
 
 uint32_t hashInit;
 
-int procPipe[2] = { -1, -1 };
+int utilPipe[2] = { -1, -1 };
 
-static void pipeRead(void) {
+static void utilRead(void) {
 	char buf[1024];
-	ssize_t len = read(procPipe[0], buf, sizeof(buf) - 1);
+	ssize_t len = read(utilPipe[0], buf, sizeof(buf) - 1);
 	if (len < 0) err(EX_IOERR, "read");
 	if (!len) return;
 	buf[len - 1] = '\0';
@@ -221,17 +221,17 @@ int main(int argc, char *argv[]) {
 	signal(SIGCHLD, signalHandler);
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
-	int error = pipe(procPipe);
+	int error = pipe(utilPipe);
 	if (error) err(EX_OSERR, "pipe");
 
 	fcntl(irc, F_SETFD, FD_CLOEXEC);
-	fcntl(procPipe[0], F_SETFD, FD_CLOEXEC);
-	fcntl(procPipe[1], F_SETFD, FD_CLOEXEC);
+	fcntl(utilPipe[0], F_SETFD, FD_CLOEXEC);
+	fcntl(utilPipe[1], F_SETFD, FD_CLOEXEC);
 
 	struct pollfd fds[3] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
-		{ .events = POLLIN, .fd = procPipe[0] },
+		{ .events = POLLIN, .fd = utilPipe[0] },
 	};
 	while (!self.quit) {
 		int nfds = poll(fds, ARRAY_LEN(fds), -1);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
 		if (nfds > 0) {
 			if (fds[0].revents) uiRead();
 			if (fds[1].revents) ircRecv();
-			if (fds[2].revents) pipeRead();
+			if (fds[2].revents) utilRead();
 		}
 
 		if (signals[SIGHUP]) self.quit = "zzz";
