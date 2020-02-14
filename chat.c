@@ -79,17 +79,31 @@ static void exitSave(void) {
 uint32_t hashInit;
 
 int utilPipe[2] = { -1, -1 };
+int execPipe[2] = { -1, -1 };
 
 static void utilRead(void) {
 	char buf[1024];
 	ssize_t len = read(utilPipe[0], buf, sizeof(buf) - 1);
 	if (len < 0) err(EX_IOERR, "read");
 	if (!len) return;
-	buf[len - 1] = '\0';
+	buf[len] = '\0';
 	char *ptr = buf;
 	while (ptr) {
 		char *line = strsep(&ptr, "\n");
-		uiFormat(Network, Warm, NULL, "%s", line);
+		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
+	}
+}
+
+static void execRead(void) {
+	char buf[1024];
+	ssize_t len = read(execPipe[0], buf, sizeof(buf) - 1);
+	if (len < 0) err(EX_IOERR, "read");
+	if (!len) return;
+	buf[len] = '\0';
+	char *ptr = buf;
+	while (ptr) {
+		char *line = strsep(&ptr, "\n");
+		if (line[0]) command(execID, line);
 	}
 }
 
@@ -221,25 +235,34 @@ int main(int argc, char *argv[]) {
 	signal(SIGCHLD, signalHandler);
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
-	int error = pipe(utilPipe);
-	if (error) err(EX_OSERR, "pipe");
-
 	fcntl(irc, F_SETFD, FD_CLOEXEC);
-	fcntl(utilPipe[0], F_SETFD, FD_CLOEXEC);
-	fcntl(utilPipe[1], F_SETFD, FD_CLOEXEC);
+	if (!self.restricted) {
+		int error = pipe(utilPipe);
+		if (error) err(EX_OSERR, "pipe");
 
-	struct pollfd fds[3] = {
+		error = pipe(execPipe);
+		if (error) err(EX_OSERR, "pipe");
+
+		fcntl(utilPipe[0], F_SETFD, FD_CLOEXEC);
+		fcntl(utilPipe[1], F_SETFD, FD_CLOEXEC);
+		fcntl(execPipe[0], F_SETFD, FD_CLOEXEC);
+		fcntl(execPipe[1], F_SETFD, FD_CLOEXEC);
+	}
+
+	struct pollfd fds[] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
 		{ .events = POLLIN, .fd = utilPipe[0] },
+		{ .events = POLLIN, .fd = execPipe[0] },
 	};
 	while (!self.quit) {
-		int nfds = poll(fds, ARRAY_LEN(fds), -1);
+		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 		if (nfds > 0) {
 			if (fds[0].revents) uiRead();
 			if (fds[1].revents) ircRecv();
 			if (fds[2].revents) utilRead();
+			if (fds[3].revents) execRead();
 		}
 
 		if (signals[SIGHUP]) self.quit = "zzz";

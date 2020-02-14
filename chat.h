@@ -138,6 +138,9 @@ extern struct Replies {
 	size_t whois;
 } replies;
 
+size_t execID;
+int execPipe[2];
+
 void handle(struct Message msg);
 void command(size_t id, char *input);
 const char *commandIsPrivmsg(size_t id, const char *input);

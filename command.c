@@ -195,6 +195,24 @@ static void commandCopy(size_t id, char *params) {
 	urlCopyMatch(id, params);
 }
 
+static void commandExec(size_t id, char *params) {
+	execID = id;
+
+	pid_t pid = fork();
+	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid) return;
+
+	const char *shell = getenv("SHELL");
+	if (!shell) shell = "/bin/sh";
+
+	close(STDIN_FILENO);
+	dup2(execPipe[1], STDOUT_FILENO);
+	dup2(utilPipe[1], STDERR_FILENO);
+	execlp(shell, shell, "-c", params, NULL);
+	warn("%s", shell);
+	_exit(EX_UNAVAILABLE);
+}
+
 static void commandHelp(size_t id, char *params) {
 	(void)id;
 	uiHide();
@@ -220,6 +238,7 @@ static const struct Handler {
 	{ "/close", .fn = commandClose },
 	{ "/copy", .fn = commandCopy, .restricted = true },
 	{ "/debug", .fn = commandDebug, .restricted = true },
+	{ "/exec", .fn = commandExec, .restricted = true },
 	{ "/help", .fn = commandHelp },
 	{ "/join", .fn = commandJoin, .restricted = true },
 	{ "/list", .fn = commandList },

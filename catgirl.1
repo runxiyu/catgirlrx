@@ -93,6 +93,7 @@ The default is the first available of
 Disable the
 .Ic /copy ,
 .Ic /debug ,
+.Ic /exec ,
 .Ic /join ,
 .Ic /msg ,
 .Ic /open ,
@@ -280,6 +281,14 @@ or matching
 Toggle logging in the
 .Sy <debug>
 window.
+.It Ic /exec Ar command
+Run
+.Ar command
+with
+.Ev SHELL
+and interpret its output
+as input to the current window,
+including as commands.
 .It Ic /help Op Ar search
 View this manual.
 Type
