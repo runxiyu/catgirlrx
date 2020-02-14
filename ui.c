@@ -84,7 +84,8 @@ struct Window {
 	int scroll;
 	bool mark;
 	enum Heat heat;
-	int unreadCount;
+	int unreadTotal;
+	int unreadWarm;
 	int unreadLines;
 };
 
@@ -406,7 +407,7 @@ static void statusUpdate(void) {
 		const struct Window *window = windows.ptrs[num];
 		if (!window->heat && num != windows.show) continue;
 		if (num != windows.show) {
-			otherUnread += window->unreadCount;
+			otherUnread += window->unreadWarm;
 			if (window->heat > otherHeat) otherHeat = window->heat;
 		}
 		int trunc;
@@ -416,20 +417,20 @@ static void statusUpdate(void) {
 			idColors[window->id], (num == windows.show ? "\26" : ""),
 			num, idNames[window->id],
 			&trunc, (window->heat > Warm ? White : idColors[window->id]),
-			window->unreadCount,
+			window->unreadWarm,
 			idColors[window->id]
 		);
-		if (!window->mark || !window->unreadCount) buf[trunc] = '\0';
+		if (!window->mark || !window->unreadWarm) buf[trunc] = '\0';
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
 
 	const struct Window *window = windows.ptrs[windows.show];
 	snprintf(title, sizeof(title), "%s %s", self.network, idNames[window->id]);
-	if (window->mark && window->unreadCount) {
+	if (window->mark && window->unreadWarm) {
 		snprintf(
 			&title[strlen(title)], sizeof(title) - strlen(title),
-			" (%d%s)", window->unreadCount, (window->heat > Warm ? "!" : "")
+			" (%d%s)", window->unreadWarm, (window->heat > Warm ? "!" : "")
 		);
 	}
 	if (otherUnread) {
@@ -443,7 +444,8 @@ static void statusUpdate(void) {
 static void mark(struct Window *window) {
 	if (window->scroll) return;
 	window->mark = true;
-	window->unreadCount = 0;
+	window->unreadTotal = 0;
+	window->unreadWarm = 0;
 	window->unreadLines = 0;
 }
 
@@ -588,12 +590,13 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 
 	int lines = 1;
 	waddch(window->pad, '\n');
+	window->unreadTotal++;
 	if (window->mark && heat > Cold) {
-		if (!window->unreadCount++) {
-			lines++;
-			waddch(window->pad, '\n');
-		}
 		if (window->heat < heat) window->heat = heat;
+		if (!window->unreadWarm++) {
+			waddch(window->pad, '\n');
+			lines++;
+		}
 		statusUpdate();
 	}
 	lines += wordWrap(window->pad, str);
@@ -625,7 +628,7 @@ static void reflow(struct Window *window) {
 		const char *line = bufferLine(&window->buffer, i);
 		if (!line) continue;
 		waddch(window->pad, '\n');
-		if (i >= (size_t)(BufferCap - window->unreadCount)) {
+		if (i >= (size_t)(BufferCap - window->unreadTotal)) {
 			window->unreadLines += 1 + wordWrap(window->pad, line);
 		} else {
 			wordWrap(window->pad, line);
