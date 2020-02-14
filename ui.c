@@ -950,7 +950,8 @@ void uiRead(void) {
 }
 
 static const time_t Signatures[] = {
-	0x6C72696774616301,
+	0x6C72696774616301, // no heat, unreadTotal, unreadWarm
+	0x6C72696774616302,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -971,10 +972,13 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeTime(file, Signatures[0])) return -1;
+	if (writeTime(file, Signatures[1])) return -1;
 	for (size_t num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
+		if (writeTime(file, window->heat)) return -1;
+		if (writeTime(file, window->unreadTotal)) return -1;
+		if (writeTime(file, window->unreadWarm)) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			time_t time = bufferTime(&window->buffer, i);
 			const char *line = bufferLine(&window->buffer, i);
@@ -1017,12 +1021,17 @@ void uiLoad(const char *name) {
 		fclose(file);
 		return;
 	}
-	signatureVersion(signature);
+	size_t version = signatureVersion(signature);
 
 	char *buf = NULL;
 	size_t cap = 0;
 	while (0 < readString(file, &buf, &cap)) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
+		if (version > 0) {
+			window->heat = readTime(file);
+			window->unreadTotal = readTime(file);
+			window->unreadWarm = readTime(file);
+		}
 		for (;;) {
 			time_t time = readTime(file);
 			if (!time) break;
@@ -1031,6 +1040,7 @@ void uiLoad(const char *name) {
 		}
 		reflow(window);
 		waddch(window->pad, '\n');
+		window->unreadLines++;
 	}
 
 	free(buf);
