@@ -60,9 +60,9 @@ static bool reserve(size_t index, size_t count) {
 	return true;
 }
 
-static void delete(size_t index, size_t count) {
+static void delete(bool copy, size_t index, size_t count) {
 	if (index + count > len) return;
-	if (count > 1) {
+	if (copy) {
 		memcpy(cut.buf, &buf[index], sizeof(*buf) * count);
 		cut.len = count;
 	}
@@ -109,7 +109,7 @@ static void tabComplete(size_t id) {
 		return;
 	}
 
-	delete(tab.pos, tab.len);
+	delete(false, tab.pos, tab.len);
 	if (wcs[0] != L'/' && !tab.pos) {
 		tab.len = n + 2;
 		reserve(tab.pos, tab.len);
@@ -158,22 +158,22 @@ void edit(size_t id, enum Edit op, wchar_t ch) {
 			while (pos < len && !iswspace(buf[pos])) pos++;
 		}
 
-		break; case EditDeleteHead: delete(0, pos); pos = 0;
-		break; case EditDeleteTail: delete(pos, len - pos);
-		break; case EditDeletePrev: if (pos) delete(--pos, 1);
-		break; case EditDeleteNext: delete(pos, 1);
+		break; case EditDeleteHead: delete(true, 0, pos); pos = 0;
+		break; case EditDeleteTail: delete(true, pos, len - pos);
+		break; case EditDeletePrev: if (pos) delete(false, --pos, 1);
+		break; case EditDeleteNext: delete(false, pos, 1);
 		break; case EditDeletePrevWord: {
 			if (!pos) break;
 			size_t word = pos - 1;
 			while (word && !iswspace(buf[word - 1])) word--;
-			delete(word, pos - word);
+			delete(true, word, pos - word);
 			pos = word;
 		}
 		break; case EditDeleteNextWord: {
 			if (pos == len) break;
 			size_t word = pos + 1;
 			while (word < len && !iswspace(buf[word])) word++;
-			delete(pos, word - pos);
+			delete(true, pos, word - pos);
 		}
 		break; case EditPaste: {
 			if (reserve(pos, cut.len)) {
