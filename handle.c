@@ -220,9 +220,14 @@ static void handleReplyISupport(struct Message *msg) {
 		} else if (!strcmp(key, "CHANTYPES")) {
 			set(&network.chanTypes, msg->params[i]);
 		} else if (!strcmp(key, "PREFIX")) {
-			strsep(&msg->params[i], ")");
-			if (!msg->params[i]) continue;
+			strsep(&msg->params[i], "(");
+			set(&network.prefixModes, strsep(&msg->params[i], ")"));
 			set(&network.prefixes, msg->params[i]);
+		} else if (!strcmp(key, "CHANMODES")) {
+			set(&network.listModes, strsep(&msg->params[i], ","));
+			set(&network.paramModes, strsep(&msg->params[i], ","));
+			set(&network.setParamModes, strsep(&msg->params[i], ","));
+			set(&network.channelModes, strsep(&msg->params[i], ","));
 		}
 	}
 }

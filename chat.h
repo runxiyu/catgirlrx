@@ -87,6 +87,11 @@ extern struct Network {
 	char *name;
 	char *chanTypes;
 	char *prefixes;
+	char *prefixModes;
+	char *listModes;
+	char *paramModes;
+	char *setParamModes;
+	char *channelModes;
 } network;
 
 extern struct Self {
