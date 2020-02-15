@@ -549,6 +549,13 @@ static void handleReplyAway(struct Message *msg) {
 	);
 }
 
+static void handleReplyNowAway(struct Message *msg) {
+	require(msg, false, 2);
+	if (!replies.away) return;
+	uiFormat(Network, Warm, tagTime(msg), "%s", msg->params[1]);
+	replies.away--;
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -675,6 +682,8 @@ static const struct Handler {
 	{ "005", handleReplyISupport },
 	{ "276", handleReplyWhoisGeneric },
 	{ "301", handleReplyAway },
+	{ "305", handleReplyNowAway },
+	{ "306", handleReplyNowAway },
 	{ "307", handleReplyWhoisGeneric },
 	{ "311", handleReplyWhoisUser },
 	{ "312", handleReplyWhoisServer },

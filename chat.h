@@ -131,6 +131,7 @@ void ircFormat(const char *format, ...)
 void ircClose(void);
 
 extern struct Replies {
+	size_t away;
 	size_t join;
 	size_t list;
 	size_t names;

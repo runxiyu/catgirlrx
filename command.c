@@ -110,6 +110,16 @@ static void commandNick(size_t id, char *params) {
 	ircFormat("NICK :%s\r\n", params);
 }
 
+static void commandAway(size_t id, char *params) {
+	(void)id;
+	if (params) {
+		ircFormat("AWAY :%s\r\n", params);
+	} else {
+		ircFormat("AWAY\r\n");
+	}
+	replies.away++;
+}
+
 static void commandTopic(size_t id, char *params) {
 	if (params) {
 		ircFormat("TOPIC %s :%s\r\n", idNames[id], params);
@@ -235,6 +245,7 @@ static const struct Handler {
 	Command *fn;
 	bool restricted;
 } Commands[] = {
+	{ "/away", .fn = commandAway },
 	{ "/close", .fn = commandClose },
 	{ "/copy", .fn = commandCopy, .restricted = true },
 	{ "/debug", .fn = commandDebug, .restricted = true },
