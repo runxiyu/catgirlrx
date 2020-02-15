@@ -348,7 +348,6 @@ static void handleReplyNames(struct Message *msg) {
 	size_t len = 0;
 	while (msg->params[3]) {
 		char *name = strsep(&msg->params[3], " ");
-		name += strspn(name, network.prefixes);
 		char *nick = strsep(&name, "!");
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
@@ -510,10 +509,10 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 	size_t len = 0;
 	while (msg->params[2]) {
 		char *channel = strsep(&msg->params[2], " ");
-		channel += strspn(channel, network.prefixes);
+		char *name = &channel[strspn(channel, network.prefixes)];
 		int n = snprintf(
 			&buf[len], sizeof(buf) - len,
-			"%s\3%02d%s\3", (len ? ", " : ""), hash(channel), channel
+			"%s\3%02d%s\3", (len ? ", " : ""), hash(name), channel
 		);
 		assert(n > 0 && len + n < sizeof(buf));
 		len += n;
