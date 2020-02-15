@@ -141,6 +141,16 @@ static void commandInvite(size_t id, char *params) {
 	ircFormat("INVITE %s %s\r\n", nick, idNames[id]);
 }
 
+static void commandKick(size_t id, char *params) {
+	if (!params) return;
+	char *nick = strsep(&params, " ");
+	if (params) {
+		ircFormat("KICK %s %s :%s\r\n", idNames[id], nick, params);
+	} else {
+		ircFormat("KICK %s %s\r\n", idNames[id], nick);
+	}
+}
+
 static void commandList(size_t id, char *params) {
 	(void)id;
 	if (params) {
@@ -259,6 +269,7 @@ static const struct Handler {
 	{ "/help", .fn = commandHelp },
 	{ "/invite", .fn = commandInvite },
 	{ "/join", .fn = commandJoin, .restricted = true },
+	{ "/kick", .fn = commandKick },
 	{ "/list", .fn = commandList },
 	{ "/me", .fn = commandMe },
 	{ "/move", .fn = commandMove },
