@@ -168,6 +168,18 @@ static void commandWhois(size_t id, char *params) {
 	replies.whois++;
 }
 
+static void commandNS(size_t id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("PRIVMSG NickServ :%s\r\n", params);
+}
+
+static void commandCS(size_t id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("PRIVMSG ChanServ :%s\r\n", params);
+}
+
 static void commandQuery(size_t id, char *params) {
 	if (!params) return;
 	size_t query = idFor(params);
@@ -264,6 +276,7 @@ static const struct Handler {
 	{ "/away", .fn = commandAway },
 	{ "/close", .fn = commandClose },
 	{ "/copy", .fn = commandCopy, .restricted = true },
+	{ "/cs", .fn = commandCS },
 	{ "/debug", .fn = commandDebug, .restricted = true },
 	{ "/exec", .fn = commandExec, .restricted = true },
 	{ "/help", .fn = commandHelp },
@@ -277,6 +290,7 @@ static const struct Handler {
 	{ "/names", .fn = commandNames },
 	{ "/nick", .fn = commandNick },
 	{ "/notice", .fn = commandNotice },
+	{ "/ns", .fn = commandNS },
 	{ "/open", .fn = commandOpen, .restricted = true },
 	{ "/part", .fn = commandPart },
 	{ "/query", .fn = commandQuery, .restricted = true },
