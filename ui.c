@@ -426,7 +426,7 @@ static void statusUpdate(void) {
 	wclrtoeol(status);
 
 	const struct Window *window = windows.ptrs[windows.show];
-	snprintf(title, sizeof(title), "%s %s", self.network, idNames[window->id]);
+	snprintf(title, sizeof(title), "%s %s", network.name, idNames[window->id]);
 	if (window->mark && window->unreadWarm) {
 		snprintf(
 			&title[strlen(title)], sizeof(title) - strlen(title),

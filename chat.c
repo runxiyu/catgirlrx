@@ -65,6 +65,7 @@ enum Color idColors[IDCap] = {
 
 size_t idNext = Network + 1;
 
+struct Network network;
 struct Self self = { .color = Default };
 
 static const char *save;
@@ -187,10 +188,10 @@ int main(int argc, char *argv[]) {
 	if (!user) user = nick;
 	if (!real) real = nick;
 
+	set(&network.name, host);
+	set(&network.chanTypes, "#&");
+	set(&network.prefixes, "@+");
 	set(&self.nick, "*");
-	set(&self.network, host);
-	set(&self.chanTypes, "#&");
-	set(&self.prefixes, "@+");
 	commandComplete();
 
 	FILE *certFile = NULL;

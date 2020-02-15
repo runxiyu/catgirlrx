@@ -82,15 +82,18 @@ enum Cap {
 #undef X
 };
 
+extern struct Network {
+	char *name;
+	char *chanTypes;
+	char *prefixes;
+} network;
+
 extern struct Self {
 	bool debug;
 	bool restricted;
 	char *plain;
 	const char *join;
 	enum Cap caps;
-	char *network;
-	char *chanTypes;
-	char *prefixes;
 	char *nick;
 	char *user;
 	enum Color color;

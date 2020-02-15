@@ -212,17 +212,17 @@ static void handleReplyISupport(struct Message *msg) {
 		char *key = strsep(&msg->params[i], "=");
 		if (!msg->params[i]) continue;
 		if (!strcmp(key, "NETWORK")) {
-			set(&self.network, msg->params[i]);
+			set(&network.name, msg->params[i]);
 			uiFormat(
 				Network, Cold, tagTime(msg),
 				"You arrive in %s", msg->params[i]
 			);
 		} else if (!strcmp(key, "CHANTYPES")) {
-			set(&self.chanTypes, msg->params[i]);
+			set(&network.chanTypes, msg->params[i]);
 		} else if (!strcmp(key, "PREFIX")) {
 			strsep(&msg->params[i], ")");
 			if (!msg->params[i]) continue;
-			set(&self.prefixes, msg->params[i]);
+			set(&network.prefixes, msg->params[i]);
 		}
 	}
 }
@@ -348,7 +348,7 @@ static void handleReplyNames(struct Message *msg) {
 	size_t len = 0;
 	while (msg->params[3]) {
 		char *name = strsep(&msg->params[3], " ");
-		name += strspn(name, self.prefixes);
+		name += strspn(name, network.prefixes);
 		char *nick = strsep(&name, "!");
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
@@ -510,7 +510,7 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 	size_t len = 0;
 	while (msg->params[2]) {
 		char *channel = strsep(&msg->params[2], " ");
-		channel += strspn(channel, self.prefixes);
+		channel += strspn(channel, network.prefixes);
 		int n = snprintf(
 			&buf[len], sizeof(buf) - len,
 			"%s\3%02d%s\3", (len ? ", " : ""), hash(channel), channel
@@ -642,11 +642,11 @@ static const char *colorMentions(size_t id, struct Message *msg) {
 
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
-	bool query = !strchr(self.chanTypes, msg->params[0][0]);
-	bool network = strchr(msg->nick, '.');
+	bool query = !strchr(network.chanTypes, msg->params[0][0]);
+	bool server = strchr(msg->nick, '.');
 	bool mine = !strcmp(msg->nick, self.nick);
 	size_t id;
-	if (query && network) {
+	if (query && server) {
 		id = Network;
 	} else if (query && !mine) {
 		id = idFor(msg->nick);
