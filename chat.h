@@ -72,6 +72,7 @@ static inline enum Color hash(const char *str) {
 #define ENUM_CAP \
 	X("extended-join", CapExtendedJoin) \
 	X("invite-notify", CapInviteNotify) \
+	X("multi-prefix", CapMultiPrefix) \
 	X("sasl", CapSASL) \
 	X("server-time", CapServerTime) \
 	X("userhost-in-names", CapUserhostInNames)
