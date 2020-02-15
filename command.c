@@ -135,6 +135,12 @@ static void commandNames(size_t id, char *params) {
 	replies.names++;
 }
 
+static void commandInvite(size_t id, char *params) {
+	if (!params) return;
+	char *nick = strsep(&params, " ");
+	ircFormat("INVITE %s %s\r\n", nick, idNames[id]);
+}
+
 static void commandList(size_t id, char *params) {
 	(void)id;
 	if (params) {
@@ -251,6 +257,7 @@ static const struct Handler {
 	{ "/debug", .fn = commandDebug, .restricted = true },
 	{ "/exec", .fn = commandExec, .restricted = true },
 	{ "/help", .fn = commandHelp },
+	{ "/invite", .fn = commandInvite },
 	{ "/join", .fn = commandJoin, .restricted = true },
 	{ "/list", .fn = commandList },
 	{ "/me", .fn = commandMe },

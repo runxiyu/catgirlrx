@@ -418,6 +418,25 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleInvite(struct Message *msg) {
+	require(msg, true, 2);
+	if (!strcmp(msg->params[0], self.nick)) {
+		uiFormat(
+			Network, Hot, tagTime(msg),
+			"\3%02d%s\3\tinvites you to \3%02d%s\3",
+			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
+		);
+	} else {
+		uiFormat(
+			idFor(msg->params[1]), Cold, tagTime(msg),
+			"\3%02d%s\3\tinvites %s to \3%02d%s\3",
+			hash(msg->user), msg->nick,
+			msg->params[0],
+			hash(msg->params[1]), msg->params[1]
+		);
+	}
+}
+
 static void handleReplyList(struct Message *msg) {
 	require(msg, false, 4);
 	if (!replies.list) return;
@@ -710,6 +729,7 @@ static const struct Handler {
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
 	{ "ERROR", handleError },
+	{ "INVITE", handleInvite },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "NICK", handleNick },
