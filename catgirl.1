@@ -1,4 +1,4 @@
-.Dd February 14, 2020
+.Dd February 15, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -477,6 +477,16 @@ usually
 .It Pa ~/.local/share/catgirl
 The most likely location of save files.
 .El
+.
+.Sh EXIT STATUS
+The
+.Nm
+client exits 0
+if requested by the user,
+.Dv EX_UNAVAILABLE
+(69)
+if the connection is lost,
+and >0 if an error occurs.
 .
 .Sh EXAMPLES
 Command line:
