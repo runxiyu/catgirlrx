@@ -93,6 +93,8 @@ extern struct Network {
 	char *paramModes;
 	char *setParamModes;
 	char *channelModes;
+	char excepts;
+	char invex;
 } network;
 
 extern struct Self {

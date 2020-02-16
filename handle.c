@@ -228,6 +228,10 @@ static void handleReplyISupport(struct Message *msg) {
 			set(&network.paramModes, strsep(&msg->params[i], ","));
 			set(&network.setParamModes, strsep(&msg->params[i], ","));
 			set(&network.channelModes, strsep(&msg->params[i], ","));
+		} else if (!strcmp(key, "EXCEPTS")) {
+			network.excepts = (msg->params[i] ? msg->params[i][0] : 'e');
+		} else if (!strcmp(key, "INVEX")) {
+			network.invex = (msg->params[i] ? msg->params[i][0] : 'I');
 		}
 	}
 }
