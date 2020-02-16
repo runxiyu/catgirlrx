@@ -353,14 +353,15 @@ static void handleReplyNames(struct Message *msg) {
 	size_t len = 0;
 	while (msg->params[3]) {
 		char *name = strsep(&msg->params[3], " ");
-		char *nick = strsep(&name, "!");
+		char *prefixes = strsep(&name, "!");
+		char *nick = &prefixes[strspn(prefixes, network.prefixes)];
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
 		if (!replies.names) continue;
 		int n = snprintf(
 			&buf[len], sizeof(buf) - len,
-			"%s\3%02d%s\3", (len ? ", " : ""), color, nick
+			"%s\3%02d%s\3", (len ? ", " : ""), color, prefixes
 		);
 		assert(n > 0 && len + n < sizeof(buf));
 		len += n;
