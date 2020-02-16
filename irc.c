@@ -220,7 +220,7 @@ static struct Message parse(char *line) {
 		while (tags) {
 			char *tag = strsep(&tags, ";");
 			char *key = strsep(&tag, "=");
-			for (size_t i = 0; i < TagCap; ++i) {
+			for (uint i = 0; i < TagCap; ++i) {
 				if (strcmp(key, TagNames[i])) continue;
 				unescape(tag);
 				msg.tags[i] = tag;
@@ -237,7 +237,7 @@ static struct Message parse(char *line) {
 	}
 
 	msg.cmd = strsep(&line, " ");
-	for (size_t i = 0; line && i < ParamCap; ++i) {
+	for (uint i = 0; line && i < ParamCap; ++i) {
 		if (line[0] == ':') {
 			msg.params[i] = &line[1];
 			break;

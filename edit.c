@@ -78,7 +78,7 @@ static struct {
 	size_t len;
 } tab;
 
-static void tabComplete(size_t id) {
+static void tabComplete(uint id) {
 	if (!tab.len) {
 		tab.pos = pos;
 		while (tab.pos && buf[tab.pos - 1] != L' ') tab.pos--;
@@ -142,7 +142,7 @@ static void tabReject(void) {
 	tab.len = 0;
 }
 
-void edit(size_t id, enum Edit op, wchar_t ch) {
+void edit(uint id, enum Edit op, wchar_t ch) {
 	size_t init = pos;
 	switch (op) {
 		break; case EditHead: pos = 0;

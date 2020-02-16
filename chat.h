@@ -26,6 +26,7 @@
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define BIT(x) x##Bit, x = 1 << x##Bit, x##Bit_ = x##Bit
 
+typedef unsigned uint;
 typedef unsigned char byte;
 
 enum Color {
@@ -38,17 +39,17 @@ enum Color {
 enum { None, Debug, Network, IDCap = 256 };
 extern char *idNames[IDCap];
 extern enum Color idColors[IDCap];
-extern size_t idNext;
+extern uint idNext;
 
-static inline size_t idFind(const char *name) {
-	for (size_t id = 0; id < idNext; ++id) {
+static inline uint idFind(const char *name) {
+	for (uint id = 0; id < idNext; ++id) {
 		if (!strcmp(idNames[id], name)) return id;
 	}
 	return None;
 }
 
-static inline size_t idFor(const char *name) {
-	size_t id = idFind(name);
+static inline uint idFor(const char *name) {
+	uint id = idFind(name);
 	if (id) return id;
 	if (idNext == IDCap) return Network;
 	idNames[idNext] = strdup(name);
@@ -141,29 +142,29 @@ void ircFormat(const char *format, ...)
 void ircClose(void);
 
 extern struct Replies {
-	size_t away;
-	size_t join;
-	size_t list;
-	size_t names;
-	size_t topic;
-	size_t whois;
+	uint away;
+	uint join;
+	uint list;
+	uint names;
+	uint topic;
+	uint whois;
 } replies;
 
-size_t execID;
+uint execID;
 int execPipe[2];
 
 void handle(struct Message msg);
-void command(size_t id, char *input);
-const char *commandIsPrivmsg(size_t id, const char *input);
-const char *commandIsNotice(size_t id, const char *input);
-const char *commandIsAction(size_t id, const char *input);
+void command(uint id, char *input);
+const char *commandIsPrivmsg(uint id, const char *input);
+const char *commandIsNotice(uint id, const char *input);
+const char *commandIsAction(uint id, const char *input);
 void commandComplete(void);
 
 int utilPipe[2];
 
 enum { UtilCap = 16 };
 struct Util {
-	size_t argc;
+	uint argc;
 	const char *argv[UtilCap];
 };
 
@@ -181,15 +182,15 @@ void uiInit(void);
 void uiShow(void);
 void uiHide(void);
 void uiDraw(void);
-void uiShowID(size_t id);
-void uiShowNum(size_t num);
-void uiMoveID(size_t id, size_t num);
-void uiCloseID(size_t id);
-void uiCloseNum(size_t id);
+void uiShowID(uint id);
+void uiShowNum(uint num);
+void uiMoveID(uint id, uint num);
+void uiCloseID(uint id);
+void uiCloseNum(uint id);
 void uiRead(void);
-void uiWrite(size_t id, enum Heat heat, const time_t *time, const char *str);
+void uiWrite(uint id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
-	size_t id, enum Heat heat, const time_t *time, const char *format, ...
+	uint id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 void uiLoad(const char *name);
 int uiSave(const char *name);
@@ -213,26 +214,26 @@ enum Edit {
 	EditComplete,
 	EditEnter,
 };
-void edit(size_t id, enum Edit op, wchar_t ch);
+void edit(uint id, enum Edit op, wchar_t ch);
 char *editBuffer(size_t *pos);
 
-const char *complete(size_t id, const char *prefix);
+const char *complete(uint id, const char *prefix);
 void completeAccept(void);
 void completeReject(void);
-void completeAdd(size_t id, const char *str, enum Color color);
-void completeTouch(size_t id, const char *str, enum Color color);
-void completeReplace(size_t id, const char *old, const char *new);
-void completeRemove(size_t id, const char *str);
-void completeClear(size_t id);
-size_t completeID(const char *str);
-enum Color completeColor(size_t id, const char *str);
+void completeAdd(uint id, const char *str, enum Color color);
+void completeTouch(uint id, const char *str, enum Color color);
+void completeReplace(uint id, const char *old, const char *new);
+void completeRemove(uint id, const char *str);
+void completeClear(uint id);
+uint completeID(const char *str);
+enum Color completeColor(uint id, const char *str);
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;
-void urlScan(size_t id, const char *nick, const char *mesg);
-void urlOpenCount(size_t id, size_t count);
-void urlOpenMatch(size_t id, const char *str);
-void urlCopyMatch(size_t id, const char *str);
+void urlScan(uint id, const char *nick, const char *mesg);
+void urlOpenCount(uint id, uint count);
+void urlOpenMatch(uint id, const char *str);
+void urlCopyMatch(uint id, const char *str);
 
 FILE *configOpen(const char *path, const char *mode);
 FILE *dataOpen(const char *path, const char *mode);

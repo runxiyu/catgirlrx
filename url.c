@@ -59,7 +59,7 @@ static void compile(void) {
 }
 
 struct URL {
-	size_t id;
+	uint id;
 	char *nick;
 	char *url;
 };
@@ -71,7 +71,7 @@ static struct {
 } ring;
 static_assert(!(Cap & (Cap - 1)), "Cap is power of two");
 
-static void push(size_t id, const char *nick, const char *str, size_t len) {
+static void push(uint id, const char *nick, const char *str, size_t len) {
 	struct URL *url = &ring.urls[ring.len++ % Cap];
 	free(url->nick);
 	free(url->url);
@@ -85,7 +85,7 @@ static void push(size_t id, const char *nick, const char *str, size_t len) {
 	if (!url->url) err(EX_OSERR, "strndup");
 }
 
-void urlScan(size_t id, const char *nick, const char *mesg) {
+void urlScan(uint id, const char *nick, const char *mesg) {
 	if (!mesg) return;
 	compile();
 	regmatch_t match = {0};
@@ -175,8 +175,8 @@ static void urlCopy(const char *url) {
 	_exit(EX_CONFIG);
 }
 
-void urlOpenCount(size_t id, size_t count) {
-	for (size_t i = 1; i <= Cap; ++i) {
+void urlOpenCount(uint id, uint count) {
+	for (uint i = 1; i <= Cap; ++i) {
 		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
 		if (!url->url) break;
 		if (url->id != id) continue;
@@ -185,8 +185,8 @@ void urlOpenCount(size_t id, size_t count) {
 	}
 }
 
-void urlOpenMatch(size_t id, const char *str) {
-	for (size_t i = 1; i <= Cap; ++i) {
+void urlOpenMatch(uint id, const char *str) {
+	for (uint i = 1; i <= Cap; ++i) {
 		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
 		if (!url->url) break;
 		if (url->id != id) continue;
@@ -197,8 +197,8 @@ void urlOpenMatch(size_t id, const char *str) {
 	}
 }
 
-void urlCopyMatch(size_t id, const char *str) {
-	for (size_t i = 1; i <= Cap; ++i) {
+void urlCopyMatch(uint id, const char *str) {
+	for (uint i = 1; i <= Cap; ++i) {
 		const struct URL *url = &ring.urls[(ring.len - i) % Cap];
 		if (!url->url) break;
 		if (url->id != id) continue;

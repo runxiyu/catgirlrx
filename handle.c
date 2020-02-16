@@ -63,15 +63,15 @@ static const char *capList(enum Cap caps) {
 	return buf;
 }
 
-static void require(struct Message *msg, bool origin, size_t len) {
+static void require(struct Message *msg, bool origin, uint len) {
 	if (origin) {
 		if (!msg->nick) errx(EX_PROTOCOL, "%s missing origin", msg->cmd);
 		if (!msg->user) msg->user = msg->nick;
 		if (!msg->host) msg->host = msg->user;
 	}
-	for (size_t i = 0; i < len; ++i) {
+	for (uint i = 0; i < len; ++i) {
 		if (msg->params[i]) continue;
-		errx(EX_PROTOCOL, "%s missing parameter %zu", msg->cmd, 1 + i);
+		errx(EX_PROTOCOL, "%s missing parameter %u", msg->cmd, 1 + i);
 	}
 }
 
@@ -195,7 +195,7 @@ static void handleReplyWelcome(struct Message *msg) {
 	set(&self.nick, msg->params[0]);
 	completeTouch(Network, self.nick, Default);
 	if (self.join) {
-		size_t count = 1;
+		uint count = 1;
 		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
 			if (*ch == ',') count++;
 		}
@@ -207,7 +207,7 @@ static void handleReplyWelcome(struct Message *msg) {
 }
 
 static void handleReplyISupport(struct Message *msg) {
-	for (size_t i = 1; i < ParamCap; ++i) {
+	for (uint i = 1; i < ParamCap; ++i) {
 		if (!msg->params[i]) break;
 		char *key = strsep(&msg->params[i], "=");
 		if (!msg->params[i]) continue;
@@ -245,7 +245,7 @@ static void handleReplyMOTD(struct Message *msg) {
 
 static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
-	size_t id = idFor(msg->params[0]);
+	uint id = idFor(msg->params[0]);
 	if (!strcmp(msg->nick, self.nick)) {
 		if (!self.user) {
 			set(&self.user, msg->user);
@@ -275,7 +275,7 @@ static void handleJoin(struct Message *msg) {
 
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
-	size_t id = idFor(msg->params[0]);
+	uint id = idFor(msg->params[0]);
 	if (!strcmp(msg->nick, self.nick)) {
 		completeClear(id);
 	}
@@ -292,7 +292,7 @@ static void handlePart(struct Message *msg) {
 
 static void handleKick(struct Message *msg) {
 	require(msg, true, 2);
-	size_t id = idFor(msg->params[0]);
+	uint id = idFor(msg->params[0]);
 	bool kicked = !strcmp(msg->params[1], self.nick);
 	completeTouch(id, msg->nick, hash(msg->user));
 	urlScan(id, msg->nick, msg->params[2]);
@@ -316,7 +316,7 @@ static void handleNick(struct Message *msg) {
 		set(&self.nick, msg->params[0]);
 		uiRead(); // Update prompt.
 	}
-	size_t id;
+	uint id;
 	while (None != (id = completeID(msg->nick))) {
 		if (!strcmp(idNames[id], msg->nick)) {
 			set(&idNames[id], msg->params[0]);
@@ -332,7 +332,7 @@ static void handleNick(struct Message *msg) {
 
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
-	size_t id;
+	uint id;
 	while (None != (id = completeID(msg->nick))) {
 		urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
@@ -348,7 +348,7 @@ static void handleQuit(struct Message *msg) {
 
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
-	size_t id = idFor(msg->params[2]);
+	uint id = idFor(msg->params[2]);
 	char buf[1024];
 	size_t len = 0;
 	while (msg->params[3]) {
@@ -394,7 +394,7 @@ static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
 	if (!replies.topic) return;
 	replies.topic--;
-	size_t id = idFor(msg->params[1]);
+	uint id = idFor(msg->params[1]);
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
 		id, Cold, tagTime(msg),
@@ -405,7 +405,7 @@ static void handleReplyTopic(struct Message *msg) {
 
 static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
-	size_t id = idFor(msg->params[0]);
+	uint id = idFor(msg->params[0]);
 	if (msg->params[1][0]) {
 		urlScan(id, msg->nick, msg->params[1]);
 		uiFormat(
@@ -560,7 +560,7 @@ static void handleReplyEndOfWhois(struct Message *msg) {
 static void handleReplyAway(struct Message *msg) {
 	require(msg, false, 3);
 	// Might be part of a WHOIS response.
-	size_t id;
+	uint id;
 	if (completeColor(Network, msg->params[1]) != Default) {
 		id = Network;
 	} else {
@@ -602,7 +602,7 @@ static bool isMention(const struct Message *msg) {
 	return false;
 }
 
-static const char *colorMentions(size_t id, struct Message *msg) {
+static const char *colorMentions(uint id, struct Message *msg) {
 	char *split = strchr(msg->params[1], ':');
 	if (!split) {
 		split = strchr(msg->params[1], ' ');
@@ -650,7 +650,7 @@ static void handlePrivmsg(struct Message *msg) {
 	bool query = !strchr(network.chanTypes, msg->params[0][0]);
 	bool server = strchr(msg->nick, '.');
 	bool mine = !strcmp(msg->nick, self.nick);
-	size_t id;
+	uint id;
 	if (query && server) {
 		id = Network;
 	} else if (query && !mine) {

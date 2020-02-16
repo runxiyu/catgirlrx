@@ -23,14 +23,14 @@
 #include "chat.h"
 
 struct Node {
-	size_t id;
+	uint id;
 	char *str;
 	enum Color color;
 	struct Node *prev;
 	struct Node *next;
 };
 
-static struct Node *alloc(size_t id, const char *str, enum Color color) {
+static struct Node *alloc(uint id, const char *str, enum Color color) {
 	struct Node *node = malloc(sizeof(*node));
 	if (!node) err(EX_OSERR, "malloc");
 	node->id = id;
@@ -73,31 +73,31 @@ static struct Node *append(struct Node *node) {
 	return node;
 }
 
-static struct Node *find(size_t id, const char *str) {
+static struct Node *find(uint id, const char *str) {
 	for (struct Node *node = head; node; node = node->next) {
 		if (node->id == id && !strcmp(node->str, str)) return node;
 	}
 	return NULL;
 }
 
-void completeAdd(size_t id, const char *str, enum Color color) {
+void completeAdd(uint id, const char *str, enum Color color) {
 	if (!find(id, str)) append(alloc(id, str, color));
 }
 
-void completeTouch(size_t id, const char *str, enum Color color) {
+void completeTouch(uint id, const char *str, enum Color color) {
 	struct Node *node = find(id, str);
 	if (node && node->color != color) node->color = color;
 	prepend(node ? detach(node) : alloc(id, str, color));
 }
 
-enum Color completeColor(size_t id, const char *str) {
+enum Color completeColor(uint id, const char *str) {
 	struct Node *node = find(id, str);
 	return (node ? node->color : Default);
 }
 
 static struct Node *match;
 
-const char *complete(size_t id, const char *prefix) {
+const char *complete(uint id, const char *prefix) {
 	for (match = (match ? match->next : head); match; match = match->next) {
 		if (match->id && match->id != id) continue;
 		if (strncasecmp(match->str, prefix, strlen(prefix))) continue;
@@ -115,14 +115,14 @@ void completeReject(void) {
 	match = NULL;
 }
 
-size_t completeID(const char *str) {
+uint completeID(const char *str) {
 	for (match = (match ? match->next : head); match; match = match->next) {
 		if (match->id && !strcmp(match->str, str)) return match->id;
 	}
 	return None;
 }
 
-void completeReplace(size_t id, const char *old, const char *new) {
+void completeReplace(uint id, const char *old, const char *new) {
 	struct Node *next = NULL;
 	for (struct Node *node = head; node; node = next) {
 		next = node->next;
@@ -136,7 +136,7 @@ void completeReplace(size_t id, const char *old, const char *new) {
 	}
 }
 
-void completeRemove(size_t id, const char *str) {
+void completeRemove(uint id, const char *str) {
 	struct Node *next = NULL;
 	for (struct Node *node = head; node; node = next) {
 		next = node->next;
@@ -149,7 +149,7 @@ void completeRemove(size_t id, const char *str) {
 	}
 }
 
-void completeClear(size_t id) {
+void completeClear(uint id) {
 	struct Node *next = NULL;
 	for (struct Node *node = head; node; node = next) {
 		next = node->next;

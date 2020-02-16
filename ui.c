@@ -78,31 +78,31 @@ static const char *bufferLine(const struct Buffer *buffer, size_t i) {
 
 enum { WindowLines = BufferCap };
 struct Window {
-	size_t id;
+	uint id;
 	struct Buffer buffer;
 	WINDOW *pad;
 	int scroll;
 	bool mark;
 	enum Heat heat;
-	int unreadTotal;
-	int unreadWarm;
-	int unreadLines;
+	uint unreadTotal;
+	uint unreadWarm;
+	uint unreadLines;
 };
 
 static struct {
-	size_t show;
-	size_t swap;
+	uint show;
+	uint swap;
 	struct Window *ptrs[IDCap];
-	size_t len;
+	uint len;
 } windows;
 
-static size_t windowPush(struct Window *window) {
+static uint windowPush(struct Window *window) {
 	assert(windows.len < IDCap);
 	windows.ptrs[windows.len] = window;
 	return windows.len++;
 }
 
-static size_t windowInsert(size_t num, struct Window *window) {
+static uint windowInsert(uint num, struct Window *window) {
 	assert(windows.len < IDCap);
 	assert(num <= windows.len);
 	memmove(
@@ -115,7 +115,7 @@ static size_t windowInsert(size_t num, struct Window *window) {
 	return num;
 }
 
-static struct Window *windowRemove(size_t num) {
+static struct Window *windowRemove(uint num) {
 	assert(num < windows.len);
 	struct Window *window = windows.ptrs[num];
 	windows.len--;
@@ -127,8 +127,8 @@ static struct Window *windowRemove(size_t num) {
 	return window;
 }
 
-static size_t windowFor(size_t id) {
-	for (size_t num = 0; num < windows.len; ++num) {
+static uint windowFor(uint id) {
+	for (uint num = 0; num < windows.len; ++num) {
 		if (windows.ptrs[num]->id == id) return num;
 	}
 
@@ -403,7 +403,7 @@ static void statusUpdate(void) {
 	enum Heat otherHeat = Cold;
 	wmove(status, 0, 0);
 
-	for (size_t num = 0; num < windows.len; ++num) {
+	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (!window->heat && num != windows.show) continue;
 		if (num != windows.show) {
@@ -413,7 +413,7 @@ static void statusUpdate(void) {
 		int trunc;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), "\3%d%s %zu %s %n(\3%02d%d\3%d) ",
+			buf, sizeof(buf), "\3%d%s %u %s %n(\3%02d%d\3%d) ",
 			idColors[window->id], (num == windows.show ? "\26" : ""),
 			num, idNames[window->id],
 			&trunc, (window->heat > Warm ? White : idColors[window->id]),
@@ -555,7 +555,7 @@ static int wordWrap(WINDOW *win, const char *str) {
 }
 
 struct Util uiNotifyUtil;
-static void notify(size_t id, const char *str) {
+static void notify(uint id, const char *str) {
 	if (!uiNotifyUtil.argc) return;
 
 	struct Util util = uiNotifyUtil;
@@ -583,7 +583,7 @@ static void notify(size_t id, const char *str) {
 	_exit(EX_CONFIG);
 }
 
-void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
+void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t clock = (src ? *src : time(NULL));
 	bufferPush(&window->buffer, clock, str);
@@ -609,7 +609,7 @@ void uiWrite(size_t id, enum Heat heat, const time_t *src, const char *str) {
 }
 
 void uiFormat(
-	size_t id, enum Heat heat, const time_t *time, const char *format, ...
+	uint id, enum Heat heat, const time_t *time, const char *format, ...
 ) {
 	char buf[1024];
 	va_list ap;
@@ -641,7 +641,7 @@ static void resize(void) {
 	int height, width;
 	getmaxyx(windows.ptrs[0]->pad, height, width);
 	if (width == COLS) return;
-	for (size_t num = 0; num < windows.len; ++num) {
+	for (uint num = 0; num < windows.len; ++num) {
 		wresize(windows.ptrs[num]->pad, BufferCap, COLS);
 		reflow(windows.ptrs[num]);
 	}
@@ -715,7 +715,7 @@ static void inputAdd(struct Style *style, const char *str) {
 }
 
 static void inputUpdate(void) {
-	size_t id = windows.ptrs[windows.show]->id;
+	uint id = windows.ptrs[windows.show]->id;
 	size_t pos;
 	char *buf = editBuffer(&pos);
 
@@ -768,7 +768,7 @@ static void inputUpdate(void) {
 	wmove(input, y, x);
 }
 
-static void windowShow(size_t num) {
+static void windowShow(uint num) {
 	touchwin(windows.ptrs[num]->pad);
 	windows.swap = windows.show;
 	windows.show = num;
@@ -777,15 +777,15 @@ static void windowShow(size_t num) {
 	inputUpdate();
 }
 
-void uiShowID(size_t id) {
+void uiShowID(uint id) {
 	windowShow(windowFor(id));
 }
 
-void uiShowNum(size_t num) {
+void uiShowNum(uint num) {
 	if (num < windows.len) windowShow(num);
 }
 
-void uiMoveID(size_t id, size_t num) {
+void uiMoveID(uint id, uint num) {
 	struct Window *window = windowRemove(windowFor(id));
 	if (num < windows.len) {
 		windowShow(windowInsert(num, window));
@@ -794,7 +794,7 @@ void uiMoveID(size_t id, size_t num) {
 	}
 }
 
-static void windowClose(size_t num) {
+static void windowClose(uint num) {
 	if (windows.ptrs[num]->id == Network) return;
 	struct Window *window = windowRemove(num);
 	completeClear(window->id);
@@ -809,26 +809,26 @@ static void windowClose(size_t num) {
 	statusUpdate();
 }
 
-void uiCloseID(size_t id) {
+void uiCloseID(uint id) {
 	windowClose(windowFor(id));
 }
 
-void uiCloseNum(size_t num) {
+void uiCloseNum(uint num) {
 	if (num < windows.len) windowClose(num);
 }
 
 static void showAuto(void) {
-	static size_t swap;
+	static uint swap;
 	if (windows.swap != swap) {
 		swap = windows.show;
 	}
-	for (size_t num = 0; num < windows.len; ++num) {
+	for (uint num = 0; num < windows.len; ++num) {
 		if (windows.ptrs[num]->heat < Hot) continue;
 		windowShow(num);
 		windows.swap = swap;
 		return;
 	}
-	for (size_t num = 0; num < windows.len; ++num) {
+	for (uint num = 0; num < windows.len; ++num) {
 		if (windows.ptrs[num]->heat < Warm) continue;
 		windowShow(num);
 		windows.swap = swap;
@@ -839,7 +839,7 @@ static void showAuto(void) {
 
 static void keyCode(int code) {
 	struct Window *window = windows.ptrs[windows.show];
-	size_t id = window->id;
+	uint id = window->id;
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
 		break; case KeyFocusIn:  unmark(window);
@@ -880,7 +880,7 @@ static void keyCode(int code) {
 
 static void keyCtrl(wchar_t ch) {
 	struct Window *window = windows.ptrs[windows.show];
-	size_t id = window->id;
+	uint id = window->id;
 	switch (ch ^ L'@') {
 		break; case L'?': edit(id, EditDeletePrev, 0);
 		break; case L'A': edit(id, EditHead, 0);
@@ -906,7 +906,7 @@ static void keyCtrl(wchar_t ch) {
 }
 
 static void keyStyle(wchar_t ch) {
-	size_t id = windows.ptrs[windows.show]->id;
+	uint id = windows.ptrs[windows.show]->id;
 	switch (iswcntrl(ch) ? ch ^ L'@' : (wchar_t)towupper(ch)) {
 		break; case L'B': edit(id, EditInsert, B);
 		break; case L'C': edit(id, EditInsert, C);
@@ -973,7 +973,7 @@ int uiSave(const char *name) {
 	if (!file) return -1;
 
 	if (writeTime(file, Signatures[1])) return -1;
-	for (size_t num = 0; num < windows.len; ++num) {
+	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
 		if (writeTime(file, window->heat)) return -1;

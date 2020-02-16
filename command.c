@@ -22,9 +22,9 @@
 
 #include "chat.h"
 
-typedef void Command(size_t id, char *params);
+typedef void Command(uint id, char *params);
 
-static void commandDebug(size_t id, char *params) {
+static void commandDebug(uint id, char *params) {
 	(void)id;
 	(void)params;
 	self.debug ^= true;
@@ -34,12 +34,12 @@ static void commandDebug(size_t id, char *params) {
 	);
 }
 
-static void commandQuote(size_t id, char *params) {
+static void commandQuote(uint id, char *params) {
 	(void)id;
 	if (params) ircFormat("%s\r\n", params);
 }
 
-static void commandPrivmsg(size_t id, char *params) {
+static void commandPrivmsg(uint id, char *params) {
 	if (!params || !params[0]) return;
 	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], params);
 	struct Message msg = {
@@ -52,7 +52,7 @@ static void commandPrivmsg(size_t id, char *params) {
 	handle(msg);
 }
 
-static void commandNotice(size_t id, char *params) {
+static void commandNotice(uint id, char *params) {
 	if (!params || !params[0]) return;
 	ircFormat("NOTICE %s :%s\r\n", idNames[id], params);
 	struct Message msg = {
@@ -65,21 +65,21 @@ static void commandNotice(size_t id, char *params) {
 	handle(msg);
 }
 
-static void commandMe(size_t id, char *params) {
+static void commandMe(uint id, char *params) {
 	char buf[512];
 	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ? params : ""));
 	commandPrivmsg(id, buf);
 }
 
-static void commandMsg(size_t id, char *params) {
+static void commandMsg(uint id, char *params) {
 	(void)id;
 	char *nick = strsep(&params, " ");
 	if (!params) return;
 	commandPrivmsg(idFor(nick), params);
 }
 
-static void commandJoin(size_t id, char *params) {
-	size_t count = 1;
+static void commandJoin(uint id, char *params) {
+	uint count = 1;
 	if (params) {
 		for (char *ch = params; *ch && *ch != ' '; ++ch) {
 			if (*ch == ',') count++;
@@ -91,7 +91,7 @@ static void commandJoin(size_t id, char *params) {
 	replies.names += count;
 }
 
-static void commandPart(size_t id, char *params) {
+static void commandPart(uint id, char *params) {
 	if (params) {
 		ircFormat("PART %s :%s\r\n", idNames[id], params);
 	} else {
@@ -99,18 +99,18 @@ static void commandPart(size_t id, char *params) {
 	}
 }
 
-static void commandQuit(size_t id, char *params) {
+static void commandQuit(uint id, char *params) {
 	(void)id;
 	set(&self.quit, (params ? params : "Goodbye"));
 }
 
-static void commandNick(size_t id, char *params) {
+static void commandNick(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("NICK :%s\r\n", params);
 }
 
-static void commandAway(size_t id, char *params) {
+static void commandAway(uint id, char *params) {
 	(void)id;
 	if (params) {
 		ircFormat("AWAY :%s\r\n", params);
@@ -120,7 +120,7 @@ static void commandAway(size_t id, char *params) {
 	replies.away++;
 }
 
-static void commandTopic(size_t id, char *params) {
+static void commandTopic(uint id, char *params) {
 	if (params) {
 		ircFormat("TOPIC %s :%s\r\n", idNames[id], params);
 	} else {
@@ -129,19 +129,19 @@ static void commandTopic(size_t id, char *params) {
 	}
 }
 
-static void commandNames(size_t id, char *params) {
+static void commandNames(uint id, char *params) {
 	(void)params;
 	ircFormat("NAMES :%s\r\n", idNames[id]);
 	replies.names++;
 }
 
-static void commandInvite(size_t id, char *params) {
+static void commandInvite(uint id, char *params) {
 	if (!params) return;
 	char *nick = strsep(&params, " ");
 	ircFormat("INVITE %s %s\r\n", nick, idNames[id]);
 }
 
-static void commandKick(size_t id, char *params) {
+static void commandKick(uint id, char *params) {
 	if (!params) return;
 	char *nick = strsep(&params, " ");
 	if (params) {
@@ -151,7 +151,7 @@ static void commandKick(size_t id, char *params) {
 	}
 }
 
-static void commandList(size_t id, char *params) {
+static void commandList(uint id, char *params) {
 	(void)id;
 	if (params) {
 		ircFormat("LIST :%s\r\n", params);
@@ -161,33 +161,33 @@ static void commandList(size_t id, char *params) {
 	replies.list++;
 }
 
-static void commandWhois(size_t id, char *params) {
+static void commandWhois(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("WHOIS :%s\r\n", params);
 	replies.whois++;
 }
 
-static void commandNS(size_t id, char *params) {
+static void commandNS(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("PRIVMSG NickServ :%s\r\n", params);
 }
 
-static void commandCS(size_t id, char *params) {
+static void commandCS(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("PRIVMSG ChanServ :%s\r\n", params);
 }
 
-static void commandQuery(size_t id, char *params) {
+static void commandQuery(uint id, char *params) {
 	if (!params) return;
-	size_t query = idFor(params);
+	uint query = idFor(params);
 	idColors[query] = completeColor(id, params);
 	uiShowID(query);
 }
 
-static void commandWindow(size_t id, char *params) {
+static void commandWindow(uint id, char *params) {
 	if (!params) return;
 	if (isdigit(params[0])) {
 		uiShowNum(strtoul(params, NULL, 10));
@@ -197,7 +197,7 @@ static void commandWindow(size_t id, char *params) {
 	}
 }
 
-static void commandMove(size_t id, char *params) {
+static void commandMove(uint id, char *params) {
 	if (!params) return;
 	char *name = strsep(&params, " ");
 	if (params) {
@@ -208,7 +208,7 @@ static void commandMove(size_t id, char *params) {
 	}
 }
 
-static void commandClose(size_t id, char *params) {
+static void commandClose(uint id, char *params) {
 	if (!params) {
 		uiCloseID(id);
 	} else if (isdigit(params[0])) {
@@ -219,7 +219,7 @@ static void commandClose(size_t id, char *params) {
 	}
 }
 
-static void commandOpen(size_t id, char *params) {
+static void commandOpen(uint id, char *params) {
 	if (!params) {
 		urlOpenCount(id, 1);
 	} else if (isdigit(params[0])) {
@@ -229,11 +229,11 @@ static void commandOpen(size_t id, char *params) {
 	}
 }
 
-static void commandCopy(size_t id, char *params) {
+static void commandCopy(uint id, char *params) {
 	urlCopyMatch(id, params);
 }
 
-static void commandExec(size_t id, char *params) {
+static void commandExec(uint id, char *params) {
 	execID = id;
 
 	pid_t pid = fork();
@@ -251,7 +251,7 @@ static void commandExec(size_t id, char *params) {
 	_exit(EX_UNAVAILABLE);
 }
 
-static void commandHelp(size_t id, char *params) {
+static void commandHelp(uint id, char *params) {
 	(void)id;
 	uiHide();
 
@@ -306,7 +306,7 @@ static int compar(const void *cmd, const void *_handler) {
 	return strcmp(cmd, handler->cmd);
 }
 
-const char *commandIsPrivmsg(size_t id, const char *input) {
+const char *commandIsPrivmsg(uint id, const char *input) {
 	if (id == Network || id == Debug) return NULL;
 	if (input[0] != '/') return input;
 	const char *space = strchr(&input[1], ' ');
@@ -315,19 +315,19 @@ const char *commandIsPrivmsg(size_t id, const char *input) {
 	return NULL;
 }
 
-const char *commandIsNotice(size_t id, const char *input) {
+const char *commandIsNotice(uint id, const char *input) {
 	if (id == Network || id == Debug) return NULL;
 	if (strncmp(input, "/notice ", 8)) return NULL;
 	return &input[8];
 }
 
-const char *commandIsAction(size_t id, const char *input) {
+const char *commandIsAction(uint id, const char *input) {
 	if (id == Network || id == Debug) return NULL;
 	if (strncmp(input, "/me ", 4)) return NULL;
 	return &input[4];
 }
 
-void command(size_t id, char *input) {
+void command(uint id, char *input) {
 	if (id == Debug && input[0] != '/') {
 		commandQuote(id, input);
 	} else if (commandIsPrivmsg(id, input)) {

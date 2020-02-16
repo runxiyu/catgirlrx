@@ -63,7 +63,7 @@ enum Color idColors[IDCap] = {
 	[Network] = Gray,
 };
 
-size_t idNext = Network + 1;
+uint idNext = Network + 1;
 
 struct Network network;
 struct Self self = { .color = Default };
