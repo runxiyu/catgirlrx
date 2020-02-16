@@ -672,10 +672,12 @@ static void handlePrivmsg(struct Message *msg) {
 			hash(msg->user), msg->nick, LightGray, msg->params[1]
 		);
 	} else if (action) {
+		const char *mentions = colorMentions(id, msg);
 		uiFormat(
 			id, (mention || query ? Hot : Warm), tagTime(msg),
-			"%s\35\3%d* %s\17\35\t%s",
-			(mention ? "\26" : ""), hash(msg->user), msg->nick, msg->params[1]
+			"%s\35\3%d* %s\17\35\t%s%s",
+			(mention ? "\26" : ""), hash(msg->user), msg->nick,
+			mentions, msg->params[1]
 		);
 	} else {
 		const char *mentions = colorMentions(id, msg);
