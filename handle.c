@@ -730,6 +730,7 @@ static const struct Handler {
 	{ "366", handleReplyEndOfNames },
 	{ "372", handleReplyMOTD },
 	{ "378", handleReplyWhoisGeneric },
+	{ "379", handleReplyWhoisGeneric },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
 	{ "671", handleReplyWhoisGeneric },
