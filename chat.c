@@ -191,6 +191,11 @@ int main(int argc, char *argv[]) {
 	set(&network.name, host);
 	set(&network.chanTypes, "#&");
 	set(&network.prefixes, "@+");
+	set(&network.prefixModes, "ov");
+	set(&network.listModes, "b");
+	set(&network.paramModes, "k");
+	set(&network.setParamModes, "l");
+	set(&network.channelModes, "imnpst");
 	set(&self.nick, "*");
 	commandComplete();
 
