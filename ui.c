@@ -217,33 +217,33 @@ static void errExit(void) {
 }
 
 #define ENUM_KEY \
-	X(KeyMeta0, "\0330") \
-	X(KeyMeta1, "\0331") \
-	X(KeyMeta2, "\0332") \
-	X(KeyMeta3, "\0333") \
-	X(KeyMeta4, "\0334") \
-	X(KeyMeta5, "\0335") \
-	X(KeyMeta6, "\0336") \
-	X(KeyMeta7, "\0337") \
-	X(KeyMeta8, "\0338") \
-	X(KeyMeta9, "\0339") \
-	X(KeyMetaA, "\33a") \
-	X(KeyMetaB, "\33b") \
-	X(KeyMetaD, "\33d") \
-	X(KeyMetaF, "\33f") \
-	X(KeyMetaL, "\33l") \
-	X(KeyMetaM, "\33m") \
-	X(KeyMetaU, "\33u") \
-	X(KeyMetaV, "\33v") \
-	X(KeyMetaSlash, "\33/") \
-	X(KeyFocusIn, "\33[I") \
-	X(KeyFocusOut, "\33[O") \
-	X(KeyPasteOn, "\33[200~") \
-	X(KeyPasteOff, "\33[201~")
+	X(KeyMeta0, "\0330", "\33)") \
+	X(KeyMeta1, "\0331", "\33!") \
+	X(KeyMeta2, "\0332", "\33@") \
+	X(KeyMeta3, "\0333", "\33#") \
+	X(KeyMeta4, "\0334", "\33$") \
+	X(KeyMeta5, "\0335", "\33%") \
+	X(KeyMeta6, "\0336", "\33^") \
+	X(KeyMeta7, "\0337", "\33&") \
+	X(KeyMeta8, "\0338", "\33*") \
+	X(KeyMeta9, "\0339", "\33(") \
+	X(KeyMetaA, "\33a", NULL) \
+	X(KeyMetaB, "\33b", NULL) \
+	X(KeyMetaD, "\33d", NULL) \
+	X(KeyMetaF, "\33f", NULL) \
+	X(KeyMetaL, "\33l", NULL) \
+	X(KeyMetaM, "\33m", NULL) \
+	X(KeyMetaU, "\33u", NULL) \
+	X(KeyMetaV, "\33v", NULL) \
+	X(KeyMetaSlash, "\33/", NULL) \
+	X(KeyFocusIn, "\33[I", NULL) \
+	X(KeyFocusOut, "\33[O", NULL) \
+	X(KeyPasteOn, "\33[200~", NULL) \
+	X(KeyPasteOff, "\33[201~", NULL)
 
 enum {
 	KeyMax = KEY_MAX,
-#define X(id, seq) id,
+#define X(id, seq, alt) id,
 	ENUM_KEY
 #undef X
 };
@@ -262,7 +262,7 @@ void uiInit(void) {
 		from_status_line = "\7";
 	}
 
-#define X(id, seq) define_key(seq, id);
+#define X(id, seq, alt) define_key(seq, id); if (alt) define_key(alt, id);
 	ENUM_KEY
 #undef X
 
