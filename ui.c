@@ -621,18 +621,21 @@ void uiFormat(
 
 static void reflow(struct Window *window) {
 	werase(window->pad);
-	wmove(window->pad, WindowLines - 1, 0);
+	wmove(window->pad, 0, 0);
+	int flowed = 0;
 	window->unreadLines = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const char *line = bufferLine(&window->buffer, i);
 		if (!line) continue;
 		waddch(window->pad, '\n');
+		int lines = 1 + wordWrap(window->pad, line);
 		if (i >= (size_t)(BufferCap - window->unreadTotal)) {
-			window->unreadLines += 1 + wordWrap(window->pad, line);
-		} else {
-			wordWrap(window->pad, line);
+			window->unreadLines += lines;
 		}
+		flowed += lines;
 	}
+	wscrl(window->pad, -(WindowLines - 1 - flowed));
+	wmove(window->pad, WindowLines - 1, RIGHT);
 }
 
 static void resize(void) {
