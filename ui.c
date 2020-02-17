@@ -90,10 +90,10 @@ struct Window {
 };
 
 static struct {
-	uint show;
-	uint swap;
 	struct Window *ptrs[IDCap];
 	uint len;
+	uint show;
+	uint swap;
 } windows;
 
 static uint windowPush(struct Window *window) {

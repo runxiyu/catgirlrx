@@ -157,15 +157,17 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	return sock;
 }
 
-static void debug(char dir, const char *line) {
+enum { MessageCap = 8191 + 512 };
+
+static void debug(const char *pre, const char *line) {
 	if (!self.debug) return;
 	size_t len = strcspn(line, "\r\n");
 	uiFormat(
-		Debug, Cold, NULL, "\3%d%c%c\3\t%.*s",
-		Gray, dir, dir, (int)len, line
+		Debug, Cold, NULL, "\3%02d%s\3\t%.*s",
+		Gray, pre, (int)len, line
 	);
 	if (!isatty(STDERR_FILENO)) {
-		fprintf(stderr, "%c%c %.*s\n", dir, dir, (int)len, line);
+		fprintf(stderr, "%s %.*s\n", pre, (int)len, line);
 	}
 }
 
@@ -181,13 +183,13 @@ void ircSend(const char *ptr, size_t len) {
 }
 
 void ircFormat(const char *format, ...) {
-	char buf[1024];
+	char buf[MessageCap];
 	va_list ap;
 	va_start(ap, format);
 	int len = vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
 	assert((size_t)len < sizeof(buf));
-	debug('<', buf);
+	debug("<<", buf);
 	ircSend(buf, len);
 }
 
@@ -249,7 +251,7 @@ static struct Message parse(char *line) {
 }
 
 void ircRecv(void) {
-	static char buf[8191 + 512];
+	static char buf[MessageCap];
 	static size_t len = 0;
 
 	assert(client);
@@ -265,7 +267,7 @@ void ircRecv(void) {
 		crlf = memmem(line, &buf[len] - line, "\r\n", 2);
 		if (!crlf) break;
 		*crlf = '\0';
-		debug('>', line);
+		debug(">>", line);
 		handle(parse(line));
 		line = crlf + 2;
 	}

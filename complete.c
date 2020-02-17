@@ -35,10 +35,10 @@ static struct Node *alloc(uint id, const char *str, enum Color color) {
 	if (!node) err(EX_OSERR, "malloc");
 	node->id = id;
 	node->str = strdup(str);
-	if (!node->str) err(EX_OSERR, "strdup");
 	node->color = color;
 	node->prev = NULL;
 	node->next = NULL;
+	if (!node->str) err(EX_OSERR, "strdup");
 	return node;
 }
 
@@ -75,7 +75,9 @@ static struct Node *append(struct Node *node) {
 
 static struct Node *find(uint id, const char *str) {
 	for (struct Node *node = head; node; node = node->next) {
-		if (node->id == id && !strcmp(node->str, str)) return node;
+		if (node->id != id) continue;
+		if (strcmp(node->str, str)) continue;
+		return node;
 	}
 	return NULL;
 }
@@ -86,7 +88,7 @@ void completeAdd(uint id, const char *str, enum Color color) {
 
 void completeTouch(uint id, const char *str, enum Color color) {
 	struct Node *node = find(id, str);
-	if (node && node->color != color) node->color = color;
+	if (node) node->color = color;
 	prepend(node ? detach(node) : alloc(id, str, color));
 }
 
@@ -128,11 +130,10 @@ void completeReplace(uint id, const char *old, const char *new) {
 		next = node->next;
 		if (id && node->id != id) continue;
 		if (strcmp(node->str, old)) continue;
-		if (match == node) match = NULL;
 		free(node->str);
 		node->str = strdup(new);
-		if (!node->str) err(EX_OSERR, "strdup");
 		prepend(detach(node));
+		if (!node->str) err(EX_OSERR, "strdup");
 	}
 }
 

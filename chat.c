@@ -17,6 +17,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <locale.h>
 #include <poll.h>
 #include <signal.h>
@@ -39,7 +40,7 @@
 static void genCert(const char *path) {
 	const char *name = strrchr(path, '/');
 	name = (name ? &name[1] : path);
-	char subj[256];
+	char subj[4 + NAME_MAX];
 	snprintf(subj, sizeof(subj), "/CN=%.*s", (int)strcspn(name, "."), name);
 	umask(0066);
 	execlp(
@@ -56,13 +57,11 @@ char *idNames[IDCap] = {
 	[Debug] = "<debug>",
 	[Network] = "<network>",
 };
-
 enum Color idColors[IDCap] = {
 	[None] = Black,
 	[Debug] = Green,
 	[Network] = Gray,
 };
-
 uint idNext = Network + 1;
 
 struct Network network;
@@ -79,21 +78,9 @@ static void exitSave(void) {
 
 uint32_t hashInit;
 
-int utilPipe[2] = { -1, -1 };
+uint execID;
 int execPipe[2] = { -1, -1 };
-
-static void utilRead(void) {
-	char buf[1024];
-	ssize_t len = read(utilPipe[0], buf, sizeof(buf) - 1);
-	if (len < 0) err(EX_IOERR, "read");
-	if (!len) return;
-	buf[len] = '\0';
-	char *ptr = buf;
-	while (ptr) {
-		char *line = strsep(&ptr, "\n");
-		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
-	}
-}
+int utilPipe[2] = { -1, -1 };
 
 static void execRead(void) {
 	char buf[1024];
@@ -105,6 +92,19 @@ static void execRead(void) {
 	while (ptr) {
 		char *line = strsep(&ptr, "\n");
 		if (line[0]) command(execID, line);
+	}
+}
+
+static void utilRead(void) {
+	char buf[1024];
+	ssize_t len = read(utilPipe[0], buf, sizeof(buf) - 1);
+	if (len < 0) err(EX_IOERR, "read");
+	if (!len) return;
+	buf[len] = '\0';
+	char *ptr = buf;
+	while (ptr) {
+		char *line = strsep(&ptr, "\n");
+		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
 	}
 }
 
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
 	if (!user) user = nick;
 	if (!real) real = nick;
 
-	set(&network.name, host);
+	// Modes defined in RFC 1459:
 	set(&network.chanTypes, "#&");
 	set(&network.prefixes, "@+");
 	set(&network.prefixModes, "ov");
@@ -196,6 +196,8 @@ int main(int argc, char *argv[]) {
 	set(&network.paramModes, "k");
 	set(&network.setParamModes, "l");
 	set(&network.channelModes, "imnpst");
+
+	set(&network.name, host);
 	set(&self.nick, "*");
 	commandComplete();
 

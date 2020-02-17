@@ -65,8 +65,8 @@ static inline uint idFor(const char *name) {
 	if (id) return id;
 	if (idNext == IDCap) return Network;
 	idNames[idNext] = strdup(name);
-	if (!idNames[idNext]) err(EX_OSERR, "strdup");
 	idColors[idNext] = Default;
+	if (!idNames[idNext]) err(EX_OSERR, "strdup");
 	return idNext++;
 }
 
@@ -79,8 +79,21 @@ static inline enum Color hash(const char *str) {
 		hash ^= *str;
 		hash *= 0x27220A95;
 	}
-	return 2 + hash % 74;
+	return Blue + hash % 74;
 }
+
+extern struct Network {
+	char *name;
+	char *chanTypes;
+	char *prefixes;
+	char *prefixModes;
+	char *listModes;
+	char *paramModes;
+	char *setParamModes;
+	char *channelModes;
+	char excepts;
+	char invex;
+} network;
 
 #define ENUM_CAP \
 	X("extended-join", CapExtendedJoin) \
@@ -96,25 +109,12 @@ enum Cap {
 #undef X
 };
 
-extern struct Network {
-	char *name;
-	char *chanTypes;
-	char *prefixes;
-	char *prefixModes;
-	char *listModes;
-	char *paramModes;
-	char *setParamModes;
-	char *channelModes;
-	char excepts;
-	char invex;
-} network;
-
 extern struct Self {
 	bool debug;
 	bool restricted;
-	char *plain;
-	const char *join;
 	enum Cap caps;
+	char *plain;
+	char *join;
 	char *nick;
 	char *user;
 	enum Color color;
@@ -155,25 +155,8 @@ void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 void ircClose(void);
 
-extern struct Replies {
-	uint away;
-	uint join;
-	uint list;
-	uint names;
-	uint topic;
-	uint whois;
-} replies;
-
 uint execID;
 int execPipe[2];
-
-void handle(struct Message msg);
-void command(uint id, char *input);
-const char *commandIsPrivmsg(uint id, const char *input);
-const char *commandIsNotice(uint id, const char *input);
-const char *commandIsAction(uint id, const char *input);
-void commandComplete(void);
-
 int utilPipe[2];
 
 enum { UtilCap = 16 };
@@ -189,6 +172,22 @@ static inline void utilPush(struct Util *util, const char *arg) {
 		errx(EX_CONFIG, "too many utility arguments");
 	}
 }
+
+extern struct Replies {
+	uint away;
+	uint join;
+	uint list;
+	uint names;
+	uint topic;
+	uint whois;
+} replies;
+
+void handle(struct Message msg);
+void command(uint id, char *input);
+const char *commandIsPrivmsg(uint id, const char *input);
+const char *commandIsNotice(uint id, const char *input);
+const char *commandIsAction(uint id, const char *input);
+void commandComplete(void);
 
 enum Heat { Cold, Warm, Hot };
 extern struct Util uiNotifyUtil;

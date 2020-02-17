@@ -39,53 +39,45 @@ static void commandQuote(uint id, char *params) {
 	if (params) ircFormat("%s\r\n", params);
 }
 
-static void commandPrivmsg(uint id, char *params) {
+static void echoMessage(char *cmd, uint id, char *params) {
 	if (!params || !params[0]) return;
-	ircFormat("PRIVMSG %s :%s\r\n", idNames[id], params);
+	ircFormat("%s %s :%s\r\n", cmd, idNames[id], params);
 	struct Message msg = {
 		.nick = self.nick,
 		.user = self.user,
-		.cmd = "PRIVMSG",
+		.cmd = cmd,
 		.params[0] = idNames[id],
 		.params[1] = params,
 	};
 	handle(msg);
 }
 
+static void commandPrivmsg(uint id, char *params) {
+	echoMessage("PRIVMSG", id, params);
+}
+
 static void commandNotice(uint id, char *params) {
-	if (!params || !params[0]) return;
-	ircFormat("NOTICE %s :%s\r\n", idNames[id], params);
-	struct Message msg = {
-		.nick = self.nick,
-		.user = self.user,
-		.cmd = "NOTICE",
-		.params[0] = idNames[id],
-		.params[1] = params,
-	};
-	handle(msg);
+	echoMessage("NOTICE", id, params);
 }
 
 static void commandMe(uint id, char *params) {
 	char buf[512];
 	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ? params : ""));
-	commandPrivmsg(id, buf);
+	echoMessage("PRIVMSG", id, buf);
 }
 
 static void commandMsg(uint id, char *params) {
-	(void)id;
-	char *nick = strsep(&params, " ");
-	if (!params) return;
-	commandPrivmsg(idFor(nick), params);
+	id = idFor(strsep(&params, " "));
+	echoMessage("PRIVMSG", id, params);
 }
 
 static void commandJoin(uint id, char *params) {
+	if (!params) params = idNames[id];
 	uint count = 1;
-	if (params) {
-		for (char *ch = params; *ch && *ch != ' '; ++ch) {
-			if (*ch == ',') count++;
-		}
+	for (char *ch = params; *ch && *ch != ' '; ++ch) {
+		if (*ch == ',') count++;
 	}
-	ircFormat("JOIN %s\r\n", (params ? params : idNames[id]));
+	ircFormat("JOIN %s\r\n", params);
 	replies.join += count;
 	replies.topic += count;
 	replies.names += count;
@@ -101,7 +93,7 @@ static void commandPart(uint id, char *params) {
 
 static void commandQuit(uint id, char *params) {
 	(void)id;
-	set(&self.quit, (params ? params : "Goodbye"));
+	set(&self.quit, (params ? params : "nyaa~"));
 }
 
 static void commandNick(uint id, char *params) {
@@ -131,7 +123,7 @@ static void commandTopic(uint id, char *params) {
 
 static void commandNames(uint id, char *params) {
 	(void)params;
-	ircFormat("NAMES :%s\r\n", idNames[id]);
+	ircFormat("NAMES %s\r\n", idNames[id]);
 	replies.names++;
 }
 
@@ -170,14 +162,12 @@ static void commandWhois(uint id, char *params) {
 
 static void commandNS(uint id, char *params) {
 	(void)id;
-	if (!params) return;
-	ircFormat("PRIVMSG NickServ :%s\r\n", params);
+	if (params) ircFormat("PRIVMSG NickServ :%s\r\n", params);
 }
 
 static void commandCS(uint id, char *params) {
 	(void)id;
-	if (!params) return;
-	ircFormat("PRIVMSG ChanServ :%s\r\n", params);
+	if (params) ircFormat("PRIVMSG ChanServ :%s\r\n", params);
 }
 
 static void commandQuery(uint id, char *params) {
@@ -330,36 +320,41 @@ const char *commandIsAction(uint id, const char *input) {
 void command(uint id, char *input) {
 	if (id == Debug && input[0] != '/') {
 		commandQuote(id, input);
+		return;
 	} else if (commandIsPrivmsg(id, input)) {
 		commandPrivmsg(id, input);
+		return;
 	} else if (input[0] == '/' && isdigit(input[1])) {
 		commandWindow(id, &input[1]);
-	} else {
-		const char *cmd = strsep(&input, " ");
-		const char *unique = complete(None, cmd);
-		if (unique && !complete(None, cmd)) {
-			cmd = unique;
-			completeReject();
-		}
-		const struct Handler *handler = bsearch(
-			cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
-		);
-		if (self.restricted && handler && handler->restricted) {
-			handler = NULL;
-		}
-		if (handler) {
-			if (input) {
-				input += strspn(input, " ");
-				size_t len = strlen(input);
-				while (input[len - 1] == ' ') input[--len] = '\0';
-				if (!input[0]) input = NULL;
-			}
-			if (input && !input[0]) input = NULL;
-			handler->fn(id, input);
-		} else {
-			uiFormat(id, Hot, NULL, "No such command %s", cmd);
-		}
+		return;
 	}
+
+	const char *cmd = strsep(&input, " ");
+	const char *unique = complete(None, cmd);
+	if (unique && !complete(None, cmd)) {
+		cmd = unique;
+		completeReject();
+	}
+
+	const struct Handler *handler = bsearch(
+		cmd, Commands, ARRAY_LEN(Commands), sizeof(*handler), compar
+	);
+	if (!handler) {
+		uiFormat(id, Warm, NULL, "No such command %s", cmd);
+		return;
+	}
+	if (self.restricted && handler->restricted) {
+		uiFormat(id, Warm, NULL, "Command %s is restricted", cmd);
+		return;
+	}
+
+	if (input) {
+		input += strspn(input, " ");
+		size_t len = strlen(input);
+		while (input[len - 1] == ' ') input[--len] = '\0';
+		if (!input[0]) input = NULL;
+	}
+	handler->fn(id, input);
 }
 
 void commandComplete(void) {

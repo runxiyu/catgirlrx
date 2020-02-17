@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -142,8 +143,10 @@ static void urlCopy(const char *url) {
 	int error = pipe(rw);
 	if (error) err(EX_OSERR, "pipe");
 
-	ssize_t len = write(rw[1], url, strlen(url));
-	if (len < 0) err(EX_IOERR, "write");
+	size_t len = strlen(url);
+	if (len > PIPE_BUF) len = PIPE_BUF;
+	ssize_t n = write(rw[1], url, len);
+	if (n < 0) err(EX_IOERR, "write");
 
 	error = close(rw[1]);
 	if (error) err(EX_IOERR, "close");
