@@ -111,7 +111,7 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 
 	if (bindHost) {
 		error = getaddrinfo(bindHost, NULL, &hints, &head);
-		if (error) errx(EX_NOHOST, "%s: %s", host, gai_strerror(error));
+		if (error) errx(EX_NOHOST, "%s: %s", bindHost, gai_strerror(error));
 
 		for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
 			sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
