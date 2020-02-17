@@ -634,8 +634,10 @@ static void reflow(struct Window *window) {
 		}
 		flowed += lines;
 	}
-	wscrl(window->pad, -(WindowLines - 1 - flowed));
-	wmove(window->pad, WindowLines - 1, RIGHT);
+	if (flowed < WindowLines) {
+		wscrl(window->pad, -(WindowLines - 1 - flowed));
+		wmove(window->pad, WindowLines - 1, RIGHT);
+	}
 }
 
 static void resize(void) {
