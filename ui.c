@@ -428,15 +428,15 @@ static void statusUpdate(void) {
 	const struct Window *window = windows.ptrs[windows.show];
 	snprintf(title, sizeof(title), "%s %s", network.name, idNames[window->id]);
 	if (window->mark && window->unreadWarm) {
-		snprintf(
-			&title[strlen(title)], sizeof(title) - strlen(title),
-			" (%d%s)", window->unreadWarm, (window->heat > Warm ? "!" : "")
+		catf(
+			title, sizeof(title), " (%d%s)",
+			window->unreadWarm, (window->heat > Warm ? "!" : "")
 		);
 	}
 	if (otherUnread) {
-		snprintf(
-			&title[strlen(title)], sizeof(title) - strlen(title),
-			" (+%d%s)", otherUnread, (otherHeat > Warm ? "!" : "")
+		catf(
+			title, sizeof(title), " (+%d%s)",
+			otherUnread, (otherHeat > Warm ? "!" : "")
 		);
 	}
 }
@@ -560,14 +560,13 @@ static void notify(uint id, const char *str) {
 
 	struct Util util = uiNotifyUtil;
 	utilPush(&util, idNames[id]);
-	size_t len = 0;
 	char buf[1024] = "";
-	while (*str && len < sizeof(buf)) {
-		size_t run;
+	while (*str) {
+		size_t len;
 		struct Style style = Reset;
-		styleParse(&style, &str, &run);
-		len += snprintf(&buf[len], sizeof(buf) - len, "%.*s", (int)run, str);
-		str += run;
+		styleParse(&style, &str, &len);
+		catf(buf, sizeof(buf), "%.*s", (int)len, str);
+		str += len;
 	}
 	utilPush(&util, buf);
 

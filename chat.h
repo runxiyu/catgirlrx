@@ -14,10 +14,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <err.h>
 #include <getopt.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <sysexits.h>
 #include <time.h>
@@ -28,6 +31,15 @@
 
 typedef unsigned uint;
 typedef unsigned char byte;
+
+static inline void __attribute__((format(printf, 3, 4)))
+catf(char *buf, size_t cap, const char *format, ...) {
+	size_t len = strnlen(buf, cap);
+	va_list ap;
+	va_start(ap, format);
+	assert(0 <= vsnprintf(&buf[len], cap - len, format, ap));
+	va_end(ap);
+}
 
 enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,

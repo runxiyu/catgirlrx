@@ -353,8 +353,7 @@ static void handleQuit(struct Message *msg) {
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
-	char buf[1024];
-	size_t len = 0;
+	char buf[1024] = "";
 	while (msg->params[3]) {
 		char *name = strsep(&msg->params[3], " ");
 		char *prefixes = strsep(&name, "!");
@@ -363,12 +362,10 @@ static void handleReplyNames(struct Message *msg) {
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
 		if (!replies.names) continue;
-		int n = snprintf(
-			&buf[len], sizeof(buf) - len,
-			"%s\3%02d%s\3", (len ? ", " : ""), color, prefixes
+		catf(
+			buf, sizeof(buf), "%s\3%02d%s\3",
+			(buf[0] ? ", " : ""), color, prefixes
 		);
-		assert(n > 0 && len + n < sizeof(buf));
-		len += n;
 	}
 	if (!replies.names) return;
 	uiFormat(
@@ -515,17 +512,14 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 static void handleReplyWhoisChannels(struct Message *msg) {
 	require(msg, false, 3);
 	if (!replies.whois) return;
-	char buf[1024];
-	size_t len = 0;
+	char buf[1024] = "";
 	while (msg->params[2]) {
 		char *channel = strsep(&msg->params[2], " ");
 		char *name = &channel[strspn(channel, network.prefixes)];
-		int n = snprintf(
-			&buf[len], sizeof(buf) - len,
-			"%s\3%02d%s\3", (len ? ", " : ""), hash(name), channel
+		catf(
+			buf, sizeof(buf), "%s\3%02d%s\3",
+			(buf[0] ? ", " : ""), hash(name), channel
 		);
-		assert(n > 0 && len + n < sizeof(buf));
-		len += n;
 	}
 	uiFormat(
 		Network, Warm, tagTime(msg),
@@ -622,12 +616,10 @@ static const char *colorMentions(uint id, struct Message *msg) {
 	*split = '\0';
 
 	static char buf[1024];
-	FILE *str = fmemopen(buf, sizeof(buf), "w");
-	if (!str) err(EX_OSERR, "fmemopen");
-
+	buf[0] = '\0';
 	while (*mention) {
 		size_t skip = strspn(mention, ",<> ");
-		fwrite(mention, skip, 1, str);
+		catf(buf, sizeof(buf), "%.*s", (int)skip, mention);
 		mention += skip;
 
 		size_t len = strcspn(mention, ",<> ");
@@ -635,17 +627,14 @@ static const char *colorMentions(uint id, struct Message *msg) {
 		mention[len] = '\0';
 		enum Color color = completeColor(id, mention);
 		if (color != Default) {
-			fprintf(str, "\3%02d%s\3", color, mention);
+			catf(buf, sizeof(buf), "\3%02d%s\3", color, mention);
 		} else {
-			fprintf(str, "%s", mention);
+			catf(buf, sizeof(buf), "%s", mention);
 		}
 		mention[len] = punct;
 		mention += len;
 	}
-	fputc(delimit, str);
-
-	fclose(str);
-	buf[sizeof(buf) - 1] = '\0';
+	catf(buf, sizeof(buf), "%c", delimit);
 	return buf;
 }
 
