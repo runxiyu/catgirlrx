@@ -53,7 +53,7 @@ static WINDOW *status;
 static WINDOW *marker;
 static WINDOW *input;
 
-enum { BufferCap = 512 };
+enum { BufferCap = 1024 };
 struct Buffer {
 	time_t times[BufferCap];
 	char *lines[BufferCap];
