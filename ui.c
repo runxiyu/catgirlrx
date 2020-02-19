@@ -542,7 +542,6 @@ static int wordWrap(WINDOW *win, const char *str) {
 		size_t len = styleParse(&style, &str);
 		size_t ws = strcspn(str, "\t ");
 		if (ws < len) len = ws;
-		if (!len) continue;
 
 		wattr_set(
 			win,
@@ -685,7 +684,6 @@ static void bufferList(const struct Buffer *buffer) {
 			size_t len = styleParse(&style, &line);
 			size_t tab = strcspn(line, "\t");
 			if (tab < len) len = tab;
-			if (!len) continue;
 
 			vid_attr(
 				style.attr | colorAttr(Colors[style.fg]),
@@ -713,7 +711,6 @@ static void inputAdd(struct Style *style, const char *str) {
 			break; case U: waddch(input, 'U');
 		}
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
-		if (!len) continue;
 		wattr_set(
 			input,
 			style->attr | colorAttr(Colors[style->fg]),
