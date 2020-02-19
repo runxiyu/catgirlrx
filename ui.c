@@ -79,14 +79,14 @@ static const char *bufferLine(const struct Buffer *buffer, size_t i) {
 enum { WindowLines = BufferCap };
 struct Window {
 	uint id;
-	struct Buffer buffer;
 	WINDOW *pad;
 	int scroll;
 	bool mark;
 	enum Heat heat;
-	uint unreadTotal;
+	uint unread;
 	uint unreadWarm;
 	uint unreadLines;
+	struct Buffer buffer;
 };
 
 static struct {
@@ -186,36 +186,6 @@ static short colorPair(short fg, short bg) {
 	return colorPairs++;
 }
 
-// XXX: Assuming terminals will be fine with these even if they're unsupported,
-// since they're "private" modes.
-static const char *EnterFocusMode = "\33[?1004h";
-static const char *ExitFocusMode  = "\33[?1004l";
-static const char *EnterPasteMode = "\33[?2004h";
-static const char *ExitPasteMode  = "\33[?2004l";
-
-// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
-static void acquireKeys(void) {
-	struct termios term;
-	int error = tcgetattr(STDOUT_FILENO, &term);
-	if (error) err(EX_OSERR, "tcgetattr");
-	term.c_iflag &= ~IXON;
-	term.c_cc[VINTR] = _POSIX_VDISABLE;
-	term.c_cc[VSUSP] = _POSIX_VDISABLE;
-#ifdef VDSUSP
-	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
-#endif
-	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
-	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
-	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
-	if (error) err(EX_OSERR, "tcsetattr");
-}
-
-static void errExit(void) {
-	putp(ExitFocusMode);
-	putp(ExitPasteMode);
-	reset_shell_mode();
-}
-
 #define ENUM_KEY \
 	X(KeyMeta0, "\0330", "\33)") \
 	X(KeyMeta1, "\0331", "\33!") \
@@ -248,6 +218,36 @@ enum {
 #undef X
 };
 
+// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
+static void acquireKeys(void) {
+	struct termios term;
+	int error = tcgetattr(STDOUT_FILENO, &term);
+	if (error) err(EX_OSERR, "tcgetattr");
+	term.c_iflag &= ~IXON;
+	term.c_cc[VINTR] = _POSIX_VDISABLE;
+	term.c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
+	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
+	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
+	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
+	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
+	if (error) err(EX_OSERR, "tcsetattr");
+}
+
+// XXX: Assuming terminals will be fine with these even if they're unsupported,
+// since they're "private" modes.
+static const char *EnterFocusMode = "\33[?1004h";
+static const char *ExitFocusMode  = "\33[?1004l";
+static const char *EnterPasteMode = "\33[?2004h";
+static const char *ExitPasteMode  = "\33[?2004l";
+
+static void errExit(void) {
+	putp(ExitFocusMode);
+	putp(ExitPasteMode);
+	reset_shell_mode();
+}
+
 void uiInit(void) {
 	initscr();
 	cbreak();
@@ -273,7 +273,7 @@ void uiInit(void) {
 	short fg = 8 + COLOR_BLACK;
 	wbkgd(marker, '~' | colorAttr(fg) | COLOR_PAIR(colorPair(fg, -1)));
 
-	input = newpad(1, 512);
+	input = newpad(1, 1024);
 	if (!input) err(EX_OSERR, "newpad");
 	keypad(input, true);
 	nodelay(input, true);
@@ -357,7 +357,7 @@ static const short Colors[ColorCap] = {
 
 enum { B = '\2', C = '\3', O = '\17', R = '\26', I = '\35', U = '\37' };
 
-static void styleParse(struct Style *style, const char **str, size_t *len) {
+static size_t styleParse(struct Style *style, const char **str) {
 	switch (**str) {
 		break; case B: (*str)++; style->attr ^= A_BOLD;
 		break; case O: (*str)++; *style = Reset;
@@ -379,14 +379,13 @@ static void styleParse(struct Style *style, const char **str, size_t *len) {
 			if (isdigit(**str)) style->bg = style->bg * 10 + *(*str)++ - '0';
 		}
 	}
-	*len = strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
+	return strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
 }
 
 static void statusAdd(const char *str) {
-	size_t len;
 	struct Style style = Reset;
 	while (*str) {
-		styleParse(&style, &str, &len);
+		size_t len = styleParse(&style, &str);
 		wattr_set(
 			status,
 			style.attr | colorAttr(Colors[style.fg]),
@@ -399,16 +398,18 @@ static void statusAdd(const char *str) {
 }
 
 static void statusUpdate(void) {
-	int otherUnread = 0;
-	enum Heat otherHeat = Cold;
-	wmove(status, 0, 0);
+	struct {
+		uint unread;
+		enum Heat heat;
+	} others = { 0, Cold };
 
+	wmove(status, 0, 0);
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (!window->heat && num != windows.show) continue;
 		if (num != windows.show) {
-			otherUnread += window->unreadWarm;
-			if (window->heat > otherHeat) otherHeat = window->heat;
+			others.unread += window->unreadWarm;
+			if (window->heat > others.heat) others.heat = window->heat;
 		}
 		int trunc;
 		char buf[256];
@@ -433,10 +434,10 @@ static void statusUpdate(void) {
 			window->unreadWarm, (window->heat > Warm ? "!" : "")
 		);
 	}
-	if (otherUnread) {
+	if (others.unread) {
 		catf(
 			title, sizeof(title), " (+%d%s)",
-			otherUnread, (otherHeat > Warm ? "!" : "")
+			others.unread, (others.heat > Warm ? "!" : "")
 		);
 	}
 }
@@ -444,7 +445,7 @@ static void statusUpdate(void) {
 static void mark(struct Window *window) {
 	if (window->scroll) return;
 	window->mark = true;
-	window->unreadTotal = 0;
+	window->unread = 0;
 	window->unreadWarm = 0;
 	window->unreadLines = 0;
 }
@@ -508,9 +509,9 @@ static int wordWidth(const char *str) {
 static int wordWrap(WINDOW *win, const char *str) {
 	int y, x, width;
 	getmaxyx(win, y, width);
+	waddch(win, '\n');
 
-	size_t len;
-	int lines = 0;
+	int lines = 1;
 	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
@@ -538,9 +539,10 @@ static int wordWrap(WINDOW *win, const char *str) {
 			}
 		}
 
-		styleParse(&style, &str, &len);
+		size_t len = styleParse(&style, &str);
 		size_t ws = strcspn(str, "\t ");
 		if (ws < len) len = ws;
+		if (!len) continue;
 
 		wattr_set(
 			win,
@@ -562,9 +564,8 @@ static void notify(uint id, const char *str) {
 	utilPush(&util, idNames[id]);
 	char buf[1024] = "";
 	while (*str) {
-		size_t len;
 		struct Style style = Reset;
-		styleParse(&style, &str, &len);
+		size_t len = styleParse(&style, &str);
 		catf(buf, sizeof(buf), "%.*s", (int)len, str);
 		str += len;
 	}
@@ -584,23 +585,24 @@ static void notify(uint id, const char *str) {
 
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
-	time_t clock = (src ? *src : time(NULL));
-	bufferPush(&window->buffer, clock, str);
+	time_t ts = (src ? *src : time(NULL));
+	bufferPush(&window->buffer, ts, str);
 
-	int lines = 1;
-	waddch(window->pad, '\n');
-	window->unreadTotal++;
+	int lines = 0;
+	window->unread++;
 	if (window->mark && heat > Cold) {
-		if (window->heat < heat) window->heat = heat;
 		if (!window->unreadWarm++) {
-			waddch(window->pad, '\n');
 			lines++;
+			waddch(window->pad, '\n');
 		}
+		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
+
 	lines += wordWrap(window->pad, str);
 	window->unreadLines += lines;
 	if (window->scroll) windowScroll(window, lines);
+
 	if (window->mark && heat > Warm) {
 		beep();
 		notify(id, str);
@@ -622,18 +624,19 @@ void uiFormat(
 static void reflow(struct Window *window) {
 	werase(window->pad);
 	wmove(window->pad, 0, 0);
+
 	int flowed = 0;
 	window->unreadLines = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const char *line = bufferLine(&window->buffer, i);
 		if (!line) continue;
-		waddch(window->pad, '\n');
-		int lines = 1 + wordWrap(window->pad, line);
-		if (i >= (size_t)(BufferCap - window->unreadTotal)) {
+		int lines = wordWrap(window->pad, line);
+		if (i >= (size_t)(BufferCap - window->unread)) {
 			window->unreadLines += lines;
 		}
 		flowed += lines;
 	}
+
 	if (flowed < WindowLines) {
 		wscrl(window->pad, -(WindowLines - 1 - flowed));
 		wmove(window->pad, WindowLines - 1, RIGHT);
@@ -656,19 +659,20 @@ static void resize(void) {
 static void bufferList(const struct Buffer *buffer) {
 	uiHide();
 	waiting = true;
+
 	for (size_t i = 0; i < BufferCap; ++i) {
-		time_t time = bufferTime(buffer, i);
 		const char *line = bufferLine(buffer, i);
 		if (!line) continue;
 
+		time_t time = bufferTime(buffer, i);
 		struct tm *tm = localtime(&time);
-		if (!tm) continue;
-		char buf[sizeof("[00:00:00]")];
-		strftime(buf, sizeof(buf), "[%T]", tm);
-		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
-		printf("%s ", buf);
+		if (!tm) err(EX_OSERR, "localtime");
 
-		size_t len;
+		char buf[sizeof("00:00:00")];
+		strftime(buf, sizeof(buf), "%T", tm);
+		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
+		printf("[%s] ", buf);
+
 		bool align = false;
 		struct Style style = Reset;
 		while (*line) {
@@ -677,15 +681,18 @@ static void bufferList(const struct Buffer *buffer) {
 				align = true;
 				line++;
 			}
-			styleParse(&style, &line, &len);
+
+			size_t len = styleParse(&style, &line);
 			size_t tab = strcspn(line, "\t");
 			if (tab < len) len = tab;
+			if (!len) continue;
+
 			vid_attr(
 				style.attr | colorAttr(Colors[style.fg]),
 				colorPair(Colors[style.fg], Colors[style.bg]),
 				NULL
 			);
-			if (len) printf("%.*s", (int)len, line);
+			printf("%.*s", (int)len, line);
 			line += len;
 		}
 		printf("\n");
@@ -693,10 +700,9 @@ static void bufferList(const struct Buffer *buffer) {
 }
 
 static void inputAdd(struct Style *style, const char *str) {
-	size_t len;
 	while (*str) {
 		const char *code = str;
-		styleParse(style, &str, &len);
+		size_t len = styleParse(style, &str);
 		wattr_set(input, A_BOLD | A_REVERSE, 0, NULL);
 		switch (*code) {
 			break; case B: waddch(input, 'B');
@@ -707,6 +713,7 @@ static void inputAdd(struct Style *style, const char *str) {
 			break; case U: waddch(input, 'U');
 		}
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
+		if (!len) continue;
 		wattr_set(
 			input,
 			style->attr | colorAttr(Colors[style->fg]),
@@ -719,52 +726,58 @@ static void inputAdd(struct Style *style, const char *str) {
 }
 
 static void inputUpdate(void) {
-	uint id = windows.ptrs[windows.show]->id;
 	size_t pos;
 	char *buf = editBuffer(&pos);
+	uint id = windows.ptrs[windows.show]->id;
 
-	const char *skip = NULL;
-	struct Style init = { .fg = self.color, .bg = Default };
-	struct Style rest = Reset;
 	const char *prefix = "";
 	const char *prompt = self.nick;
 	const char *suffix = "";
-	if (NULL != (skip = commandIsPrivmsg(id, buf))) {
+	const char *skip = buf;
+	struct Style stylePrompt = { .fg = self.color, .bg = Default };
+	struct Style styleInput = Reset;
+
+	const char *privmsg = commandIsPrivmsg(id, buf);
+	const char *notice = commandIsNotice(id, buf);
+	const char *action = commandIsAction(id, buf);
+	if (privmsg) {
 		prefix = "<"; suffix = "> ";
-	} else if (NULL != (skip = commandIsNotice(id, buf))) {
+		skip = privmsg;
+	} else if (notice) {
 		prefix = "-"; suffix = "- ";
-		rest.fg = LightGray;
-	} else if (NULL != (skip = commandIsAction(id, buf))) {
-		init.attr |= A_ITALIC;
+		styleInput.fg = LightGray;
+		skip = notice;
+	} else if (action) {
 		prefix = "* "; suffix = " ";
-		rest.attr |= A_ITALIC;
+		stylePrompt.attr |= A_ITALIC;
+		styleInput.attr |= A_ITALIC;
+		skip = action;
 	} else if (id == Debug && buf[0] != '/') {
-		skip = buf;
-		init.fg = Gray;
 		prompt = "<< ";
+		stylePrompt.fg = Gray;
 	} else {
 		prompt = "";
 	}
-	if (skip && skip > &buf[pos]) {
-		skip = NULL;
+	if (skip > &buf[pos]) {
 		prefix = prompt = suffix = "";
+		skip = buf;
 	}
 
 	int y, x;
 	wmove(input, 0, 0);
 	wattr_set(
 		input,
-		init.attr | colorAttr(Colors[init.fg]),
-		colorPair(Colors[init.fg], Colors[init.bg]),
+		stylePrompt.attr | colorAttr(Colors[stylePrompt.fg]),
+		colorPair(Colors[stylePrompt.fg], Colors[stylePrompt.bg]),
 		NULL
 	);
 	waddstr(input, prefix);
 	waddstr(input, prompt);
 	waddstr(input, suffix);
-	struct Style style = rest;
+	struct Style style = styleInput;
 	char p = buf[pos];
 	buf[pos] = '\0';
-	inputAdd(&style, (skip ? skip : buf));
+	inputAdd(&style, skip);
 	getyx(input, y, x);
 	buf[pos] = p;
 	inputAdd(&style, &buf[pos]);
@@ -954,7 +967,7 @@ void uiRead(void) {
 }
 
 static const time_t Signatures[] = {
-	0x6C72696774616301, // no heat, unreadTotal, unreadWarm
+	0x6C72696774616301, // no heat, unread, unreadWarm
 	0x6C72696774616302,
 };
 
@@ -981,7 +994,7 @@ int uiSave(const char *name) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
 		if (writeTime(file, window->heat)) return -1;
-		if (writeTime(file, window->unreadTotal)) return -1;
+		if (writeTime(file, window->unread)) return -1;
 		if (writeTime(file, window->unreadWarm)) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			time_t time = bufferTime(&window->buffer, i);
@@ -1033,7 +1046,7 @@ void uiLoad(const char *name) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
 		if (version > 0) {
 			window->heat = readTime(file);
-			window->unreadTotal = readTime(file);
+			window->unread = readTime(file);
 			window->unreadWarm = readTime(file);
 		}
 		for (;;) {
