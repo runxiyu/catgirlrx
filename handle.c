@@ -367,6 +367,15 @@ static void handleQuit(struct Message *msg) {
 	completeRemove(None, msg->nick);
 }
 
+static void handleErrorUserNotInChannel(struct Message *msg) {
+	require(msg, false, 4);
+	uiFormat(
+		idFor(msg->params[2]), Cold, tagTime(msg),
+		"%s\tis not in \3%02d%s\3",
+		msg->params[1], hash(msg->params[2]), msg->params[2]
+	);
+}
+
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
@@ -487,6 +496,17 @@ static void handleInvite(struct Message *msg) {
 			hash(msg->params[1]), msg->params[1]
 		);
 	}
+}
+
+static void handleErrorUserOnChannel(struct Message *msg) {
+	require(msg, false, 4);
+	uint id = idFor(msg->params[2]);
+	uiFormat(
+		id, Cold, tagTime(msg),
+		"\3%02d%s\3 is already in \3%02d%s\3",
+		completeColor(id, msg->params[1]), msg->params[1],
+		hash(msg->params[2]), msg->params[2]
+	);
 }
 
 static void handleReplyList(struct Message *msg) {
@@ -772,6 +792,8 @@ static const struct Handler {
 	{ "379", handleReplyWhoisGeneric },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
+	{ "441", handleErrorUserNotInChannel },
+	{ "443", handleErrorUserOnChannel },
 	{ "671", handleReplyWhoisGeneric },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
