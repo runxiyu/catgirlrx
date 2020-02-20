@@ -376,6 +376,14 @@ static void handleErrorUserNotInChannel(struct Message *msg) {
 	);
 }
 
+static void handleErrorBanListFull(struct Message *msg) {
+	require(msg, false, 4);
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"%s", (msg->params[4] ? msg->params[4] : msg->params[3])
+	);
+}
+
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
@@ -794,6 +802,7 @@ static const struct Handler {
 	{ "433", handleErrorNicknameInUse },
 	{ "441", handleErrorUserNotInChannel },
 	{ "443", handleErrorUserOnChannel },
+	{ "478", handleErrorBanListFull },
 	{ "671", handleReplyWhoisGeneric },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
