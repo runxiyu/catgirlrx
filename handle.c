@@ -511,15 +511,15 @@ static void handleReplyBanList(struct Message *msg) {
 		strftime(since, sizeof(since), "%F %T", localtime(&time));
 		uiFormat(
 			id, Cold, tagTime(msg),
-			"Banned in \3%02d%s\3 by \3%02d%s\3 since %s: %s",
+			"Banned from \3%02d%s\3 since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1],
-			completeColor(id, msg->params[3]), msg->params[3], since,
+			since, completeColor(id, msg->params[3]), msg->params[3],
 			msg->params[2]
 		);
 	} else {
 		uiFormat(
 			id, Cold, tagTime(msg),
-			"Banned in \3%02d%s\3: %s",
+			"Banned from \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1], msg->params[2]
 		);
 	}
