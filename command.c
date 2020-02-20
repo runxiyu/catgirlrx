@@ -143,6 +143,30 @@ static void commandKick(uint id, char *params) {
 	}
 }
 
+static void commandBan(uint id, char *params) {
+	if (params) {
+		int count = 1;
+		for (char *ch = params; *ch; ++ch) {
+			if (*ch == ' ') count++;
+		}
+		char b[ParamCap - 2] = "bbbbbbbbbbbbb";
+		ircFormat("MODE %s +%.*s %s\r\n", idNames[id], count, b, params);
+	} else {
+		ircFormat("MODE %s +b\r\n", idNames[id]);
+		replies.ban++;
+	}
+}
+
+static void commandUnban(uint id, char *params) {
+	if (!params) return;
+	int count = 1;
+	for (char *ch = params; *ch; ++ch) {
+		if (*ch == ' ') count++;
+	}
+	char b[ParamCap - 2] = "bbbbbbbbbbbbb";
+	ircFormat("MODE %s -%.*s %s\r\n", idNames[id], count, b, params);
+}
+
 static void commandList(uint id, char *params) {
 	(void)id;
 	if (params) {
@@ -264,6 +288,7 @@ static const struct Handler {
 	bool restricted;
 } Commands[] = {
 	{ "/away", .fn = commandAway },
+	{ "/ban", .fn = commandBan },
 	{ "/close", .fn = commandClose },
 	{ "/copy", .fn = commandCopy, .restricted = true },
 	{ "/cs", .fn = commandCS },
@@ -287,6 +312,7 @@ static const struct Handler {
 	{ "/quit", .fn = commandQuit },
 	{ "/quote", .fn = commandQuote, .restricted = true },
 	{ "/topic", .fn = commandTopic },
+	{ "/unban", .fn = commandUnban },
 	{ "/whois", .fn = commandWhois },
 	{ "/window", .fn = commandWindow },
 };

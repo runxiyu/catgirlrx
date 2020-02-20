@@ -424,6 +424,35 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleReplyBanList(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.ban) return;
+	uint id = idFor(msg->params[1]);
+	if (msg->params[3] && msg->params[4]) {
+		char since[sizeof("0000-00-00 00:00:00")];
+		time_t time = strtol(msg->params[4], NULL, 10);
+		strftime(since, sizeof(since), "%F %T", localtime(&time));
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"Banned in \3%02d%s\3 by \3%02d%s\3 since %s: %s",
+			hash(msg->params[1]), msg->params[1],
+			completeColor(id, msg->params[3]), msg->params[3], since,
+			msg->params[2]
+		);
+	} else {
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"Banned in \3%02d%s\3: %s",
+			hash(msg->params[1]), msg->params[1], msg->params[2]
+		);
+	}
+}
+
+static void handleReplyEndOfBanList(struct Message *msg) {
+	(void)msg;
+	if (replies.ban) replies.ban--;
+}
+
 static void handleInvite(struct Message *msg) {
 	require(msg, true, 2);
 	if (!strcmp(msg->params[0], self.nick)) {
@@ -719,6 +748,8 @@ static const struct Handler {
 	{ "332", handleReplyTopic },
 	{ "353", handleReplyNames },
 	{ "366", handleReplyEndOfNames },
+	{ "367", handleReplyBanList },
+	{ "368", handleReplyEndOfBanList },
 	{ "372", handleReplyMOTD },
 	{ "378", handleReplyWhoisGeneric },
 	{ "379", handleReplyWhoisGeneric },

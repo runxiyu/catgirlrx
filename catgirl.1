@@ -1,4 +1,4 @@
-.Dd February 16, 2020
+.Dd February 19, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -242,6 +242,8 @@ can be typed
 .Bl -tag -width Ds
 .It Ic /away Op Ar message
 Set or clear your away status.
+.It Ic /ban Op Ar mask ...
+List or ban masks from the channel.
 .It Ic /cs Ar command
 Send a command to ChanServ.
 .It Ic /invite Ar nick
@@ -274,6 +276,8 @@ Quit IRC.
 Send a raw IRC command.
 .It Ic /topic Op Ar topic
 Show or set the topic of the channel.
+.It Ic /unban Ar mask ...
+Unban masks from the channel.
 .It Ic /whois Ar nick
 Query information about a user.
 .El
