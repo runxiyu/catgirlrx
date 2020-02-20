@@ -152,7 +152,7 @@ static void commandBan(uint id, char *params) {
 		char b[ParamCap - 2] = "bbbbbbbbbbbbb";
 		ircFormat("MODE %s +%.*s %s\r\n", idNames[id], count, b, params);
 	} else {
-		ircFormat("MODE %s +b\r\n", idNames[id]);
+		ircFormat("MODE %s b\r\n", idNames[id]);
 		replies.ban++;
 	}
 }
