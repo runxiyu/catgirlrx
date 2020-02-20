@@ -506,6 +506,19 @@ static void handleInvite(struct Message *msg) {
 	}
 }
 
+static void handleReplyInviting(struct Message *msg) {
+	require(msg, false, 3);
+	if (self.caps & CapInviteNotify) return;
+	struct Message invite = {
+		.nick = self.nick,
+		.user = self.user,
+		.cmd = "INVITE",
+		.params[0] = msg->params[1],
+		.params[1] = msg->params[2],
+	};
+	handleInvite(&invite);
+}
+
 static void handleErrorUserOnChannel(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
@@ -791,6 +804,7 @@ static const struct Handler {
 	{ "330", handleReplyWhoisGeneric },
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
+	{ "341", handleReplyInviting },
 	{ "353", handleReplyNames },
 	{ "366", handleReplyEndOfNames },
 	{ "367", handleReplyBanList },
