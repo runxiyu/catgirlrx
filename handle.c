@@ -553,6 +553,14 @@ static void handleMode(struct Message *msg) {
 	}
 }
 
+static void handleErrorChanopPrivsNeeded(struct Message *msg) {
+	require(msg, false, 3);
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"%s", msg->params[2]
+	);
+}
+
 static void handleErrorUserNotInChannel(struct Message *msg) {
 	require(msg, false, 4);
 	uiFormat(
@@ -886,6 +894,7 @@ static const struct Handler {
 	{ "441", handleErrorUserNotInChannel },
 	{ "443", handleErrorUserOnChannel },
 	{ "478", handleErrorBanListFull },
+	{ "482", handleErrorChanopPrivsNeeded },
 	{ "671", handleReplyWhoisGeneric },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
