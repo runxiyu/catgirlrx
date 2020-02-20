@@ -491,6 +491,7 @@ static void handleMode(struct Message *msg) {
 		// TODO: User mode changes.
 		return;
 	}
+
 	uint id = idFor(msg->params[0]);
 	bool set = false;
 	uint param = 2;
@@ -499,6 +500,7 @@ static void handleMode(struct Message *msg) {
 			set = true;
 		} else if (*ch == '-') {
 			set = false;
+
 		} else if (strchr(network.prefixModes, *ch)) {
 			assert(param < ParamCap);
 			char *nick = msg->params[param++];
@@ -512,8 +514,35 @@ static void handleMode(struct Message *msg) {
 				(set ? "grants" : "revokes"),
 				completeColor(id, nick), prefix, nick
 			);
+
 		} else if (strchr(network.listModes, *ch)) {
-			// TODO
+			assert(param < ParamCap);
+			char *mask = msg->params[param++];
+			if (*ch == 'b') {
+				uiFormat(
+					id, Cold, tagTime(msg),
+					"\3%02d%s\3\t%s %s from \3%02d%s\3",
+					hash(msg->user), msg->nick,
+					(set ? "bans" : "unbans"),
+					mask,
+					hash(msg->params[0]), msg->params[0]
+				);
+				continue;
+			}
+			const char *list = (const char[]) { *ch, '\0' };
+			if (*ch == network.excepts) list = "except";
+			if (*ch == network.invex) list = "invite";
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s %s %s the \3%02d%s\3 %s list",
+				hash(msg->user), msg->nick,
+				(set ? "adds" : "removes"),
+				mask,
+				(set ? "to" : "from"),
+				hash(msg->params[0]), msg->params[0],
+				list
+			);
+
 		} else if (strchr(network.paramModes, *ch)) {
 			// TODO
 		} else if (strchr(network.setParamModes, *ch)) {
