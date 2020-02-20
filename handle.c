@@ -86,10 +86,30 @@ static const time_t *tagTime(const struct Message *msg) {
 
 typedef void Handler(struct Message *msg);
 
+static void handleErrorGeneric(struct Message *msg) {
+	require(msg, false, 2);
+	if (msg->params[2]) {
+		size_t len = strlen(msg->params[2]);
+		if (msg->params[2][len - 1] == '.') msg->params[2][len - 1] = '\0';
+		uiFormat(
+			Network, Warm, tagTime(msg),
+			"%s: %s", msg->params[2], msg->params[1]
+		);
+	} else {
+		uiFormat(
+			Network, Warm, tagTime(msg),
+			"%s", msg->params[1]
+		);
+	}
+}
+
 static void handleErrorNicknameInUse(struct Message *msg) {
 	require(msg, false, 2);
-	if (strcmp(self.nick, "*")) return;
-	ircFormat("NICK :%s_\r\n", msg->params[1]);
+	if (!strcmp(self.nick, "*")) {
+		ircFormat("NICK :%s_\r\n", msg->params[1]);
+	} else {
+		handleErrorGeneric(msg);
+	}
 }
 
 static void handleErrorErroneousNickname(struct Message *msg) {
@@ -97,10 +117,7 @@ static void handleErrorErroneousNickname(struct Message *msg) {
 	if (!strcmp(self.nick, "*")) {
 		errx(EX_CONFIG, "%s: %s", msg->params[1], msg->params[2]);
 	} else {
-		uiFormat(
-			Network, Warm, tagTime(msg),
-			"%s: %s", msg->params[2], msg->params[1]
-		);
+		handleErrorGeneric(msg);
 	}
 }
 
@@ -785,5 +802,11 @@ void handle(struct Message msg) {
 	const struct Handler *handler = bsearch(
 		msg.cmd, Handlers, ARRAY_LEN(Handlers), sizeof(*handler), compar
 	);
-	if (handler) handler->fn(&msg);
+	if (handler) {
+		handler->fn(&msg);
+		return;
+	}
+	if (strcmp(msg.cmd, "400") >= 0 && strcmp(msg.cmd, "599") <= 0) {
+		handleErrorGeneric(&msg);
+	}
 }
