@@ -367,20 +367,46 @@ static void handleQuit(struct Message *msg) {
 	completeRemove(None, msg->nick);
 }
 
-static void handleErrorUserNotInChannel(struct Message *msg) {
-	require(msg, false, 4);
-	uiFormat(
-		idFor(msg->params[2]), Cold, tagTime(msg),
-		"%s\tis not in \3%02d%s\3",
-		msg->params[1], hash(msg->params[2]), msg->params[2]
-	);
+static void handleInvite(struct Message *msg) {
+	require(msg, true, 2);
+	if (!strcmp(msg->params[0], self.nick)) {
+		uiFormat(
+			Network, Hot, tagTime(msg),
+			"\3%02d%s\3\tinvites you to \3%02d%s\3",
+			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
+		);
+	} else {
+		uiFormat(
+			idFor(msg->params[1]), Cold, tagTime(msg),
+			"\3%02d%s\3\tinvites %s to \3%02d%s\3",
+			hash(msg->user), msg->nick,
+			msg->params[0],
+			hash(msg->params[1]), msg->params[1]
+		);
+	}
 }
 
-static void handleErrorBanListFull(struct Message *msg) {
+static void handleReplyInviting(struct Message *msg) {
+	require(msg, false, 3);
+	if (self.caps & CapInviteNotify) return;
+	struct Message invite = {
+		.nick = self.nick,
+		.user = self.user,
+		.cmd = "INVITE",
+		.params[0] = msg->params[1],
+		.params[1] = msg->params[2],
+	};
+	handleInvite(&invite);
+}
+
+static void handleErrorUserOnChannel(struct Message *msg) {
 	require(msg, false, 4);
+	uint id = idFor(msg->params[2]);
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
-		"%s", (msg->params[4] ? msg->params[4] : msg->params[3])
+		id, Cold, tagTime(msg),
+		"\3%02d%s\3 is already in \3%02d%s\3",
+		completeColor(id, msg->params[1]), msg->params[1],
+		hash(msg->params[2]), msg->params[2]
 	);
 }
 
@@ -458,6 +484,23 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static void handleErrorUserNotInChannel(struct Message *msg) {
+	require(msg, false, 4);
+	uiFormat(
+		idFor(msg->params[2]), Cold, tagTime(msg),
+		"%s\tis not in \3%02d%s\3",
+		msg->params[1], hash(msg->params[2]), msg->params[2]
+	);
+}
+
+static void handleErrorBanListFull(struct Message *msg) {
+	require(msg, false, 4);
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"%s", (msg->params[4] ? msg->params[4] : msg->params[3])
+	);
+}
+
 static void handleReplyBanList(struct Message *msg) {
 	require(msg, false, 3);
 	if (!replies.ban) return;
@@ -485,49 +528,6 @@ static void handleReplyBanList(struct Message *msg) {
 static void handleReplyEndOfBanList(struct Message *msg) {
 	(void)msg;
 	if (replies.ban) replies.ban--;
-}
-
-static void handleInvite(struct Message *msg) {
-	require(msg, true, 2);
-	if (!strcmp(msg->params[0], self.nick)) {
-		uiFormat(
-			Network, Hot, tagTime(msg),
-			"\3%02d%s\3\tinvites you to \3%02d%s\3",
-			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
-		);
-	} else {
-		uiFormat(
-			idFor(msg->params[1]), Cold, tagTime(msg),
-			"\3%02d%s\3\tinvites %s to \3%02d%s\3",
-			hash(msg->user), msg->nick,
-			msg->params[0],
-			hash(msg->params[1]), msg->params[1]
-		);
-	}
-}
-
-static void handleReplyInviting(struct Message *msg) {
-	require(msg, false, 3);
-	if (self.caps & CapInviteNotify) return;
-	struct Message invite = {
-		.nick = self.nick,
-		.user = self.user,
-		.cmd = "INVITE",
-		.params[0] = msg->params[1],
-		.params[1] = msg->params[2],
-	};
-	handleInvite(&invite);
-}
-
-static void handleErrorUserOnChannel(struct Message *msg) {
-	require(msg, false, 4);
-	uint id = idFor(msg->params[2]);
-	uiFormat(
-		id, Cold, tagTime(msg),
-		"\3%02d%s\3 is already in \3%02d%s\3",
-		completeColor(id, msg->params[1]), msg->params[1],
-		hash(msg->params[2]), msg->params[2]
-	);
 }
 
 static void handleReplyList(struct Message *msg) {
