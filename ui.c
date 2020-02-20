@@ -493,7 +493,7 @@ static void windowScrollUnread(struct Window *window) {
 }
 
 static int wordWidth(const char *str) {
-	size_t len = strcspn(str, " ");
+	size_t len = strcspn(str, " \t");
 	int width = 0;
 	while (len) {
 		wchar_t wc;
@@ -515,18 +515,10 @@ static int wordWrap(WINDOW *win, const char *str) {
 	int align = 0;
 	struct Style style = Reset;
 	while (*str) {
-		if (*str == '\t') {
-			if (align) {
-				waddch(win, '\t');
-				str++;
-			} else {
-				waddch(win, ' ');
-				getyx(win, y, align);
-				str++;
-			}
-		} else if (*str == ' ') {
+		char ch = *str;
+		if (ch == ' ' || ch == '\t') {
 			getyx(win, y, x);
-			const char *word = &str[strspn(str, " ")];
+			const char *word = &str[strspn(str, " \t")];
 			if (width - x - 1 <= wordWidth(word)) {
 				lines += 1 + (align + wordWidth(word)) / width;
 				waddch(win, '\n');
@@ -534,13 +526,16 @@ static int wordWrap(WINDOW *win, const char *str) {
 				wmove(win, y, align);
 				str = word;
 			} else {
-				waddch(win, ' ');
+				waddch(win, (align ? ch : ' '));
 				str++;
 			}
 		}
+		if (ch == '\t' && !align) {
+			getyx(win, y, align);
+		}
 
 		size_t len = styleParse(&style, &str);
-		size_t ws = strcspn(str, "\t ");
+		size_t ws = strcspn(str, " \t");
 		if (ws < len) len = ws;
 
 		wattr_set(
