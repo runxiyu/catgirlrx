@@ -498,14 +498,16 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 			}
 		}
 	}
-	time_t signon = (msg->params[3] ? strtoul(msg->params[3], NULL, 10) : 0);
+	char signon[sizeof("0000-00-00 00:00:00")];
+	time_t time = (msg->params[3] ? strtol(msg->params[3], NULL, 10) : 0);
+	strftime(signon, sizeof(signon), "%F %T", localtime(&time));
 	uiFormat(
 		Network, Warm, tagTime(msg),
-		"\3%02d%s\3\tis idle for %lu %s%s%s%.*s",
+		"\3%02d%s\3\tis idle for %lu %s%s%s%s",
 		completeColor(Network, msg->params[1]), msg->params[1],
 		idle, unit, (idle != 1 ? "s" : ""),
-		(signon ? ", signed on " : ""),
-		24, (signon ? ctime(&signon) : "")
+		(msg->params[3] ? ", signed on " : ""),
+		(msg->params[3] ? signon : "")
 	);
 }
 
