@@ -240,6 +240,7 @@ static void handleReplyISupport(struct Message *msg) {
 			strsep(&msg->params[i], "(");
 			set(&network.prefixModes, strsep(&msg->params[i], ")"));
 			set(&network.prefixes, msg->params[i]);
+			assert(strlen(network.prefixes) == strlen(network.prefixModes));
 		} else if (!strcmp(key, "CHANMODES")) {
 			set(&network.listModes, strsep(&msg->params[i], ","));
 			set(&network.paramModes, strsep(&msg->params[i], ","));
@@ -481,6 +482,45 @@ static void handleTopic(struct Message *msg) {
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
 		);
+	}
+}
+
+static void handleMode(struct Message *msg) {
+	require(msg, true, 2);
+	if (!strchr(network.chanTypes, msg->params[0][0])) {
+		// TODO: User mode changes.
+		return;
+	}
+	uint id = idFor(msg->params[0]);
+	bool set = false;
+	uint param = 2;
+	for (char *ch = msg->params[1]; *ch; ++ch) {
+		if (*ch == '+') {
+			set = true;
+		} else if (*ch == '-') {
+			set = false;
+		} else if (strchr(network.prefixModes, *ch)) {
+			assert(param < ParamCap);
+			char *nick = msg->params[param++];
+			char *mode = strchr(network.prefixModes, *ch);
+			char prefix = network.prefixes[mode - network.prefixModes];
+			// TODO: Invert nick if targeting self?
+			uiFormat(
+				id, (!strcmp(nick, self.nick) ? Hot : Cold), tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%c%s\3",
+				hash(msg->user), msg->nick,
+				(set ? "grants" : "revokes"),
+				completeColor(id, nick), prefix, nick
+			);
+		} else if (strchr(network.listModes, *ch)) {
+			// TODO
+		} else if (strchr(network.paramModes, *ch)) {
+			// TODO
+		} else if (strchr(network.setParamModes, *ch)) {
+			// TODO
+		} else {
+			// TODO
+		}
 	}
 }
 
@@ -828,6 +868,7 @@ static const struct Handler {
 	{ "INVITE", handleInvite },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
+	{ "MODE", handleMode },
 	{ "NICK", handleNick },
 	{ "NOTICE", handlePrivmsg },
 	{ "PART", handlePart },
