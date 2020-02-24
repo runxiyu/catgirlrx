@@ -495,6 +495,7 @@ static void handleMode(struct Message *msg) {
 	uint id = idFor(msg->params[0]);
 	bool set = false;
 	uint param = 2;
+	char buf[1024] = "";
 	for (char *ch = msg->params[1]; *ch; ++ch) {
 		if (*ch == '+') {
 			set = true;
@@ -506,11 +507,8 @@ static void handleMode(struct Message *msg) {
 			char *nick = msg->params[param++];
 			char *mode = strchr(network.prefixModes, *ch);
 			char prefix = network.prefixes[mode - network.prefixModes];
-			// TODO: Invert nick if targeting self?
-			uiFormat(
-				id, (!strcmp(nick, self.nick) ? Hot : Cold), tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%c%s\3",
-				hash(msg->user), msg->nick,
+			catf(
+				buf, sizeof(buf), ", %s \3%02d%c%s\3",
 				(set ? "grants" : "revokes"),
 				completeColor(id, nick), prefix, nick
 			);
@@ -519,10 +517,8 @@ static void handleMode(struct Message *msg) {
 			assert(param < ParamCap);
 			char *mask = msg->params[param++];
 			if (*ch == 'b') {
-				uiFormat(
-					id, Cold, tagTime(msg),
-					"\3%02d%s\3\t%s %s from \3%02d%s\3",
-					hash(msg->user), msg->nick,
+				catf(
+					buf, sizeof(buf), ", %s %s from \3%02d%s\3",
 					(set ? "bans" : "unbans"),
 					mask,
 					hash(msg->params[0]), msg->params[0]
@@ -532,10 +528,8 @@ static void handleMode(struct Message *msg) {
 			const char *list = (const char[]) { *ch, '\0' };
 			if (*ch == network.excepts) list = "except";
 			if (*ch == network.invex) list = "invite";
-			uiFormat(
-				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s %s %s the \3%02d%s\3 %s list",
-				hash(msg->user), msg->nick,
+			catf(
+				buf, sizeof(buf), ", %s %s %s the \3%02d%s\3 %s list",
 				(set ? "adds" : "removes"),
 				mask,
 				(set ? "to" : "from"),
@@ -551,6 +545,11 @@ static void handleMode(struct Message *msg) {
 			// TODO
 		}
 	}
+	if (strlen(buf) < 2) return;
+	uiFormat(
+		id, Cold, tagTime(msg),
+		"\3%02d%s\3\t%s", hash(msg->user), msg->nick, &buf[2]
+	);
 }
 
 static void handleErrorChanopPrivsNeeded(struct Message *msg) {
