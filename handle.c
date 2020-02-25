@@ -606,6 +606,50 @@ static void handleReplyEndOfBanList(struct Message *msg) {
 	if (replies.ban) replies.ban--;
 }
 
+static void onList(const char *list, struct Message *msg) {
+	uint id = idFor(msg->params[1]);
+	if (msg->params[3] && msg->params[4]) {
+		char since[sizeof("0000-00-00 00:00:00")];
+		time_t time = strtol(msg->params[4], NULL, 10);
+		strftime(since, sizeof(since), "%F %T", localtime(&time));
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"On the \3%02d%s\3 %s list since %s by \3%02d%s\3: %s",
+			hash(msg->params[1]), msg->params[1], list,
+			since, completeColor(id, msg->params[3]), msg->params[3],
+			msg->params[2]
+		);
+	} else {
+		uiFormat(
+			id, Cold, tagTime(msg),
+			"On the \3%02d%s\3 %s list: %s",
+			hash(msg->params[1]), msg->params[1], list, msg->params[2]
+		);
+	}
+}
+
+static void handleReplyExceptList(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.excepts) return;
+	onList("except", msg);
+}
+
+static void handleReplyEndOfExceptList(struct Message *msg) {
+	(void)msg;
+	if (replies.excepts) replies.excepts--;
+}
+
+static void handleReplyInviteList(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.invex) return;
+	onList("invite", msg);
+}
+
+static void handleReplyEndOfInviteList(struct Message *msg) {
+	(void)msg;
+	if (replies.invex) replies.invex--;
+}
+
 static void handleReplyList(struct Message *msg) {
 	require(msg, false, 4);
 	if (!replies.list) return;
@@ -881,6 +925,10 @@ static const struct Handler {
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
 	{ "341", handleReplyInviting },
+	{ "346", handleReplyInviteList },
+	{ "347", handleReplyEndOfInviteList },
+	{ "348", handleReplyExceptList },
+	{ "349", handleReplyEndOfExceptList },
 	{ "353", handleReplyNames },
 	{ "366", handleReplyEndOfNames },
 	{ "367", handleReplyBanList },

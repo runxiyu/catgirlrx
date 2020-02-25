@@ -1,4 +1,4 @@
-.Dd February 19, 2020
+.Dd February 23, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -242,16 +242,12 @@ can be typed
 .Bl -tag -width Ds
 .It Ic /away Op Ar message
 Set or clear your away status.
-.It Ic /ban Op Ar mask ...
-List or ban masks from the channel.
 .It Ic /cs Ar command
 Send a command to ChanServ.
 .It Ic /invite Ar nick
 Invite a user to the channel.
 .It Ic /join Ar channel
 Join a channel.
-.It Ic /kick Ar nick Op Ar message
-Kick a user from the channel.
 .It Ic /list Op Ar channel
 List channels.
 .It Ic /me Op Ar action
@@ -276,8 +272,6 @@ Quit IRC.
 Send a raw IRC command.
 .It Ic /topic Op Ar topic
 Show or set the topic of the channel.
-.It Ic /unban Ar mask ...
-Unban masks from the channel.
 .It Ic /whois Ar nick
 Query information about a user.
 .El
@@ -324,6 +318,30 @@ or matching
 Switch to window by name.
 .It Ic /window Ar num , Ic / Ns Ar num
 Switch to window by number.
+.El
+.
+.Ss Operator Commands
+.Bl -tag -width Ds
+.It Ic /ban Op Ar mask ...
+List or ban masks from the channel.
+.It Ic /except Op Ar mask ...
+List or add masks to the channel ban exception list.
+.It Ic /invex Op Ar mask ...
+List or add masks to the channel invite list.
+.It Ic /kick Ar nick Op Ar message
+Kick a user from the channel.
+.It Ic /mode Oo Ar modes Oc Op Ar param ...
+Show or set channel modes.
+In the
+.Sy <network>
+window,
+show or set user modes.
+.It Ic /unban Ar mask ...
+Unban masks from the channel.
+.It Ic /unexcept Ar mask ...
+Remove masks from the channel ban exception list.
+.It Ic /uninvex Ar mask ...
+Remove masks from the channel invite list.
 .El
 .
 .Sh KEY BINDINGS

@@ -176,6 +176,8 @@ static inline void utilPush(struct Util *util, const char *arg) {
 extern struct Replies {
 	uint away;
 	uint ban;
+	uint excepts;
+	uint invex;
 	uint join;
 	uint list;
 	uint names;

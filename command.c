@@ -143,14 +143,34 @@ static void commandKick(uint id, char *params) {
 	}
 }
 
+static void commandMode(uint id, char *params) {
+	if (id == Network) {
+		if (params) {
+			ircFormat("MODE %s %s\r\n", self.nick, params);
+		} else {
+			ircFormat("MODE %s\r\n", self.nick);
+		}
+	} else {
+		if (params) {
+			ircFormat("MODE %s %s\r\n", idNames[id], params);
+		} else {
+			ircFormat("MODE %s\r\n", idNames[id]);
+		}
+	}
+}
+
+static void channelListMode(uint id, char pm, char l, char *params) {
+	int count = 1;
+	for (char *ch = params; *ch; ++ch) {
+		if (*ch == ' ') count++;
+	}
+	char modes[ParamCap - 2] = { l, l, l, l, l, l, l, l, l, l, l, l, l };
+	ircFormat("MODE %s %c%.*s %s\r\n", idNames[id], pm, count, modes, params);
+}
+
 static void commandBan(uint id, char *params) {
 	if (params) {
-		int count = 1;
-		for (char *ch = params; *ch; ++ch) {
-			if (*ch == ' ') count++;
-		}
-		char b[ParamCap - 2] = "bbbbbbbbbbbbb";
-		ircFormat("MODE %s +%.*s %s\r\n", idNames[id], count, b, params);
+		channelListMode(id, '+', 'b', params);
 	} else {
 		ircFormat("MODE %s b\r\n", idNames[id]);
 		replies.ban++;
@@ -159,12 +179,35 @@ static void commandBan(uint id, char *params) {
 
 static void commandUnban(uint id, char *params) {
 	if (!params) return;
-	int count = 1;
-	for (char *ch = params; *ch; ++ch) {
-		if (*ch == ' ') count++;
+	channelListMode(id, '-', 'b', params);
+}
+
+static void commandExcept(uint id, char *params) {
+	if (params) {
+		channelListMode(id, '+', network.excepts, params);
+	} else {
+		ircFormat("MODE %s %c\r\n", idNames[id], network.excepts);
+		replies.excepts++;
 	}
-	char b[ParamCap - 2] = "bbbbbbbbbbbbb";
-	ircFormat("MODE %s -%.*s %s\r\n", idNames[id], count, b, params);
+}
+
+static void commandUnexcept(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '-', network.excepts, params);
+}
+
+static void commandInvex(uint id, char *params) {
+	if (params) {
+		channelListMode(id, '+', network.invex, params);
+	} else {
+		ircFormat("MODE %s %c\r\n", idNames[id], network.invex);
+		replies.invex++;
+	}
+}
+
+static void commandUninvex(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '-', network.invex, params);
 }
 
 static void commandList(uint id, char *params) {
@@ -293,13 +336,16 @@ static const struct Handler {
 	{ "/copy", .fn = commandCopy, .restricted = true },
 	{ "/cs", .fn = commandCS },
 	{ "/debug", .fn = commandDebug, .restricted = true },
+	{ "/except", .fn = commandExcept },
 	{ "/exec", .fn = commandExec, .restricted = true },
 	{ "/help", .fn = commandHelp },
+	{ "/invex", .fn = commandInvex },
 	{ "/invite", .fn = commandInvite },
 	{ "/join", .fn = commandJoin, .restricted = true },
 	{ "/kick", .fn = commandKick },
 	{ "/list", .fn = commandList },
 	{ "/me", .fn = commandMe },
+	{ "/mode", .fn = commandMode },
 	{ "/move", .fn = commandMove },
 	{ "/msg", .fn = commandMsg, .restricted = true },
 	{ "/names", .fn = commandNames },
@@ -313,6 +359,8 @@ static const struct Handler {
 	{ "/quote", .fn = commandQuote, .restricted = true },
 	{ "/topic", .fn = commandTopic },
 	{ "/unban", .fn = commandUnban },
+	{ "/unexcept", .fn = commandUnexcept },
+	{ "/uninvex", .fn = commandUninvex },
 	{ "/whois", .fn = commandWhois },
 	{ "/window", .fn = commandWindow },
 };
