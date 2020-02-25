@@ -227,21 +227,24 @@ static void handleReplyISupport(struct Message *msg) {
 	for (uint i = 1; i < ParamCap; ++i) {
 		if (!msg->params[i]) break;
 		char *key = strsep(&msg->params[i], "=");
-		if (!msg->params[i]) continue;
 		if (!strcmp(key, "NETWORK")) {
+			if (!msg->params[i]) continue;
 			set(&network.name, msg->params[i]);
 			uiFormat(
 				Network, Cold, tagTime(msg),
 				"You arrive in %s", msg->params[i]
 			);
 		} else if (!strcmp(key, "CHANTYPES")) {
+			if (!msg->params[i]) continue;
 			set(&network.chanTypes, msg->params[i]);
 		} else if (!strcmp(key, "PREFIX")) {
+			if (!msg->params[i]) continue;
 			strsep(&msg->params[i], "(");
 			set(&network.prefixModes, strsep(&msg->params[i], ")"));
 			set(&network.prefixes, msg->params[i]);
 			assert(strlen(network.prefixes) == strlen(network.prefixModes));
 		} else if (!strcmp(key, "CHANMODES")) {
+			if (!msg->params[i]) continue;
 			set(&network.listModes, strsep(&msg->params[i], ","));
 			set(&network.paramModes, strsep(&msg->params[i], ","));
 			set(&network.setParamModes, strsep(&msg->params[i], ","));
