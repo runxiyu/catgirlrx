@@ -584,10 +584,15 @@ static void handleMode(struct Message *msg) {
 			);
 		}
 	}
-	if (strlen(buf) < 2) return;
+
+	catf(buf, sizeof(buf), " (%s", msg->params[1]);
+	for (uint i = 2; i < ParamCap; ++i) {
+		if (!msg->params[i]) break;
+		catf(buf, sizeof(buf), " %s", msg->params[i]);
+	}
 	uiFormat(
 		id, Cold, tagTime(msg),
-		"\3%02d%s\3\t%s", hash(msg->user), msg->nick, &buf[2]
+		"\3%02d%s\3\t%s)", hash(msg->user), msg->nick, &buf[2]
 	);
 }
 
