@@ -488,6 +488,18 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static const char *ModeNames[256] = {
+	['i'] = "invite-only",
+	['k'] = "key",
+	['l'] = "client limit",
+	['m'] = "moderated",
+	['n'] = "no external messages",
+	['o'] = "operator",
+	['s'] = "secret",
+	['t'] = "protected topic",
+	['v'] = "voice",
+};
+
 static void handleMode(struct Message *msg) {
 	require(msg, true, 2);
 	if (!strchr(network.chanTypes, msg->params[0][0])) {
@@ -500,6 +512,8 @@ static void handleMode(struct Message *msg) {
 	uint param = 2;
 	char buf[1024] = "";
 	for (char *ch = msg->params[1]; *ch; ++ch) {
+		const char *name = ModeNames[(byte)*ch];
+		if (!name) name = (const char[]) { *ch, '\0' };
 		if (*ch == '+') {
 			set = true;
 		} else if (*ch == '-') {
@@ -541,11 +555,33 @@ static void handleMode(struct Message *msg) {
 			);
 
 		} else if (strchr(network.paramModes, *ch)) {
-			// TODO
+			assert(param < ParamCap);
+			catf(
+				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s %s %s",
+				(set ? "" : "un"), hash(msg->params[0]), msg->params[0], name,
+				(set ? "to" : "from"), msg->params[param++]
+			);
+
 		} else if (strchr(network.setParamModes, *ch)) {
-			// TODO
+			if (set) {
+				assert(param < ParamCap);
+				catf(
+					buf, sizeof(buf), ", sets \3%02d%s\3 %s to %s",
+					hash(msg->params[0]), msg->params[0], name,
+					msg->params[param++]
+				);
+			} else {
+				catf(
+					buf, sizeof(buf), ", unsets \3%02d%s\3 %s",
+					hash(msg->params[0]), msg->params[0], name
+				);
+			}
+
 		} else {
-			// TODO
+			catf(
+				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s",
+				(set ? "" : "un"), hash(msg->params[0]), msg->params[0], name
+			);
 		}
 	}
 	if (strlen(buf) < 2) return;
