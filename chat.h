@@ -96,6 +96,7 @@ extern struct Network {
 } network;
 
 #define ENUM_CAP \
+	X("causal.agency/consumer", CapConsumer) \
 	X("extended-join", CapExtendedJoin) \
 	X("invite-notify", CapInviteNotify) \
 	X("multi-prefix", CapMultiPrefix) \
@@ -112,6 +113,7 @@ enum Cap {
 extern struct Self {
 	bool debug;
 	bool restricted;
+	size_t pos;
 	enum Cap caps;
 	char *plain;
 	char *join;
@@ -128,6 +130,7 @@ static inline void set(char **field, const char *value) {
 }
 
 #define ENUM_TAG \
+	X("causal.agency/pos", TagPos) \
 	X("time", TagTime)
 
 enum Tag {

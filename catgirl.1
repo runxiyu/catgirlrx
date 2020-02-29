@@ -1,4 +1,4 @@
-.Dd February 23, 2020
+.Dd February 29, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -657,6 +657,18 @@ join = #ascii.town
 .%U https://ircv3.net/specs/extensions/multi-prefix-3.1
 .Re
 .El
+.
+.Ss Extensions
+The
+.Nm
+client can take advantage of the
+.Sy causal.agency/consumer
+vendor-specific IRCv3 capability
+implemented by
+.Xr pounce 1 .
+The consumer position is stored in the
+.Cm save
+file.
 .
 .Sh AUTHORS
 .An June Bug Aq Mt june@causal.agency

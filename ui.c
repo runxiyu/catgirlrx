@@ -960,7 +960,8 @@ void uiRead(void) {
 
 static const time_t Signatures[] = {
 	0x6C72696774616301, // no heat, unread, unreadWarm
-	0x6C72696774616302,
+	0x6C72696774616302, // no self.pos
+	0x6C72696774616303,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -981,7 +982,8 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeTime(file, Signatures[1])) return -1;
+	if (writeTime(file, Signatures[2])) return -1;
+	if (writeTime(file, self.pos)) return -1;
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
@@ -1031,6 +1033,10 @@ void uiLoad(const char *name) {
 		return;
 	}
 	size_t version = signatureVersion(signature);
+
+	if (version > 1) {
+		self.pos = readTime(file);
+	}
 
 	char *buf = NULL;
 	size_t cap = 0;

@@ -126,6 +126,10 @@ static void handleCap(struct Message *msg) {
 	enum Cap caps = capParse(msg->params[2]);
 	if (!strcmp(msg->params[1], "LS")) {
 		caps &= ~CapSASL;
+		if (caps & CapConsumer && self.pos) {
+			ircFormat("CAP REQ %s=%zu\r\n", CapNames[CapConsumerBit], self.pos);
+			caps &= ~CapConsumer;
+		}
 		if (caps) {
 			ircFormat("CAP REQ :%s\r\n", capList(caps));
 		} else {
@@ -1019,9 +1023,10 @@ void handle(struct Message msg) {
 	);
 	if (handler) {
 		handler->fn(&msg);
-		return;
-	}
-	if (strcmp(msg.cmd, "400") >= 0 && strcmp(msg.cmd, "599") <= 0) {
+	} else if (strcmp(msg.cmd, "400") >= 0 && strcmp(msg.cmd, "599") <= 0) {
 		handleErrorGeneric(&msg);
+	}
+	if (msg.tags[TagPos]) {
+		self.pos = strtoull(msg.tags[TagPos], NULL, 10);
 	}
 }
