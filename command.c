@@ -392,7 +392,7 @@ const char *commandIsAction(uint id, const char *input) {
 }
 
 void command(uint id, char *input) {
-	if (id == Debug && input[0] != '/') {
+	if (id == Debug && input[0] != '/' && !self.restricted) {
 		commandQuote(id, input);
 		return;
 	} else if (commandIsPrivmsg(id, input)) {
