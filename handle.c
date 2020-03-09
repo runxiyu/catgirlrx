@@ -272,6 +272,10 @@ static void handleReplyMOTD(struct Message *msg) {
 	}
 }
 
+static void handleErrorNoMOTD(struct Message *msg) {
+	(void)msg;
+}
+
 static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	uint id = idFor(msg->params[0]);
@@ -984,6 +988,7 @@ static const struct Handler {
 	{ "372", handleReplyMOTD },
 	{ "378", handleReplyWhoisGeneric },
 	{ "379", handleReplyWhoisGeneric },
+	{ "422", handleErrorNoMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
 	{ "441", handleErrorUserNotInChannel },
