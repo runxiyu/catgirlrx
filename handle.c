@@ -496,6 +496,32 @@ static void handleTopic(struct Message *msg) {
 	}
 }
 
+static const char *UserModes[256] = {
+	['O'] = "local oper",
+	['i'] = "invisible",
+	['o'] = "oper",
+	['r'] = "registered",
+	['w'] = "wallops",
+};
+
+static void handleReplyUserModeIs(struct Message *msg) {
+	require(msg, false, 2);
+	char buf[1024] = "";
+	for (char *ch = msg->params[1]; *ch; ++ch) {
+		if (*ch == '+') continue;
+		if (UserModes[(byte)*ch]) {
+			catf(buf, sizeof(buf), ", %s", UserModes[(byte)*ch]);
+		} else {
+			catf(buf, sizeof(buf), ", mode %c", *ch);
+		}
+	}
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\tis%s",
+		self.color, self.nick, (buf[0] ? &buf[1] : buf)
+	);
+}
+
 static const char *ModeNames[256] = {
 	['i'] = "invite-only",
 	['k'] = "key",
@@ -960,6 +986,7 @@ static const struct Handler {
 } Handlers[] = {
 	{ "001", handleReplyWelcome },
 	{ "005", handleReplyISupport },
+	{ "221", handleReplyUserModeIs },
 	{ "276", handleReplyWhoisGeneric },
 	{ "301", handleReplyAway },
 	{ "305", handleReplyNowAway },
