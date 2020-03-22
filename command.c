@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,12 +53,48 @@ static void echoMessage(char *cmd, uint id, char *params) {
 	handle(msg);
 }
 
+static void splitMessage(char *cmd, uint id, char *params) {
+	if (!params) return;
+	// FIXME: Get USERLEN, HOSTLEN from ISUPPORT and assume worst case if
+	// self.user and self.host are unset?
+	const char *nick = self.nick;
+	const char *user = (self.user ? self.user : "*");
+	const char *host = (self.host ? self.host : "*");
+	int overhead = snprintf(
+		NULL, 0, ":%s!%s@%s %s %s :\r\n",
+		nick, user, host, cmd, idNames[id]
+	);
+	assert(overhead > 0 && overhead < 512);
+	int chunk = 512 - overhead;
+	if (strlen(params) <= (size_t)chunk) {
+		echoMessage(cmd, id, params);
+		return;
+	}
+
+	while (*params) {
+		int len = 0;
+		for (int n = 0; len + n <= chunk; len += n) {
+			n = mblen(&params[len], 1 + strlen(&params[len]));
+			if (n < 0) {
+				n = 1;
+				mblen(NULL, 0);
+			}
+			if (!n) break;
+		}
+		char ch = params[len];
+		params[len] = '\0';
+		echoMessage(cmd, id, params);
+		params[len] = ch;
+		params += len;
+	}
+}
+
 static void commandPrivmsg(uint id, char *params) {
-	echoMessage("PRIVMSG", id, params);
+	splitMessage("PRIVMSG", id, params);
 }
 
 static void commandNotice(uint id, char *params) {
-	echoMessage("NOTICE", id, params);
+	splitMessage("NOTICE", id, params);
 }
 
 static void commandMe(uint id, char *params) {
@@ -68,7 +105,7 @@ static void commandMe(uint id, char *params) {
 
 static void commandMsg(uint id, char *params) {
 	id = idFor(strsep(&params, " "));
-	echoMessage("PRIVMSG", id, params);
+	splitMessage("PRIVMSG", id, params);
 }
 
 static void commandJoin(uint id, char *params) {
