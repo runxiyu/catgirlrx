@@ -512,13 +512,13 @@ static void handleReplyUserModeIs(struct Message *msg) {
 		if (UserModes[(byte)*ch]) {
 			catf(buf, sizeof(buf), ", %s", UserModes[(byte)*ch]);
 		} else {
-			catf(buf, sizeof(buf), ", mode %c", *ch);
+			catf(buf, sizeof(buf), ", +%c", *ch);
 		}
 	}
 	uiFormat(
 		Network, Warm, tagTime(msg),
-		"\3%02d%s\3\tis%s",
-		self.color, self.nick, (buf[0] ? &buf[1] : buf)
+		"\3%02d%s\3\tis %s",
+		self.color, self.nick, (buf[0] ? &buf[2] : buf)
 	);
 }
 
@@ -536,6 +536,35 @@ static const char *ChanModes[256] = {
 	['t'] = "protected topic",
 	['v'] = "voice",
 };
+
+static void handleReplyChannelModeIs(struct Message *msg) {
+	require(msg, false, 3);
+	uint param = 3;
+	char buf[1024] = "";
+	for (char *ch = msg->params[2]; *ch; ++ch) {
+		if (*ch == '+') continue;
+		const char *name = ChanModes[(byte)*ch];
+		if (!name) name = (const char[]) { '+', *ch, '\0' };
+		if (
+			strchr(network.paramModes, *ch) ||
+			strchr(network.setParamModes, *ch)
+		) {
+			assert(param < ParamCap);
+			catf(
+				buf, sizeof(buf), ", has %s of %s",
+				name, msg->params[param++]
+			);
+		} else {
+			catf(buf, sizeof(buf), ", is %s", name);
+		}
+	}
+	uiFormat(
+		idFor(msg->params[1]), Cold, tagTime(msg),
+		"\3%02d%s\3\t%s",
+		hash(msg->params[1]), msg->params[1],
+		(buf[0] ? &buf[2] : "has no modes")
+	);
+}
 
 static void handleMode(struct Message *msg) {
 	require(msg, true, 2);
@@ -1017,6 +1046,7 @@ static const struct Handler {
 	{ "319", handleReplyWhoisChannels },
 	{ "322", handleReplyList },
 	{ "323", handleReplyListEnd },
+	{ "324", handleReplyChannelModeIs },
 	{ "330", handleReplyWhoisGeneric },
 	{ "331", handleReplyNoTopic },
 	{ "332", handleReplyTopic },
