@@ -539,8 +539,25 @@ static const char *ChanModes[256] = {
 
 static void handleMode(struct Message *msg) {
 	require(msg, true, 2);
+
 	if (!strchr(network.chanTypes, msg->params[0][0])) {
-		// TODO: User mode changes.
+		bool set = true;
+		char buf[1024] = "";
+		for (char *ch = msg->params[1]; *ch; ++ch) {
+			if (*ch == '+') { set = true; continue; }
+			if (*ch == '-') { set = false; continue; }
+			const char *name = UserModes[(byte)*ch];
+			if (!name) name = (const char[]) { "-+"[set], *ch, '\0' };
+			catf(
+				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s",
+				(set ? "" : "un"), self.color, msg->params[0], name
+			);
+		}
+		if (!buf[0]) return;
+		uiFormat(
+			Network, Warm, tagTime(msg),
+			"\3%02d%s\3\t%s", hash(msg->user), msg->nick, &buf[2]
+		);
 		return;
 	}
 
