@@ -40,7 +40,7 @@ static void commandQuote(uint id, char *params) {
 }
 
 static void echoMessage(char *cmd, uint id, char *params) {
-	if (!params || !params[0]) return;
+	if (!params) return;
 	ircFormat("%s %s :%s\r\n", cmd, idNames[id], params);
 	struct Message msg = {
 		.nick = self.nick,
@@ -395,6 +395,8 @@ const char *commandIsAction(uint id, const char *input) {
 void command(uint id, char *input) {
 	if (id == Debug && input[0] != '/' && !self.restricted) {
 		commandQuote(id, input);
+		return;
+	} else if (!input[0]) {
 		return;
 	} else if (commandIsPrivmsg(id, input)) {
 		commandPrivmsg(id, input);
