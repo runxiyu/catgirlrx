@@ -97,6 +97,7 @@ extern struct Network {
 
 #define ENUM_CAP \
 	X("causal.agency/consumer", CapConsumer) \
+	X("chghost", CapChghost) \
 	X("extended-join", CapExtendedJoin) \
 	X("invite-notify", CapInviteNotify) \
 	X("multi-prefix", CapMultiPrefix) \
@@ -119,6 +120,7 @@ extern struct Self {
 	char *join;
 	char *nick;
 	char *user;
+	char *host;
 	enum Color color;
 	char *quit;
 } self;

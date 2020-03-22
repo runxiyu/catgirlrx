@@ -280,9 +280,12 @@ static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	uint id = idFor(msg->params[0]);
 	if (!strcmp(msg->nick, self.nick)) {
-		if (!self.user) {
+		if (!self.user || strcmp(self.user, msg->user)) {
 			set(&self.user, msg->user);
 			self.color = hash(msg->user);
+		}
+		if (!self.host || strcmp(self.host, msg->host)) {
+			set(&self.host, msg->host);
 		}
 		idColors[id] = hash(msg->params[0]);
 		completeTouch(None, msg->params[0], idColors[id]);
@@ -304,6 +307,18 @@ static void handleJoin(struct Message *msg) {
 		(msg->params[2] ? ") " : ""),
 		hash(msg->params[0]), msg->params[0]
 	);
+}
+
+static void handleChghost(struct Message *msg) {
+	require(msg, true, 2);
+	if (strcmp(msg->nick, self.nick)) return;
+	if (!self.user || strcmp(self.user, msg->params[0])) {
+		set(&self.user, msg->params[0]);
+		self.color = hash(msg->params[0]);
+	}
+	if (!self.host || strcmp(self.host, msg->params[1])) {
+		set(&self.host, msg->params[1]);
+	}
 }
 
 static void handlePart(struct Message *msg) {
@@ -1076,6 +1091,7 @@ static const struct Handler {
 	{ "906", handleErrorSASLFail },
 	{ "AUTHENTICATE", handleAuthenticate },
 	{ "CAP", handleCap },
+	{ "CHGHOST", handleChghost },
 	{ "ERROR", handleError },
 	{ "INVITE", handleInvite },
 	{ "JOIN", handleJoin },
