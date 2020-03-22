@@ -357,6 +357,7 @@ static const struct Handler {
 	{ "/query", .fn = commandQuery, .restricted = true },
 	{ "/quit", .fn = commandQuit },
 	{ "/quote", .fn = commandQuote, .restricted = true },
+	{ "/say", .fn = commandPrivmsg },
 	{ "/topic", .fn = commandTopic },
 	{ "/unban", .fn = commandUnban },
 	{ "/unexcept", .fn = commandUnexcept },
