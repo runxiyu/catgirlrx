@@ -64,7 +64,7 @@ enum Color idColors[IDCap] = {
 };
 uint idNext = Network + 1;
 
-struct Network network;
+struct Network network = { .userLen = 9, .hostLen = 63 };
 struct Self self = { .color = Default };
 
 static const char *save;

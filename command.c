@@ -55,14 +55,12 @@ static void echoMessage(char *cmd, uint id, char *params) {
 
 static void splitMessage(char *cmd, uint id, char *params) {
 	if (!params) return;
-	// FIXME: Get USERLEN, HOSTLEN from ISUPPORT and assume worst case if
-	// self.user and self.host are unset?
-	const char *nick = self.nick;
-	const char *user = (self.user ? self.user : "*");
-	const char *host = (self.host ? self.host : "*");
 	int overhead = snprintf(
-		NULL, 0, ":%s!%s@%s %s %s :\r\n",
-		nick, user, host, cmd, idNames[id]
+		NULL, 0, ":%s!%*s@%*s %s %s :\r\n",
+		self.nick,
+		(self.user ? 0 : network.userLen), (self.user ? self.user : "*"),
+		(self.host ? 0 : network.hostLen), (self.host ? self.host : "*"),
+		cmd, idNames[id]
 	);
 	assert(overhead > 0 && overhead < 512);
 	int chunk = 512 - overhead;

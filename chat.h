@@ -84,6 +84,8 @@ static inline enum Color hash(const char *str) {
 
 extern struct Network {
 	char *name;
+	uint userLen;
+	uint hostLen;
 	char *chanTypes;
 	char *prefixes;
 	char *prefixModes;

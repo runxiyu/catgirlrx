@@ -238,6 +238,12 @@ static void handleReplyISupport(struct Message *msg) {
 				Network, Cold, tagTime(msg),
 				"You arrive in %s", msg->params[i]
 			);
+		} else if (!strcmp(key, "USERLEN")) {
+			if (!msg->params[i]) continue;
+			network.userLen = strtoul(msg->params[i], NULL, 10);
+		} else if (!strcmp(key, "HOSTLEN")) {
+			if (!msg->params[i]) continue;
+			network.hostLen = strtoul(msg->params[i], NULL, 10);
 		} else if (!strcmp(key, "CHANTYPES")) {
 			if (!msg->params[i]) continue;
 			set(&network.chanTypes, msg->params[i]);
