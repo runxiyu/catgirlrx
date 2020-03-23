@@ -24,7 +24,7 @@
 
 #include "chat.h"
 
-enum { Cap = 512 };
+enum { Cap = 1024 };
 static wchar_t buf[Cap];
 static size_t len;
 static size_t pos;
