@@ -465,12 +465,11 @@ void command(uint id, char *input) {
 		uiFormat(id, Warm, NULL, "Command %s is restricted", cmd);
 		return;
 	}
-	if (!(handler->flags & Multiline)) {
-		char *nl = strchr(input, '\n');
-		if (nl) *nl = '\0';
-	}
 
 	if (input) {
+		if (!(handler->flags & Multiline)) {
+			input[strcspn(input, "\n")] = '\0';
+		}
 		input += strspn(input, " ");
 		size_t len = strlen(input);
 		while (input[len - 1] == ' ') input[--len] = '\0';
