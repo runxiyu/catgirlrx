@@ -205,6 +205,7 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaM, "\33m", NULL) \
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
+	X(KeyMetaEnter, "\33\r", "\33\n") \
 	X(KeyMetaSlash, "\33/", NULL) \
 	X(KeyFocusIn, "\33[I", NULL) \
 	X(KeyFocusOut, "\33[O", NULL) \
@@ -861,6 +862,7 @@ static void keyCode(int code) {
 		break; case KeyFocusIn:  unmark(window);
 		break; case KeyFocusOut: mark(window);
 
+		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaA: showAuto();
