@@ -704,8 +704,15 @@ static void inputAdd(struct Style *style, const char *str) {
 			break; case R: waddch(input, 'R');
 			break; case I: waddch(input, 'I');
 			break; case U: waddch(input, 'U');
+			break; case '\n': waddch(input, 'N');
 		}
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
+		if (str[0] == '\n') {
+			str++;
+			len--;
+		}
+		size_t nl = strcspn(str, "\n");
+		if (nl < len) len = nl;
 		wattr_set(
 			input,
 			style->attr | colorAttr(Colors[style->fg]),
@@ -853,8 +860,6 @@ static void keyCode(int code) {
 		break; case KEY_RESIZE:  resize();
 		break; case KeyFocusIn:  unmark(window);
 		break; case KeyFocusOut: mark(window);
-		break; case KeyPasteOn:; // TODO
-		break; case KeyPasteOff:; // TODO
 
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
@@ -939,9 +944,15 @@ void uiRead(void) {
 
 	int ret;
 	wint_t ch;
-	static bool style;
+	static bool paste, style;
 	while (ERR != (ret = wget_wch(input, &ch))) {
-		if (ret == KEY_CODE_YES) {
+		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
+			paste = true;
+		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
+			paste = false;
+		} else if (paste) {
+			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
+		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
 			style = true;
