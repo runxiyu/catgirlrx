@@ -64,14 +64,14 @@ static void splitMessage(char *cmd, uint id, char *params) {
 	);
 	assert(overhead > 0 && overhead < 512);
 	int chunk = 512 - overhead;
-	if (strlen(params) <= (size_t)chunk) {
+	if (strlen(params) <= (size_t)chunk && !strchr(params, '\n')) {
 		echoMessage(cmd, id, params);
 		return;
 	}
 
 	while (*params) {
 		int len = 0;
-		for (int n = 0; len + n <= chunk; len += n) {
+		for (int n = 0; params[len] != '\n' && len + n <= chunk; len += n) {
 			n = mblen(&params[len], 1 + strlen(&params[len]));
 			if (n < 0) {
 				n = 1;
@@ -84,6 +84,7 @@ static void splitMessage(char *cmd, uint id, char *params) {
 		echoMessage(cmd, id, params);
 		params[len] = ch;
 		params += len;
+		if (ch == '\n') params++;
 	}
 }
 
@@ -360,45 +361,50 @@ static void commandHelp(uint id, char *params) {
 	_exit(EX_UNAVAILABLE);
 }
 
+enum Flag {
+	BIT(Multiline),
+	BIT(Restricted),
+};
+
 static const struct Handler {
 	const char *cmd;
 	Command *fn;
-	bool restricted;
+	enum Flag flags;
 } Commands[] = {
-	{ "/away", .fn = commandAway },
-	{ "/ban", .fn = commandBan },
-	{ "/close", .fn = commandClose },
-	{ "/copy", .fn = commandCopy, .restricted = true },
-	{ "/cs", .fn = commandCS },
-	{ "/debug", .fn = commandDebug, .restricted = true },
-	{ "/except", .fn = commandExcept },
-	{ "/exec", .fn = commandExec, .restricted = true },
-	{ "/help", .fn = commandHelp },
-	{ "/invex", .fn = commandInvex },
-	{ "/invite", .fn = commandInvite },
-	{ "/join", .fn = commandJoin, .restricted = true },
-	{ "/kick", .fn = commandKick },
-	{ "/list", .fn = commandList },
-	{ "/me", .fn = commandMe },
-	{ "/mode", .fn = commandMode },
-	{ "/move", .fn = commandMove },
-	{ "/msg", .fn = commandMsg, .restricted = true },
-	{ "/names", .fn = commandNames },
-	{ "/nick", .fn = commandNick },
-	{ "/notice", .fn = commandNotice },
-	{ "/ns", .fn = commandNS },
-	{ "/open", .fn = commandOpen, .restricted = true },
-	{ "/part", .fn = commandPart },
-	{ "/query", .fn = commandQuery, .restricted = true },
-	{ "/quit", .fn = commandQuit },
-	{ "/quote", .fn = commandQuote, .restricted = true },
-	{ "/say", .fn = commandPrivmsg },
-	{ "/topic", .fn = commandTopic },
-	{ "/unban", .fn = commandUnban },
-	{ "/unexcept", .fn = commandUnexcept },
-	{ "/uninvex", .fn = commandUninvex },
-	{ "/whois", .fn = commandWhois },
-	{ "/window", .fn = commandWindow },
+	{ "/away", commandAway, 0 },
+	{ "/ban", commandBan, 0 },
+	{ "/close", commandClose, 0 },
+	{ "/copy", commandCopy, Restricted },
+	{ "/cs", commandCS, 0 },
+	{ "/debug", commandDebug, Restricted },
+	{ "/except", commandExcept, 0 },
+	{ "/exec", commandExec, Multiline | Restricted },
+	{ "/help", commandHelp, 0 },
+	{ "/invex", commandInvex, 0 },
+	{ "/invite", commandInvite, 0 },
+	{ "/join", commandJoin, Restricted },
+	{ "/kick", commandKick, 0 },
+	{ "/list", commandList, 0 },
+	{ "/me", commandMe, 0 },
+	{ "/mode", commandMode, 0 },
+	{ "/move", commandMove, 0 },
+	{ "/msg", commandMsg, Multiline | Restricted },
+	{ "/names", commandNames, 0 },
+	{ "/nick", commandNick, 0 },
+	{ "/notice", commandNotice, Multiline },
+	{ "/ns", commandNS, 0 },
+	{ "/open", commandOpen, Restricted },
+	{ "/part", commandPart, 0 },
+	{ "/query", commandQuery, Restricted },
+	{ "/quit", commandQuit, 0 },
+	{ "/quote", commandQuote, Multiline | Restricted },
+	{ "/say", commandPrivmsg, Multiline },
+	{ "/topic", commandTopic, 0 },
+	{ "/unban", commandUnban, 0 },
+	{ "/unexcept", commandUnexcept, 0 },
+	{ "/uninvex", commandUninvex, 0 },
+	{ "/whois", commandWhois, 0 },
+	{ "/window", commandWindow, 0 },
 };
 
 static int compar(const void *cmd, const void *_handler) {
@@ -455,9 +461,13 @@ void command(uint id, char *input) {
 		uiFormat(id, Warm, NULL, "No such command %s", cmd);
 		return;
 	}
-	if (self.restricted && handler->restricted) {
+	if (self.restricted && handler->flags & Restricted) {
 		uiFormat(id, Warm, NULL, "Command %s is restricted", cmd);
 		return;
+	}
+	if (!(handler->flags & Multiline)) {
+		char *nl = strchr(input, '\n');
+		if (nl) *nl = '\0';
 	}
 
 	if (input) {
