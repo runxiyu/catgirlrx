@@ -527,6 +527,9 @@ static const char *UserModes[256] = {
 
 static void handleReplyUserModeIs(struct Message *msg) {
 	require(msg, false, 2);
+	if (!replies.mode) return;
+	replies.mode--;
+
 	char buf[1024] = "";
 	for (char *ch = msg->params[1]; *ch; ++ch) {
 		if (*ch == '+') continue;
@@ -560,6 +563,9 @@ static const char *ChanModes[256] = {
 
 static void handleReplyChannelModeIs(struct Message *msg) {
 	require(msg, false, 3);
+	if (!replies.mode) return;
+	replies.mode--;
+
 	uint param = 3;
 	char buf[1024] = "";
 	for (char *ch = msg->params[2]; *ch; ++ch) {

@@ -187,6 +187,7 @@ extern struct Replies {
 	uint invex;
 	uint join;
 	uint list;
+	uint mode;
 	uint names;
 	uint topic;
 	uint whois;

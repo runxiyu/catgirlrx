@@ -185,12 +185,14 @@ static void commandMode(uint id, char *params) {
 			ircFormat("MODE %s %s\r\n", self.nick, params);
 		} else {
 			ircFormat("MODE %s\r\n", self.nick);
+			replies.mode++;
 		}
 	} else {
 		if (params) {
 			ircFormat("MODE %s %s\r\n", idNames[id], params);
 		} else {
 			ircFormat("MODE %s\r\n", idNames[id]);
+			replies.mode++;
 		}
 	}
 }
