@@ -313,6 +313,7 @@ static void handleJoin(struct Message *msg) {
 		(msg->params[2] ? ") " : ""),
 		hash(msg->params[0]), msg->params[0]
 	);
+	logFormat(id, tagTime(msg), "%s arrives in %s", msg->nick, msg->params[0]);
 }
 
 static void handleChghost(struct Message *msg) {
@@ -342,6 +343,12 @@ static void handlePart(struct Message *msg) {
 		(msg->params[1] ? ": " : ""),
 		(msg->params[1] ? msg->params[1] : "")
 	);
+	logFormat(
+		id, tagTime(msg), "%s leaves %s%s%s",
+		msg->nick, msg->params[0],
+		(msg->params[1] ? ": " : ""),
+		(msg->params[1] ? msg->params[1] : "")
+	);
 }
 
 static void handleKick(struct Message *msg) {
@@ -357,6 +364,12 @@ static void handleKick(struct Message *msg) {
 		hash(msg->user), msg->nick,
 		completeColor(id, msg->params[1]), msg->params[1],
 		hash(msg->params[0]), msg->params[0],
+		(msg->params[2] ? ": " : ""),
+		(msg->params[2] ? msg->params[2] : "")
+	);
+	logFormat(
+		id, tagTime(msg), "%s kicks %s out of %s%s%s",
+		msg->nick, msg->params[1], msg->params[0],
 		(msg->params[2] ? ": " : ""),
 		(msg->params[2] ? msg->params[2] : "")
 	);
@@ -380,6 +393,11 @@ static void handleNick(struct Message *msg) {
 			"\3%02d%s\3\tis now known as \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
 		);
+		if (id == Network) continue;
+		logFormat(
+			id, tagTime(msg), "%s is now known as %s",
+			msg->nick, msg->params[0]
+		);
 	}
 	completeReplace(None, msg->nick, msg->params[0]);
 }
@@ -396,6 +414,13 @@ static void handleQuit(struct Message *msg) {
 			(msg->params[0] ? ": " : ""),
 			(msg->params[0] ? msg->params[0] : "")
 		);
+		if (id == Network) continue;
+		logFormat(
+			id, tagTime(msg), "%s leaves%s%s",
+			msg->nick,
+			(msg->params[0] ? ": " : ""),
+			(msg->params[0] ? msg->params[0] : "")
+		);
 	}
 	completeRemove(None, msg->nick);
 }
@@ -409,12 +434,17 @@ static void handleInvite(struct Message *msg) {
 			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
 		);
 	} else {
+		uint id = idFor(msg->params[1]);
 		uiFormat(
-			idFor(msg->params[1]), Cold, tagTime(msg),
+			id, Cold, tagTime(msg),
 			"\3%02d%s\3\tinvites %s to \3%02d%s\3",
 			hash(msg->user), msg->nick,
 			msg->params[0],
 			hash(msg->params[1]), msg->params[1]
+		);
+		logFormat(
+			id, tagTime(msg), "%s invites %s to %s",
+			msg->nick, msg->params[0], msg->params[1]
 		);
 	}
 }
@@ -495,6 +525,10 @@ static void handleReplyTopic(struct Message *msg) {
 		"The sign in \3%02d%s\3 reads: %s",
 		hash(msg->params[1]), msg->params[1], msg->params[2]
 	);
+	logFormat(
+		id, tagTime(msg), "The sign in %s reads: %s",
+		msg->params[1], msg->params[2]
+	);
 }
 
 static void handleTopic(struct Message *msg) {
@@ -508,11 +542,19 @@ static void handleTopic(struct Message *msg) {
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 			msg->params[1]
 		);
+		logFormat(
+			id, tagTime(msg), "%s places a new sign in %s: %s",
+			msg->nick, msg->params[0], msg->params[1]
+		);
 	} else {
 		uiFormat(
 			id, Warm, tagTime(msg),
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+		);
+		logFormat(
+			id, tagTime(msg), "%s removes the sign in %s",
+			msg->nick, msg->params[0]
 		);
 	}
 }
@@ -929,6 +971,10 @@ static void handleReplyAway(struct Message *msg) {
 		"\3%02d%s\3\tis away: %s",
 		completeColor(id, msg->params[1]), msg->params[1], msg->params[2]
 	);
+	logFormat(
+		id, tagTime(msg), "%s is away: %s",
+		msg->params[1], msg->params[2]
+	);
 }
 
 static void handleReplyNowAway(struct Message *msg) {
@@ -1019,12 +1065,16 @@ static void handlePrivmsg(struct Message *msg) {
 	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
 	urlScan(id, msg->nick, msg->params[1]);
 	if (notice) {
+		if (id != Network) {
+			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
+		}
 		uiFormat(
 			id, Warm, tagTime(msg),
 			"\3%d-%s-\3%d\t%s",
 			hash(msg->user), msg->nick, LightGray, msg->params[1]
 		);
 	} else if (action) {
+		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
 		const char *mentions = colorMentions(id, msg);
 		uiFormat(
 			id, (mention || query ? Hot : Warm), tagTime(msg),
@@ -1033,6 +1083,7 @@ static void handlePrivmsg(struct Message *msg) {
 			mentions, msg->params[1]
 		);
 	} else {
+		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
 		const char *mentions = colorMentions(id, msg);
 		uiFormat(
 			id, (mention || query ? Hot : Warm), tagTime(msg),
