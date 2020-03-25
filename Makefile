@@ -13,6 +13,7 @@ OBJS += config.o
 OBJS += edit.o
 OBJS += handle.o
 OBJS += irc.o
+OBJS += log.o
 OBJS += ui.o
 OBJS += url.o
 OBJS += xdg.o

@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:j:k:n:p:r:s:u:vw:";
+	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:j:k:ln:p:r:s:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
 		{ "host", required_argument, NULL, 'h' },
 		{ "join", required_argument, NULL, 'j' },
 		{ "priv", required_argument, NULL, 'k' },
+		{ "log", no_argument, NULL, 'l' },
 		{ "nick", required_argument, NULL, 'n' },
 		{ "port", required_argument, NULL, 'p' },
 		{ "real", required_argument, NULL, 'r' },
@@ -171,6 +172,7 @@ int main(int argc, char *argv[]) {
 			break; case 'h': host = optarg;
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;
+			break; case 'l': logEnable = true;
 			break; case 'n': nick = optarg;
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
@@ -327,5 +329,6 @@ int main(int argc, char *argv[]) {
 	handle(msg);
 
 	ircClose();
+	logClose();
 	uiHide();
 }

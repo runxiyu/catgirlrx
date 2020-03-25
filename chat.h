@@ -259,8 +259,14 @@ void urlOpenCount(uint id, uint count);
 void urlOpenMatch(uint id, const char *str);
 void urlCopyMatch(uint id, const char *str);
 
+extern bool logEnable;
+void logFormat(uint id, const time_t *time, const char *format, ...)
+	__attribute__((format(printf, 3, 4)));
+void logClose(void);
+
 FILE *configOpen(const char *path, const char *mode);
 FILE *dataOpen(const char *path, const char *mode);
+void dataMkdir(const char *path);
 
 int getopt_config(
 	int argc, char *const *argv,

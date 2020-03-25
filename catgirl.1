@@ -1,4 +1,4 @@
-.Dd March 23, 2020
+.Dd March 25, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl Rev
+.Op Fl Relv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl N Ar send
@@ -154,6 +154,10 @@ Join the comma-separated list of channels
 .It Fl k Ar path , Cm priv = Ar priv
 Load the TLS client private key from
 .Ar path .
+.
+.It Fl l , Cm log
+Log chat events to files in paths
+.Pa $XDG_DATA_HOME/catgirl/log/network/channel/YYYY-MM-DD.log .
 .
 .It Fl n Ar nick , Cm nick = Ar nick
 Set nickname to

@@ -134,3 +134,25 @@ local:
 	if (!file) warn("%s", path);
 	return file;
 }
+
+void dataMkdir(const char *path) {
+	const char *home = getenv("HOME");
+	const char *dataHome = getenv("XDG_DATA_HOME");
+
+	char homePath[PATH_MAX];
+	if (dataHome) {
+		snprintf(
+			homePath, sizeof(homePath),
+			"%s/" SUBDIR "/%s", dataHome, path
+		);
+	} else {
+		if (!home) return;
+		snprintf(
+			homePath, sizeof(homePath),
+			"%s/.local/share/" SUBDIR "/%s", home, path
+		);
+	}
+
+	int error = mkdir(homePath, S_IRWXU);
+	if (error && errno != EEXIST) warn("%s", homePath);
+}
