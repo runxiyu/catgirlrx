@@ -575,16 +575,16 @@ static void handleReplyUserModeIs(struct Message *msg) {
 	char buf[1024] = "";
 	for (char *ch = msg->params[1]; *ch; ++ch) {
 		if (*ch == '+') continue;
-		if (UserModes[(byte)*ch]) {
-			catf(buf, sizeof(buf), ", %s", UserModes[(byte)*ch]);
-		} else {
-			catf(buf, sizeof(buf), ", +%c", *ch);
-		}
+		const char *name = UserModes[(byte)*ch];
+		catf(
+			buf, sizeof(buf), ", +%c%s%s",
+			*ch, (name ? " " : ""), (name ? name : "")
+		);
 	}
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s",
-		self.color, self.nick, (buf[0] ? &buf[2] : buf)
+		self.color, self.nick, (buf[0] ? &buf[2] : "modeless")
 	);
 }
 
@@ -613,25 +613,28 @@ static void handleReplyChannelModeIs(struct Message *msg) {
 	for (char *ch = msg->params[2]; *ch; ++ch) {
 		if (*ch == '+') continue;
 		const char *name = ChanModes[(byte)*ch];
-		if (!name) name = (const char[]) { '+', *ch, '\0' };
 		if (
 			strchr(network.paramModes, *ch) ||
 			strchr(network.setParamModes, *ch)
 		) {
 			assert(param < ParamCap);
 			catf(
-				buf, sizeof(buf), ", has %s of %s",
-				name, msg->params[param++]
+				buf, sizeof(buf), ", +%c%s%s %s",
+				*ch, (name ? " " : ""), (name ? name : ""),
+				msg->params[param++]
 			);
 		} else {
-			catf(buf, sizeof(buf), ", is %s", name);
+			catf(
+				buf, sizeof(buf), ", +%c%s%s",
+				*ch, (name ? " " : ""), (name ? name : "")
+			);
 		}
 	}
 	uiFormat(
 		idFor(msg->params[1]), Cold, tagTime(msg),
-		"\3%02d%s\3\t%s",
+		"\3%02d%s\3\tis %s",
 		hash(msg->params[1]), msg->params[1],
-		(buf[0] ? &buf[2] : "has no modes")
+		(buf[0] ? &buf[2] : "modeless")
 	);
 }
 
@@ -640,109 +643,142 @@ static void handleMode(struct Message *msg) {
 
 	if (!strchr(network.chanTypes, msg->params[0][0])) {
 		bool set = true;
-		char buf[1024] = "";
 		for (char *ch = msg->params[1]; *ch; ++ch) {
 			if (*ch == '+') { set = true; continue; }
 			if (*ch == '-') { set = false; continue; }
 			const char *name = UserModes[(byte)*ch];
-			if (!name) name = (const char[]) { "-+"[set], *ch, '\0' };
-			catf(
-				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s",
-				(set ? "" : "un"), self.color, msg->params[0], name
+			uiFormat(
+				Network, Warm, tagTime(msg),
+				"\3%02d%s\3\t%ssets \3%02d%s\3 %c%c%s%s",
+				hash(msg->user), msg->nick,
+				(set ? "" : "un"),
+				self.color, msg->params[0],
+				set["-+"], *ch, (name ? " " : ""), (name ? name : "")
 			);
 		}
-		if (!buf[0]) return;
-		uiFormat(
-			Network, Warm, tagTime(msg),
-			"\3%02d%s\3\t%s", hash(msg->user), msg->nick, &buf[2]
-		);
 		return;
 	}
 
 	uint id = idFor(msg->params[0]);
 	bool set = true;
-	uint param = 2;
-	char buf[1024] = "";
-
+	uint i = 2;
 	for (char *ch = msg->params[1]; *ch; ++ch) {
 		if (*ch == '+') { set = true; continue; }
 		if (*ch == '-') { set = false; continue; }
 
+		const char *verb = (set ? "sets" : "unsets");
 		const char *name = ChanModes[(byte)*ch];
 		if (*ch == network.excepts) name = "except";
 		if (*ch == network.invex) name = "invite";
-		if (!name) name = (const char[]) { "-+"[set], *ch, '\0' };
+		const char *mode = (const char[]) {
+			set["-+"], *ch, (name ? ' ' : '\0'), '\0'
+		};
+		if (!name) name = "";
 
 		if (strchr(network.prefixModes, *ch)) {
-			assert(param < ParamCap);
-			char *nick = msg->params[param++];
+			assert(i < ParamCap);
+			char *nick = msg->params[i++];
 			char prefix = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
 			];
-			catf(
-				buf, sizeof(buf), ", %s \3%02d%c%s\3 \3%02d%s\3 %s",
-				(set ? "grants" : "revokes"),
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
+				hash(msg->user), msg->nick, verb,
 				completeColor(id, nick), prefix, nick,
-				hash(msg->params[0]), msg->params[0],
-				name
+				mode, name, hash(msg->params[0]), msg->params[0]
+			);
+			logFormat(
+				id, tagTime(msg), "%s %s %c%s %s%s in %s",
+				msg->nick, verb, prefix, nick, mode, name, msg->params[0]
 			);
 		}
 
 		if (strchr(network.listModes, *ch)) {
-			assert(param < ParamCap);
-			char *mask = msg->params[param++];
+			assert(i < ParamCap);
+			char *mask = msg->params[i++];
 			if (*ch == 'b') {
-				catf(
-					buf, sizeof(buf), ", %sbans %s from \3%02d%s\3",
-					(set ? "" : "un"), mask,
+				verb = (set ? "bans" : "unbans");
+				uiFormat(
+					id, Cold, tagTime(msg),
+					"\3%02d%s\3\t%s %c%c %s from \3%02d%s\3",
+					hash(msg->user), msg->nick, verb, set["-+"], *ch, mask,
 					hash(msg->params[0]), msg->params[0]
 				);
+				logFormat(
+					id, tagTime(msg), "%s %s %c%c %s from %s",
+					msg->nick, verb, set["-+"], *ch, mask, msg->params[0]
+				);
 			} else {
-				catf(
-					buf, sizeof(buf), ", %s %s %s the \3%02d%s\3 %s list",
-					(set ? "adds" : "removes"), mask, (set ? "to" : "from"),
-					hash(msg->params[0]), msg->params[0], name
+				verb = (set ? "adds" : "removes");
+				const char *to = (set ? "to" : "from");
+				uiFormat(
+					id, Cold, tagTime(msg),
+					"\3%02d%s\3\t%s %s %s the \3%02d%s\3 %s%s list",
+					hash(msg->user), msg->nick, verb, mask, to,
+					hash(msg->params[0]), msg->params[0], mode, name
+				);
+				logFormat(
+					id, tagTime(msg), "%s %s %s %s the %s %s%s list",
+					msg->nick, verb, mask, to, msg->params[0], mode, name
 				);
 			}
 		}
 
 		if (strchr(network.paramModes, *ch)) {
-			assert(param < ParamCap);
-			catf(
-				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s %s %s",
-				(set ? "" : "un"),
-				hash(msg->params[0]), msg->params[0], name,
-				(set ? "to" : "from"), msg->params[param++]
+			assert(i < ParamCap);
+			char *param = msg->params[i++];
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%s\3 %s%s %s",
+				hash(msg->user), msg->nick, verb,
+				hash(msg->params[0]), msg->params[0], mode, name, param
+			);
+			logFormat(
+				id, tagTime(msg), "%s %s %s %s%s %s",
+				msg->nick, verb, msg->params[0], mode, name, param
 			);
 		}
 
 		if (strchr(network.setParamModes, *ch) && set) {
-			assert(param < ParamCap);
-			catf(
-				buf, sizeof(buf), ", sets \3%02d%s\3 %s to %s",
-				hash(msg->params[0]), msg->params[0],
-				name, msg->params[param++]
+			assert(i < ParamCap);
+			char *param = msg->params[i++];
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%s\3 %s%s %s",
+				hash(msg->user), msg->nick, verb,
+				hash(msg->params[0]), msg->params[0], mode, name, param
+			);
+			logFormat(
+				id, tagTime(msg), "%s %s %s %s%s %s",
+				msg->nick, verb, msg->params[0], mode, name, param
 			);
 		} else if (strchr(network.setParamModes, *ch)) {
-			catf(
-				buf, sizeof(buf), ", unsets \3%02d%s\3 %s",
-				hash(msg->params[0]), msg->params[0], name
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%s\3 %s%s",
+				hash(msg->user), msg->nick, verb,
+				hash(msg->params[0]), msg->params[0], mode, name
+			);
+			logFormat(
+				id, tagTime(msg), "%s %s %s %s%s",
+				msg->nick, verb, msg->params[0], mode, name
 			);
 		}
 
 		if (strchr(network.channelModes, *ch)) {
-			catf(
-				buf, sizeof(buf), ", %ssets \3%02d%s\3 %s",
-				(set ? "" : "un"), hash(msg->params[0]), msg->params[0], name
+			uiFormat(
+				id, Cold, tagTime(msg),
+				"\3%02d%s\3\t%s \3%02d%s\3 %s%s",
+				hash(msg->user), msg->nick, verb,
+				hash(msg->params[0]), msg->params[0], mode, name
+			);
+			logFormat(
+				id, tagTime(msg), "%s %s %s %s%s",
+				msg->nick, verb, msg->params[0], mode, name
 			);
 		}
 	}
-	
-	if (!buf[0]) return;
-	uiFormat(
-		id, Cold, tagTime(msg),
-		"\3%02d%s\3\t%s", hash(msg->user), msg->nick, &buf[2]
-	);
 }
 
 static void handleErrorChanopPrivsNeeded(struct Message *msg) {
