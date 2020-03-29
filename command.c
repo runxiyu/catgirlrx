@@ -206,6 +206,26 @@ static void channelListMode(uint id, char pm, char l, char *params) {
 	ircFormat("MODE %s %c%.*s %s\r\n", idNames[id], pm, count, modes, params);
 }
 
+static void commandOp(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '+', 'o', params);
+}
+
+static void commandDeop(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '-', 'o', params);
+}
+
+static void commandVoice(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '+', 'v', params);
+}
+
+static void commandDevoice(uint id, char *params) {
+	if (!params) return;
+	channelListMode(id, '-', 'v', params);
+}
+
 static void commandBan(uint id, char *params) {
 	if (params) {
 		channelListMode(id, '+', 'b', params);
@@ -379,6 +399,8 @@ static const struct Handler {
 	{ "/copy", commandCopy, Restricted },
 	{ "/cs", commandCS, 0 },
 	{ "/debug", commandDebug, Restricted },
+	{ "/deop", commandDeop, 0 },
+	{ "/devoice", commandDevoice, 0 },
 	{ "/except", commandExcept, 0 },
 	{ "/exec", commandExec, Multiline | Restricted },
 	{ "/help", commandHelp, 0 },
@@ -395,6 +417,7 @@ static const struct Handler {
 	{ "/nick", commandNick, 0 },
 	{ "/notice", commandNotice, Multiline },
 	{ "/ns", commandNS, 0 },
+	{ "/op", commandOp, 0 },
 	{ "/open", commandOpen, Restricted },
 	{ "/part", commandPart, 0 },
 	{ "/query", commandQuery, Restricted },
@@ -405,6 +428,7 @@ static const struct Handler {
 	{ "/unban", commandUnban, 0 },
 	{ "/unexcept", commandUnexcept, 0 },
 	{ "/uninvex", commandUninvex, 0 },
+	{ "/voice", commandVoice, 0 },
 	{ "/whois", commandWhois, 0 },
 	{ "/window", commandWindow, 0 },
 };

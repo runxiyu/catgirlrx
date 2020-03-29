@@ -1,4 +1,4 @@
-.Dd March 25, 2020
+.Dd March 29, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -330,6 +330,10 @@ Switch to window by number.
 .Bl -tag -width Ds
 .It Ic /ban Op Ar mask ...
 List or ban masks from the channel.
+.It Ic /deop Ar nick ...
+Revoke channel operator status from users.
+.It Ic /devoice Ar nick ...
+Revoke voice from users in the channel.
 .It Ic /except Op Ar mask ...
 List or add masks to the channel ban exception list.
 .It Ic /invex Op Ar mask ...
@@ -342,12 +346,16 @@ In the
 .Sy <network>
 window,
 show or set user modes.
+.It Ic /op Ar nick ...
+Grant users channel operator status.
 .It Ic /unban Ar mask ...
 Unban masks from the channel.
 .It Ic /unexcept Ar mask ...
 Remove masks from the channel ban exception list.
 .It Ic /uninvex Ar mask ...
 Remove masks from the channel invite list.
+.It Ic /voice Ar nick ...
+Grant users voice in the channel.
 .El
 .
 .Sh KEY BINDINGS
