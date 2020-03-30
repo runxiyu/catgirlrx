@@ -201,7 +201,9 @@ int main(int argc, char *argv[]) {
 
 	set(&network.name, host);
 	set(&self.nick, "*");
-	commandComplete();
+
+	editCompleteAdd();
+	commandCompleteAdd();
 
 	FILE *certFile = NULL;
 	FILE *privFile = NULL;

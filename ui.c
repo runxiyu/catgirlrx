@@ -917,6 +917,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'U': edit(id, EditDeleteHead, 0);
 		break; case L'V': windowScroll(window, -(PAGE_LINES - 2));
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
+		break; case L'X': edit(id, EditExpand, 0);
 		break; case L'Y': edit(id, EditPaste, 0);
 	}
 }

@@ -505,7 +505,7 @@ void command(uint id, char *input) {
 	handler->fn(id, input);
 }
 
-void commandComplete(void) {
+void commandCompleteAdd(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
 		completeAdd(None, Commands[i].cmd, Default);
 	}

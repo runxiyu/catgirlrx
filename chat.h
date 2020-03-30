@@ -198,7 +198,7 @@ void command(uint id, char *input);
 const char *commandIsPrivmsg(uint id, const char *input);
 const char *commandIsNotice(uint id, const char *input);
 const char *commandIsAction(uint id, const char *input);
-void commandComplete(void);
+void commandCompleteAdd(void);
 
 enum Heat { Cold, Warm, Hot };
 extern struct Util uiNotifyUtil;
@@ -236,10 +236,12 @@ enum Edit {
 	EditTranspose,
 	EditInsert,
 	EditComplete,
+	EditExpand,
 	EditEnter,
 };
 void edit(uint id, enum Edit op, wchar_t ch);
 char *editBuffer(size_t *pos);
+void editCompleteAdd(void);
 
 const char *complete(uint id, const char *prefix);
 void completeAccept(void);

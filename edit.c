@@ -72,6 +72,42 @@ static void delete(bool copy, size_t index, size_t count) {
 	len -= count;
 }
 
+static const struct {
+	const wchar_t *name;
+	const wchar_t *string;
+} Macros[] = {
+	{ L"\\flip", L"(╯°□°）╯︵ ┻━┻" },
+	{ L"\\gary", L"ᕕ( ᐛ )ᕗ" },
+	{ L"\\lenny", L"( ͡° ͜ʖ ͡°)" },
+	{ L"\\look", L"ಠ_ಠ" },
+	{ L"\\shrug", L"¯\\_(ツ)_/¯" },
+};
+
+void editCompleteAdd(void) {
+	char mbs[256];
+	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
+		size_t n = wcstombs(mbs, Macros[i].name, sizeof(mbs));
+		assert(n != (size_t)-1);
+		completeAdd(None, mbs, Default);
+	}
+}
+
+static void macroExpand(void) {
+	size_t macro = pos;
+	while (macro && !iswspace(buf[macro - 1])) macro--;
+	if (macro == pos) return;
+	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
+		if (wcsncmp(Macros[i].name, &buf[macro], pos - macro)) continue;
+		delete(false, macro, pos - macro);
+		pos = macro;
+		size_t expand = wcslen(Macros[i].string);
+		if (reserve(macro, expand)) {
+			wcsncpy(&buf[macro], Macros[i].string, expand);
+			pos += expand;
+		}
+	}
+}
+
 static struct {
 	size_t pos;
 	size_t pre;
@@ -110,21 +146,24 @@ static void tabComplete(uint id) {
 	}
 
 	delete(false, tab.pos, tab.len);
-	if (wcs[0] != L'/' && !tab.pos) {
-		tab.len = n + 2;
+	tab.len = n;
+	if (wcs[0] == L'\\') {
+		reserve(tab.pos, tab.len);
+	} else if (wcs[0] != L'/' && !tab.pos) {
+		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n + 0] = L':';
 		buf[tab.pos + n + 1] = L' ';
 	} else if (
 		tab.pos >= 2 && (buf[tab.pos - 2] == L':' || buf[tab.pos - 2] == L',')
 	) {
-		tab.len = n + 2;
+		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos - 2] = L',';
 		buf[tab.pos + n + 0] = L':';
 		buf[tab.pos + n + 1] = L' ';
 	} else {
-		tab.len = n + 1;
+		tab.len++;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n] = L' ';
 	}
@@ -197,6 +236,11 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 		}
 		break; case EditComplete: {
 			tabComplete(id);
+			return;
+		}
+		break; case EditExpand: {
+			macroExpand();
+			tabAccept();
 			return;
 		}
 		break; case EditEnter: {

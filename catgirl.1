@@ -1,4 +1,4 @@
-.Dd March 29, 2020
+.Dd March 30, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -392,6 +392,9 @@ Transpose characters.
 Delete to beginning of line.
 .It Ic C-w
 Delete previous word.
+.It Ic C-x
+Expand a text macro beginning with
+.Ql \e .
 .It Ic C-y
 Paste previously deleted text.
 .It Ic M-Enter
@@ -403,7 +406,7 @@ Delete next word.
 .It Ic M-f
 Move to next word.
 .It Ic Tab
-Complete nick, channel or command.
+Complete nick, channel, command or macro.
 .El
 .
 .Ss Window Keys
