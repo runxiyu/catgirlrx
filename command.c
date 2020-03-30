@@ -417,6 +417,7 @@ static const struct Handler {
 	{ "/nick", commandNick, 0 },
 	{ "/notice", commandNotice, Multiline },
 	{ "/ns", commandNS, 0 },
+	{ "/o", commandOpen, Restricted },
 	{ "/op", commandOp, 0 },
 	{ "/open", commandOpen, Restricted },
 	{ "/part", commandPart, 0 },
