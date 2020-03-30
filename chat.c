@@ -88,8 +88,7 @@ static void execRead(void) {
 	if (len < 0) err(EX_IOERR, "read");
 	if (!len) return;
 	buf[len] = '\0';
-	char *ptr = buf;
-	while (ptr) {
+	for (char *ptr = buf; ptr;) {
 		char *line = strsep(&ptr, "\n");
 		if (line[0]) command(execID, line);
 	}
@@ -101,8 +100,7 @@ static void utilRead(void) {
 	if (len < 0) err(EX_IOERR, "read");
 	if (!len) return;
 	buf[len] = '\0';
-	char *ptr = buf;
-	while (ptr) {
+	for (char *ptr = buf; ptr;) {
 		char *line = strsep(&ptr, "\n");
 		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
 	}
@@ -287,8 +285,7 @@ int main(int argc, char *argv[]) {
 
 		if (signals[SIGCHLD]) {
 			signals[SIGCHLD] = 0;
-			int status;
-			while (0 < waitpid(-1, &status, WNOHANG)) {
+			for (int status; 0 < waitpid(-1, &status, WNOHANG);) {
 				if (WIFEXITED(status) && WEXITSTATUS(status)) {
 					uiFormat(
 						Network, Warm, NULL,

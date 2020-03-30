@@ -945,10 +945,9 @@ void uiRead(void) {
 		}
 	}
 
-	int ret;
 	wint_t ch;
 	static bool paste, style;
-	while (ERR != (ret = wget_wch(input, &ch))) {
+	for (int ret; ERR != (ret = wget_wch(input, &ch));) {
 		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
 			paste = true;
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {

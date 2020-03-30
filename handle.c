@@ -383,8 +383,7 @@ static void handleNick(struct Message *msg) {
 		set(&self.nick, msg->params[0]);
 		uiRead(); // Update prompt.
 	}
-	uint id;
-	while (None != (id = completeID(msg->nick))) {
+	for (uint id; (id = completeID(msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {
 			set(&idNames[id], msg->params[0]);
 		}
@@ -404,8 +403,7 @@ static void handleNick(struct Message *msg) {
 
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
-	uint id;
-	while (None != (id = completeID(msg->nick))) {
+	for (uint id; (id = completeID(msg->nick));) {
 		urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
 			id, Cold, tagTime(msg),
