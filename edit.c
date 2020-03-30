@@ -81,7 +81,7 @@ static struct {
 static void tabComplete(uint id) {
 	if (!tab.len) {
 		tab.pos = pos;
-		while (tab.pos && buf[tab.pos - 1] != L' ') tab.pos--;
+		while (tab.pos && !iswspace(buf[tab.pos - 1])) tab.pos--;
 		if (tab.pos == pos) return;
 		tab.pre = pos - tab.pos;
 		tab.len = tab.pre;
