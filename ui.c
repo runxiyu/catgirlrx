@@ -53,26 +53,31 @@ static WINDOW *status;
 static WINDOW *marker;
 static WINDOW *input;
 
+struct Line {
+	enum Heat heat;
+	time_t time;
+	char *str;
+};
+
 enum { BufferCap = 1024 };
 struct Buffer {
-	time_t times[BufferCap];
-	char *lines[BufferCap];
 	size_t len;
+	struct Line lines[BufferCap];
 };
 static_assert(!(BufferCap & (BufferCap - 1)), "BufferCap is power of two");
 
-static void bufferPush(struct Buffer *buffer, time_t time, const char *line) {
-	size_t i = buffer->len++ % BufferCap;
-	free(buffer->lines[i]);
-	buffer->times[i] = time;
-	buffer->lines[i] = strdup(line);
-	if (!buffer->lines[i]) err(EX_OSERR, "strdup");
+static void bufferPush(
+	struct Buffer *buffer, enum Heat heat, time_t time, const char *str
+) {
+	struct Line *line = &buffer->lines[buffer->len++ % BufferCap];
+	free(line->str);
+	line->heat = heat;
+	line->time = time;
+	line->str = strdup(str);
+	if (!line->str) err(EX_OSERR, "strdup");
 }
 
-static time_t bufferTime(const struct Buffer *buffer, size_t i) {
-	return buffer->times[(buffer->len + i) % BufferCap];
-}
-static const char *bufferLine(const struct Buffer *buffer, size_t i) {
+static struct Line bufferLine(const struct Buffer *buffer, size_t i) {
 	return buffer->lines[(buffer->len + i) % BufferCap];
 }
 
@@ -147,7 +152,7 @@ static uint windowFor(uint id) {
 
 static void windowFree(struct Window *window) {
 	for (size_t i = 0; i < BufferCap; ++i) {
-		free(window->buffer.lines[i]);
+		free(window->buffer.lines[i].str);
 	}
 	delwin(window->pad);
 	free(window);
@@ -407,7 +412,7 @@ static void statusUpdate(void) {
 	wmove(status, 0, 0);
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
-		if (!window->heat && num != windows.show) continue;
+		if (window->heat < Warm && num != windows.show) continue;
 		if (num != windows.show) {
 			others.unread += window->unreadWarm;
 			if (window->heat > others.heat) others.heat = window->heat;
@@ -581,7 +586,7 @@ static void notify(uint id, const char *str) {
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
-	bufferPush(&window->buffer, ts, str);
+	bufferPush(&window->buffer, heat, ts, str);
 
 	int lines = 0;
 	window->unread++;
@@ -623,9 +628,9 @@ static void reflow(struct Window *window) {
 	int flowed = 0;
 	window->unreadLines = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
-		const char *line = bufferLine(&window->buffer, i);
-		if (!line) continue;
-		int lines = wordWrap(window->pad, line);
+		struct Line line = bufferLine(&window->buffer, i);
+		if (!line.str) continue;
+		int lines = wordWrap(window->pad, line.str);
 		if (i >= (size_t)(BufferCap - window->unread)) {
 			window->unreadLines += lines;
 		}
@@ -656,11 +661,10 @@ static void bufferList(const struct Buffer *buffer) {
 	waiting = true;
 
 	for (size_t i = 0; i < BufferCap; ++i) {
-		const char *line = bufferLine(buffer, i);
-		if (!line) continue;
+		struct Line line = bufferLine(buffer, i);
+		if (!line.str) continue;
 
-		time_t time = bufferTime(buffer, i);
-		struct tm *tm = localtime(&time);
+		struct tm *tm = localtime(&line.time);
 		if (!tm) err(EX_OSERR, "localtime");
 
 		char buf[sizeof("00:00:00")];
@@ -670,15 +674,15 @@ static void bufferList(const struct Buffer *buffer) {
 
 		bool align = false;
 		struct Style style = Reset;
-		while (*line) {
-			if (*line == '\t') {
+		while (*line.str) {
+			if (*line.str == '\t') {
 				printf("%c", (align ? '\t' : ' '));
 				align = true;
-				line++;
+				line.str++;
 			}
 
-			size_t len = styleParse(&style, &line);
-			size_t tab = strcspn(line, "\t");
+			size_t len = styleParse(&style, (const char **)&line.str);
+			size_t tab = strcspn(line.str, "\t");
 			if (tab < len) len = tab;
 
 			vid_attr(
@@ -686,8 +690,8 @@ static void bufferList(const struct Buffer *buffer) {
 				colorPair(Colors[style.fg], Colors[style.bg]),
 				NULL
 			);
-			printf("%.*s", (int)len, line);
-			line += len;
+			printf("%.*s", (int)len, line.str);
+			line.str += len;
 		}
 		printf("\n");
 	}
@@ -1004,11 +1008,10 @@ int uiSave(const char *name) {
 		if (writeTime(file, window->unread)) return -1;
 		if (writeTime(file, window->unreadWarm)) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
-			time_t time = bufferTime(&window->buffer, i);
-			const char *line = bufferLine(&window->buffer, i);
-			if (!line) continue;
-			if (writeTime(file, time)) return -1;
-			if (writeString(file, line)) return -1;
+			struct Line line = bufferLine(&window->buffer, i);
+			if (!line.str) continue;
+			if (writeTime(file, line.time)) return -1;
+			if (writeString(file, line.str)) return -1;
 		}
 		if (writeTime(file, 0)) return -1;
 	}
@@ -1064,7 +1067,7 @@ void uiLoad(const char *name) {
 			time_t time = readTime(file);
 			if (!time) break;
 			readString(file, &buf, &cap);
-			bufferPush(&window->buffer, time, buf);
+			bufferPush(&window->buffer, Cold, time, buf);
 		}
 		reflow(window);
 		waddch(window->pad, '\n');
