@@ -44,8 +44,7 @@ static void handler(int signal) {
 int main(int argc, char *argv[]) {
 	uint delay = 8;
 
-	int opt;
-	while (0 < (opt = getopt(argc, argv, "t:"))) {
+	for (int opt; 0 < (opt = getopt(argc, argv, "t:"));) {
 		switch (opt) {
 			break; case 't': delay = strtoul(optarg, NULL, 10);
 			break; default:  return EX_USAGE;
