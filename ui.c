@@ -87,6 +87,7 @@ struct Window {
 	WINDOW *pad;
 	int scroll;
 	bool mark;
+	bool ignore;
 	enum Heat heat;
 	uint unread;
 	uint unreadWarm;
@@ -146,6 +147,7 @@ static uint windowFor(uint id) {
 	scrollok(window->pad, true);
 	wmove(window->pad, WindowLines - 1, 0);
 	window->mark = true;
+	window->ignore = true;
 
 	return windowPush(window);
 }
@@ -211,6 +213,7 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
 	X(KeyMetaEnter, "\33\r", "\33\n") \
+	X(KeyMetaMinus, "\33-", "\33_") \
 	X(KeyMetaSlash, "\33/", NULL) \
 	X(KeyFocusIn, "\33[I", NULL) \
 	X(KeyFocusOut, "\33[O", NULL) \
@@ -587,6 +590,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
 	bufferPush(&window->buffer, heat, ts, str);
+	if (heat < Cold && window->ignore) return;
 
 	int lines = 0;
 	window->unread++;
@@ -630,6 +634,7 @@ static void reflow(struct Window *window) {
 	for (size_t i = 0; i < BufferCap; ++i) {
 		struct Line line = bufferLine(&window->buffer, i);
 		if (!line.str) continue;
+		if (line.heat < Cold && window->ignore) continue;
 		int lines = wordWrap(window->pad, line.str);
 		if (i >= (size_t)(BufferCap - window->unread)) {
 			window->unreadLines += lines;
@@ -867,6 +872,7 @@ static void keyCode(int code) {
 		break; case KeyFocusOut: mark(window);
 
 		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
+		break; case KeyMetaMinus: window->ignore ^= true; reflow(window);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaA: showAuto();
