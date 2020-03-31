@@ -12,6 +12,7 @@ OBJS += complete.o
 OBJS += config.o
 OBJS += edit.o
 OBJS += handle.o
+OBJS += ignore.o
 OBJS += irc.o
 OBJS += log.o
 OBJS += ui.o

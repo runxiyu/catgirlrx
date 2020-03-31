@@ -200,7 +200,7 @@ const char *commandIsNotice(uint id, const char *input);
 const char *commandIsAction(uint id, const char *input);
 void commandCompleteAdd(void);
 
-enum Heat { Cold, Warm, Hot };
+enum Heat { Ice, Cold, Warm, Hot };
 extern struct Util uiNotifyUtil;
 void uiInit(void);
 void uiShow(void);
@@ -260,6 +260,15 @@ void urlScan(uint id, const char *nick, const char *mesg);
 void urlOpenCount(uint id, uint count);
 void urlOpenMatch(uint id, const char *str);
 void urlCopyMatch(uint id, const char *str);
+
+enum { IgnoreCap = 256 };
+extern struct Ignore {
+	size_t len;
+	char *patterns[IgnoreCap];
+} ignore;
+const char *ignoreAdd(const char *pattern);
+bool ignoreRemove(const char *pattern);
+enum Heat ignoreCheck(enum Heat heat, const struct Message *msg);
 
 extern bool logEnable;
 void logFormat(uint id, const time_t *time, const char *format, ...)

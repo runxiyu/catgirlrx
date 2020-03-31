@@ -348,6 +348,35 @@ static void commandCopy(uint id, char *params) {
 	urlCopyMatch(id, params);
 }
 
+static void commandIgnore(uint id, char *params) {
+	if (params) {
+		const char *pattern = ignoreAdd(params);
+		uiFormat(
+			id, Cold, NULL, "Ignoring \3%02d%s\3",
+			Brown, pattern
+		);
+	} else {
+		for (size_t i = 0; i < ignore.len; ++i) {
+			uiFormat(
+				Network, Warm, NULL, "Ignoring \3%02d%s\3",
+				Brown, ignore.patterns[i]
+			);
+		}
+	}
+}
+
+static void commandUnignore(uint id, char *params) {
+	if (!params) return;
+	if (ignoreRemove(params)) {
+		uiFormat(
+			id, Cold, NULL, "No longer ignoring \3%02d%s\3",
+			Brown, params
+		);
+	} else {
+		uiFormat(id, Cold, NULL, "Not ignoring \3%02d%s\3", Brown, params);
+	}
+}
+
 static void commandExec(uint id, char *params) {
 	execID = id;
 
@@ -404,6 +433,7 @@ static const struct Handler {
 	{ "/except", commandExcept, 0 },
 	{ "/exec", commandExec, Multiline | Restricted },
 	{ "/help", commandHelp, 0 },
+	{ "/ignore", commandIgnore, 0 },
 	{ "/invex", commandInvex, 0 },
 	{ "/invite", commandInvite, 0 },
 	{ "/join", commandJoin, Restricted },
@@ -428,6 +458,7 @@ static const struct Handler {
 	{ "/topic", commandTopic, 0 },
 	{ "/unban", commandUnban, 0 },
 	{ "/unexcept", commandUnexcept, 0 },
+	{ "/unignore", commandUnignore, 0 },
 	{ "/uninvex", commandUninvex, 0 },
 	{ "/voice", commandVoice, 0 },
 	{ "/whois", commandWhois, 0 },

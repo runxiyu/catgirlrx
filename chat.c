@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:j:k:ln:p:r:s:u:vw:";
+	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:i:j:k:ln:p:r:s:u:vw:";
 	const struct option LongOpts[] = {
 		{ "insecure", no_argument, NULL, '!' },
 		{ "copy", required_argument, NULL, 'C' },
@@ -140,6 +140,7 @@ int main(int argc, char *argv[]) {
 		{ "cert", required_argument, NULL, 'c' },
 		{ "sasl-external", no_argument, NULL, 'e' },
 		{ "host", required_argument, NULL, 'h' },
+		{ "ignore", required_argument, NULL, 'i' },
 		{ "join", required_argument, NULL, 'j' },
 		{ "priv", required_argument, NULL, 'k' },
 		{ "log", no_argument, NULL, 'l' },
@@ -168,6 +169,7 @@ int main(int argc, char *argv[]) {
 			break; case 'e': sasl = true;
 			break; case 'g': genCert(optarg);
 			break; case 'h': host = optarg;
+			break; case 'i': ignoreAdd(optarg);
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;
 			break; case 'l': logEnable = true;
