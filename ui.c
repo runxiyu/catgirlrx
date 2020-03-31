@@ -978,7 +978,8 @@ void uiRead(void) {
 static const time_t Signatures[] = {
 	0x6C72696774616301, // no heat, unread, unreadWarm
 	0x6C72696774616302, // no self.pos
-	0x6C72696774616303,
+	0x6C72696774616303, // no buffer line heat
+	0x6C72696774616304,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -999,7 +1000,7 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeTime(file, Signatures[2])) return -1;
+	if (writeTime(file, Signatures[3])) return -1;
 	if (writeTime(file, self.pos)) return -1;
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
@@ -1011,6 +1012,7 @@ int uiSave(const char *name) {
 			struct Line line = bufferLine(&window->buffer, i);
 			if (!line.str) continue;
 			if (writeTime(file, line.time)) return -1;
+			if (writeTime(file, line.heat)) return -1;
 			if (writeString(file, line.str)) return -1;
 		}
 		if (writeTime(file, 0)) return -1;
@@ -1066,8 +1068,9 @@ void uiLoad(const char *name) {
 		for (;;) {
 			time_t time = readTime(file);
 			if (!time) break;
+			enum Heat heat = (version > 2 ? readTime(file) : Cold);
 			readString(file, &buf, &cap);
-			bufferPush(&window->buffer, Cold, time, buf);
+			bufferPush(&window->buffer, heat, time, buf);
 		}
 		reflow(window);
 		waddch(window->pad, '\n');
