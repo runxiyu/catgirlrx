@@ -76,11 +76,16 @@ static const struct {
 	const wchar_t *name;
 	const wchar_t *string;
 } Macros[] = {
+	{ L"\\bear", L"ʕっ•ᴥ•ʔっ" },
+	{ L"\\cool", L"(⌐■_■)" },
 	{ L"\\flip", L"(╯°□°）╯︵ ┻━┻" },
 	{ L"\\gary", L"ᕕ( ᐛ )ᕗ" },
+	{ L"\\hug", L"（っ・∀・）っ" },
 	{ L"\\lenny", L"( ͡° ͜ʖ ͡°)" },
 	{ L"\\look", L"ಠ_ಠ" },
 	{ L"\\shrug", L"¯\\_(ツ)_/¯" },
+	{ L"\\unflip", L"┬─┬ノ(º_ºノ)" },
+	{ L"\\wave", L"ヾ(＾∇＾)" },
 };
 
 void editCompleteAdd(void) {
