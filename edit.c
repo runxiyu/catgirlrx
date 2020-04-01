@@ -143,7 +143,7 @@ static void tabComplete(uint id) {
 	}
 
 	wchar_t wcs[Cap];
-	n = mbstowcs(wcs, comp, sizeof(wcs));
+	n = mbstowcs(wcs, comp, Cap);
 	assert(n != (size_t)-1);
 	if (tab.pos + n + 2 > Cap) {
 		completeReject();
