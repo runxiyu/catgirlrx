@@ -160,9 +160,7 @@ static void tabComplete(uint id) {
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n + 0] = L':';
 		buf[tab.pos + n + 1] = L' ';
-	} else if (
-		tab.pos >= 2 && (buf[tab.pos - 2] == L':' || buf[tab.pos - 2] == L',')
-	) {
+	} else if (tab.pos >= 2 && buf[tab.pos - 2] == L':') {
 		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos - 2] = L',';
