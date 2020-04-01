@@ -110,10 +110,12 @@ PKG_CONFIG_PATH=/opt/libressl/lib/pkgconfig ./configure
 If your system is incapable of providing LibreSSL,
 consider building it manually and installing to
 .Pa /usr/local ,
-making sure to add
+adding
 .Pa /usr/local/lib
 to
 .Pa /etc/ld.so.conf
+and running
+.Xr ldconfig 8
 if necessary.
 .
 .Pp
