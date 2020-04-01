@@ -107,6 +107,16 @@ PKG_CONFIG_PATH=/opt/libressl/lib/pkgconfig ./configure
 .Ed
 .
 .Pp
+If your system is incapable of providing LibreSSL,
+consider building it manually and installing to
+.Pa /usr/local ,
+making sure to add
+.Pa /usr/local/lib
+to
+.Pa /etc/ld.so.conf
+if necessary.
+.
+.Pp
 The
 .Nm sandman
 wrapper is provided for macOS
