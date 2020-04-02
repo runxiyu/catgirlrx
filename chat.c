@@ -159,8 +159,7 @@ int main(int argc, char *argv[]) {
 		if (options[i].has_arg) opts[j++] = ':';
 	}
 
-	int opt;
-	while (0 < (opt = getopt_config(argc, argv, opts, options, NULL))) {
+	for (int opt; 0 < (opt = getopt_config(argc, argv, opts, options, NULL));) {
 		switch (opt) {
 			break; case '!': insecure = true;
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
