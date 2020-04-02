@@ -1095,8 +1095,6 @@ void uiLoad(const char *name) {
 			bufferPush(&window->buffer, heat, time, buf);
 		}
 		reflow(window);
-		waddch(window->pad, '\n');
-		window->unreadLines++;
 	}
 
 	free(buf);
