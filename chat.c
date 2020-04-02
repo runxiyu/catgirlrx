@@ -127,35 +127,40 @@ int main(int argc, char *argv[]) {
 	const char *user = NULL;
 	const char *real = NULL;
 
-	const char *Opts = "!C:H:N:O:RS:a:c:eg:h:i:j:k:ln:p:r:s:u:vw:";
-	const struct option LongOpts[] = {
-		{ "insecure", no_argument, NULL, '!' },
-		{ "copy", required_argument, NULL, 'C' },
-		{ "hash", required_argument, NULL, 'H' },
-		{ "notify", required_argument, NULL, 'N' },
-		{ "open", required_argument, NULL, 'O' },
-		{ "restrict", no_argument, NULL, 'R' },
-		{ "bind", required_argument, NULL, 'S' },
-		{ "sasl-plain", required_argument, NULL, 'a' },
-		{ "cert", required_argument, NULL, 'c' },
-		{ "sasl-external", no_argument, NULL, 'e' },
-		{ "host", required_argument, NULL, 'h' },
-		{ "ignore", required_argument, NULL, 'i' },
-		{ "join", required_argument, NULL, 'j' },
-		{ "priv", required_argument, NULL, 'k' },
-		{ "log", no_argument, NULL, 'l' },
-		{ "nick", required_argument, NULL, 'n' },
-		{ "port", required_argument, NULL, 'p' },
-		{ "real", required_argument, NULL, 'r' },
-		{ "save", required_argument, NULL, 's' },
-		{ "user", required_argument, NULL, 'u' },
-		{ "debug", no_argument, NULL, 'v' },
-		{ "pass", required_argument, NULL, 'w' },
+	struct option options[] = {
+		{ .val = '!', .name = "insecure", no_argument },
+		{ .val = 'C', .name = "copy", required_argument },
+		{ .val = 'H', .name = "hash", required_argument },
+		{ .val = 'N', .name = "notify", required_argument },
+		{ .val = 'O', .name = "open", required_argument },
+		{ .val = 'R', .name = "restrict", no_argument },
+		{ .val = 'S', .name = "bind", required_argument },
+		{ .val = 'a', .name = "sasl-plain", required_argument },
+		{ .val = 'c', .name = "cert", required_argument },
+		{ .val = 'e', .name = "sasl-external", no_argument },
+		{ .val = 'g', .name = "generate", required_argument },
+		{ .val = 'h', .name = "host", required_argument },
+		{ .val = 'i', .name = "ignore", required_argument },
+		{ .val = 'j', .name = "join", required_argument },
+		{ .val = 'k', .name = "priv", required_argument },
+		{ .val = 'l', .name = "log", no_argument },
+		{ .val = 'n', .name = "nick", required_argument },
+		{ .val = 'p', .name = "port", required_argument },
+		{ .val = 'r', .name = "real", required_argument },
+		{ .val = 's', .name = "save", required_argument },
+		{ .val = 'u', .name = "user", required_argument },
+		{ .val = 'v', .name = "debug", no_argument },
+		{ .val = 'w', .name = "pass", required_argument },
 		{0},
 	};
+	char opts[2 * ARRAY_LEN(options)];
+	for (size_t i = 0, j = 0; i < ARRAY_LEN(options); ++i) {
+		opts[j++] = options[i].val;
+		if (options[i].has_arg) opts[j++] = ':';
+	}
 
 	int opt;
-	while (0 < (opt = getopt_config(argc, argv, Opts, LongOpts, NULL))) {
+	while (0 < (opt = getopt_config(argc, argv, opts, options, NULL))) {
 		switch (opt) {
 			break; case '!': insecure = true;
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
