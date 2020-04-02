@@ -21,6 +21,7 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -848,19 +849,29 @@ static void showAuto(void) {
 	if (windows.swap != swap) {
 		swap = windows.show;
 	}
+	uint minHot = UINT_MAX, numHot;
+	uint minWarm = UINT_MAX, numWarm;
 	for (uint num = 0; num < windows.len; ++num) {
-		if (windows.ptrs[num]->heat < Hot) continue;
-		windowShow(num);
-		windows.swap = swap;
-		return;
+		if (windows.ptrs[num]->heat >= Hot) {
+			if (windows.ptrs[num]->unreadWarm >= minHot) continue;
+			minHot = windows.ptrs[num]->unreadWarm;
+			numHot = num;
+		}
+		if (windows.ptrs[num]->heat >= Warm) {
+			if (windows.ptrs[num]->unreadWarm >= minWarm) continue;
+			minWarm = windows.ptrs[num]->unreadWarm;
+			numWarm = num;
+		}
 	}
-	for (uint num = 0; num < windows.len; ++num) {
-		if (windows.ptrs[num]->heat < Warm) continue;
-		windowShow(num);
+	if (minHot < UINT_MAX) {
+		windowShow(numHot);
 		windows.swap = swap;
-		return;
+	} else if (minWarm < UINT_MAX) {
+		windowShow(numWarm);
+		windows.swap = swap;
+	} else {
+		windowShow(windows.swap);
 	}
-	windowShow(windows.swap);
 }
 
 static void keyCode(int code) {
