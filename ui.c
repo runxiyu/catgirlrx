@@ -636,7 +636,12 @@ static void reflow(struct Window *window) {
 		struct Line line = bufferLine(&window->buffer, i);
 		if (!line.str) continue;
 		if (line.heat < Cold && window->ignore) continue;
-		int lines = wordWrap(window->pad, line.str);
+		int lines = 0;
+		if (i == (size_t)(BufferCap - window->unread)) {
+			waddch(window->pad, '\n');
+			lines++;
+		}
+		lines += wordWrap(window->pad, line.str);
 		if (i >= (size_t)(BufferCap - window->unread)) {
 			window->unreadLines += lines;
 		}
