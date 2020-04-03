@@ -337,8 +337,8 @@ static void commandClose(uint id, char *params) {
 static void commandOpen(uint id, char *params) {
 	if (!params) {
 		urlOpenCount(id, 1);
-	} else if (isdigit(params[0])) {
-		urlOpenCount(id, strtoul(params, NULL, 10));
+	} else if (isdigit(params[0]) && !params[1]) {
+		urlOpenCount(id, params[0] - '0');
 	} else {
 		urlOpenMatch(id, params);
 	}
