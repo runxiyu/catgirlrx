@@ -260,9 +260,9 @@ static void handleReplyISupport(struct Message *msg) {
 			set(&network.setParamModes, strsep(&msg->params[i], ","));
 			set(&network.channelModes, strsep(&msg->params[i], ","));
 		} else if (!strcmp(key, "EXCEPTS")) {
-			network.excepts = (msg->params[i] ? msg->params[i][0] : 'e');
+			network.excepts = (msg->params[i] ?: "e")[0];
 		} else if (!strcmp(key, "INVEX")) {
-			network.invex = (msg->params[i] ? msg->params[i][0] : 'I');
+			network.invex = (msg->params[i] ?: "I")[0];
 		}
 	}
 }
@@ -309,7 +309,7 @@ static void handleJoin(struct Message *msg) {
 		"\3%02d%s\3\t%s%s%sarrives in \3%02d%s\3",
 		hash(msg->user), msg->nick,
 		(msg->params[2] ? "(" : ""),
-		(msg->params[2] ? msg->params[2] : ""),
+		(msg->params[2] ?: ""),
 		(msg->params[2] ? ") " : ""),
 		hash(msg->params[0]), msg->params[0]
 	);
@@ -340,14 +340,12 @@ static void handlePart(struct Message *msg) {
 		id, ignoreCheck(Cold, msg), tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
-		(msg->params[1] ? ": " : ""),
-		(msg->params[1] ? msg->params[1] : "")
+		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
 	);
 	logFormat(
 		id, tagTime(msg), "%s leaves %s%s%s",
 		msg->nick, msg->params[0],
-		(msg->params[1] ? ": " : ""),
-		(msg->params[1] ? msg->params[1] : "")
+		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
 	);
 }
 
@@ -364,14 +362,12 @@ static void handleKick(struct Message *msg) {
 		hash(msg->user), msg->nick,
 		completeColor(id, msg->params[1]), msg->params[1],
 		hash(msg->params[0]), msg->params[0],
-		(msg->params[2] ? ": " : ""),
-		(msg->params[2] ? msg->params[2] : "")
+		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
 	logFormat(
 		id, tagTime(msg), "%s kicks %s out of %s%s%s",
 		msg->nick, msg->params[1], msg->params[0],
-		(msg->params[2] ? ": " : ""),
-		(msg->params[2] ? msg->params[2] : "")
+		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
 	completeRemove(id, msg->params[1]);
 	if (kicked) completeClear(id);
@@ -409,15 +405,13 @@ static void handleQuit(struct Message *msg) {
 			id, ignoreCheck(Cold, msg), tagTime(msg),
 			"\3%02d%s\3\tleaves%s%s",
 			hash(msg->user), msg->nick,
-			(msg->params[0] ? ": " : ""),
-			(msg->params[0] ? msg->params[0] : "")
+			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
 		);
 		if (id == Network) continue;
 		logFormat(
 			id, tagTime(msg), "%s leaves%s%s",
 			msg->nick,
-			(msg->params[0] ? ": " : ""),
-			(msg->params[0] ? msg->params[0] : "")
+			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
 		);
 	}
 	completeRemove(None, msg->nick);
@@ -576,7 +570,7 @@ static void handleReplyUserModeIs(struct Message *msg) {
 		const char *name = UserModes[(byte)*ch];
 		catf(
 			buf, sizeof(buf), ", +%c%s%s",
-			*ch, (name ? " " : ""), (name ? name : "")
+			*ch, (name ? " " : ""), (name ?: "")
 		);
 	}
 	uiFormat(
@@ -618,13 +612,13 @@ static void handleReplyChannelModeIs(struct Message *msg) {
 			assert(param < ParamCap);
 			catf(
 				buf, sizeof(buf), ", +%c%s%s %s",
-				*ch, (name ? " " : ""), (name ? name : ""),
+				*ch, (name ? " " : ""), (name ?: ""),
 				msg->params[param++]
 			);
 		} else {
 			catf(
 				buf, sizeof(buf), ", +%c%s%s",
-				*ch, (name ? " " : ""), (name ? name : "")
+				*ch, (name ? " " : ""), (name ?: "")
 			);
 		}
 	}
@@ -651,7 +645,7 @@ static void handleMode(struct Message *msg) {
 				hash(msg->user), msg->nick,
 				(set ? "" : "un"),
 				self.color, msg->params[0],
-				set["-+"], *ch, (name ? " " : ""), (name ? name : "")
+				set["-+"], *ch, (name ? " " : ""), (name ?: "")
 			);
 		}
 		return;
@@ -800,7 +794,7 @@ static void handleErrorBanListFull(struct Message *msg) {
 	require(msg, false, 4);
 	uiFormat(
 		idFor(msg->params[1]), Cold, tagTime(msg),
-		"%s", (msg->params[4] ? msg->params[4] : msg->params[3])
+		"%s", (msg->params[4] ?: msg->params[3])
 	);
 }
 
@@ -933,15 +927,14 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 		}
 	}
 	char signon[sizeof("0000-00-00 00:00:00")];
-	time_t time = (msg->params[3] ? strtol(msg->params[3], NULL, 10) : 0);
+	time_t time = strtol((msg->params[3] ?: ""), NULL, 10);
 	strftime(signon, sizeof(signon), "%F %T", localtime(&time));
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis idle for %lu %s%s%s%s",
 		completeColor(Network, msg->params[1]), msg->params[1],
 		idle, unit, (idle != 1 ? "s" : ""),
-		(msg->params[3] ? ", signed on " : ""),
-		(msg->params[3] ? signon : "")
+		(msg->params[3] ? ", signed on " : ""), (msg->params[3] ? signon : "")
 	);
 }
 
@@ -976,9 +969,7 @@ static void handleReplyWhoisGeneric(struct Message *msg) {
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s%s%s",
 		completeColor(Network, msg->params[1]), msg->params[1],
-		msg->params[2],
-		(msg->params[3] ? " " : ""),
-		(msg->params[3] ? msg->params[3] : "")
+		msg->params[2], (msg->params[3] ? " " : ""), (msg->params[3] ?: "")
 	);
 }
 
@@ -1031,7 +1022,7 @@ static bool isMention(const struct Message *msg) {
 	const char *match = msg->params[1];
 	while (NULL != (match = strcasestr(match, self.nick))) {
 		char a = (match > msg->params[1] ? match[-1] : ' ');
-		char b = (match[len] ? match[len] : ' ');
+		char b = (match[len] ?: ' ');
 		if ((isspace(a) || ispunct(a)) && (isspace(b) || ispunct(b))) {
 			return true;
 		}

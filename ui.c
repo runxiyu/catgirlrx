@@ -891,6 +891,7 @@ static void keyCode(int code) {
 		break; case KeyMetaMinus: window->ignore ^= true; reflow(window);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
+		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
 		break; case KeyMetaA: showAuto();
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
@@ -911,12 +912,6 @@ static void keyCode(int code) {
 		break; case KEY_PPAGE: windowScroll(window, +(PAGE_LINES - 2));
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
 		break; case KEY_UP: windowScroll(window, +1);
-		
-		break; default: {
-			if (code >= KeyMeta0 && code <= KeyMeta9) {
-				uiShowNum(code - KeyMeta0);
-			}
-		}
 	}
 }
 

@@ -60,7 +60,7 @@ static struct Node *prepend(struct Node *node) {
 	node->next = head;
 	if (head) head->prev = node;
 	head = node;
-	if (!tail) tail = node;
+	tail = (tail ?: node);
 	return node;
 }
 
@@ -69,7 +69,7 @@ static struct Node *append(struct Node *node) {
 	node->prev = tail;
 	if (tail) tail->next = node;
 	tail = node;
-	if (!head) head = node;
+	head = (head ?: node);
 	return node;
 }
 

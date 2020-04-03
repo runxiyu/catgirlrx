@@ -1,7 +1,8 @@
 PREFIX = /usr/local
 MANDIR = ${PREFIX}/share/man
 
-CFLAGS += -std=c11 -Wall -Wextra -Wpedantic
+CEXTS = gnu-case-range gnu-conditional-omitted-operand
+CFLAGS += -std=c11 -Wall -Wextra -Wpedantic ${CEXTS:%=-Wno-%}
 LDLIBS = -lcrypto -ltls -lncursesw
 
 -include config.mk

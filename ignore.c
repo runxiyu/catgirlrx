@@ -62,8 +62,7 @@ enum Heat ignoreCheck(enum Heat heat, const struct Message *msg) {
 	char match[512];
 	snprintf(
 		match, sizeof(match), "%s!%s@%s %s %s",
-		msg->nick, msg->user, msg->host, msg->cmd,
-		(msg->params[0] ? msg->params[0] : "")
+		msg->nick, msg->user, msg->host, msg->cmd, (msg->params[0] ?: "")
 	);
 	for (size_t i = 0; i < ignore.len; ++i) {
 		if (fnmatch(ignore.patterns[i], match, FNM_CASEFOLD)) continue;

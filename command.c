@@ -58,8 +58,8 @@ static void splitMessage(char *cmd, uint id, char *params) {
 	int overhead = snprintf(
 		NULL, 0, ":%s!%*s@%*s %s %s :\r\n",
 		self.nick,
-		(self.user ? 0 : network.userLen), (self.user ? self.user : "*"),
-		(self.host ? 0 : network.hostLen), (self.host ? self.host : "*"),
+		(self.user ? 0 : network.userLen), (self.user ?: "*"),
+		(self.host ? 0 : network.hostLen), (self.host ?: "*"),
 		cmd, idNames[id]
 	);
 	assert(overhead > 0 && overhead < 512);
@@ -98,7 +98,7 @@ static void commandNotice(uint id, char *params) {
 
 static void commandMe(uint id, char *params) {
 	char buf[512];
-	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ? params : ""));
+	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ?: ""));
 	echoMessage("PRIVMSG", id, buf);
 }
 
@@ -129,7 +129,7 @@ static void commandPart(uint id, char *params) {
 
 static void commandQuit(uint id, char *params) {
 	(void)id;
-	set(&self.quit, (params ? params : "nyaa~"));
+	set(&self.quit, (params ?: "nyaa~"));
 }
 
 static void commandNick(uint id, char *params) {
@@ -384,12 +384,11 @@ static void commandExec(uint id, char *params) {
 	if (pid < 0) err(EX_OSERR, "fork");
 	if (pid) return;
 
-	const char *shell = getenv("SHELL");
-	if (!shell) shell = "/bin/sh";
-
 	close(STDIN_FILENO);
 	dup2(execPipe[1], STDOUT_FILENO);
 	dup2(utilPipe[1], STDERR_FILENO);
+
+	const char *shell = getenv("SHELL") ?: "/bin/sh";
 	execlp(shell, shell, "-c", params, NULL);
 	warn("%s", shell);
 	_exit(EX_UNAVAILABLE);
@@ -404,7 +403,7 @@ static void commandHelp(uint id, char *params) {
 	if (pid) return;
 
 	char buf[256];
-	snprintf(buf, sizeof(buf), "ip%s$", (params ? params : "COMMANDS"));
+	snprintf(buf, sizeof(buf), "ip%s$", (params ?: "COMMANDS"));
 	setenv("LESS", buf, 1);
 	execlp("man", "man", "1", "catgirl", NULL);
 	dup2(utilPipe[1], STDERR_FILENO);
