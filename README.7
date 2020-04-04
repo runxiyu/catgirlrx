@@ -1,4 +1,4 @@
-.Dd March 31, 2020
+.Dd April  4, 2020
 .Dt README 7
 .Os "Causal Agency"
 .\" To view this file, run: man ./README.7
@@ -116,7 +116,12 @@ to
 .Pa /etc/ld.so.conf
 and running
 .Xr ldconfig 8
-if necessary.
+if needed.
+It may also be necessary to create
+.Pa /etc/ssl/cert.pem
+as a symbolic link to
+.Pa /etc/ssl/certs/ca-certificates.crt
+or similar path.
 .
 .Pp
 The
