@@ -677,7 +677,9 @@ static void handleMode(struct Message *msg) {
 		if (!name) name = "";
 
 		if (strchr(network.prefixModes, *ch)) {
-			assert(i < ParamCap);
+			if (i >= ParamCap || !msg->params[i]) {
+				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+			}
 			char *nick = msg->params[i++];
 			char prefix = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
@@ -696,7 +698,9 @@ static void handleMode(struct Message *msg) {
 		}
 
 		if (strchr(network.listModes, *ch)) {
-			assert(i < ParamCap);
+			if (i >= ParamCap || !msg->params[i]) {
+				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+			}
 			char *mask = msg->params[i++];
 			if (*ch == 'b') {
 				verb = (set ? "bans" : "unbans");
@@ -727,7 +731,9 @@ static void handleMode(struct Message *msg) {
 		}
 
 		if (strchr(network.paramModes, *ch)) {
-			assert(i < ParamCap);
+			if (i >= ParamCap || !msg->params[i]) {
+				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+			}
 			char *param = msg->params[i++];
 			uiFormat(
 				id, Cold, tagTime(msg),
@@ -742,7 +748,9 @@ static void handleMode(struct Message *msg) {
 		}
 
 		if (strchr(network.setParamModes, *ch) && set) {
-			assert(i < ParamCap);
+			if (i >= ParamCap || !msg->params[i]) {
+				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+			}
 			char *param = msg->params[i++];
 			uiFormat(
 				id, Cold, tagTime(msg),
