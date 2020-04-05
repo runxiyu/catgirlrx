@@ -248,17 +248,26 @@ static void handleReplyISupport(struct Message *msg) {
 			if (!msg->params[i]) continue;
 			set(&network.chanTypes, msg->params[i]);
 		} else if (!strcmp(key, "PREFIX")) {
-			if (!msg->params[i]) continue;
 			strsep(&msg->params[i], "(");
-			set(&network.prefixModes, strsep(&msg->params[i], ")"));
-			set(&network.prefixes, msg->params[i]);
-			assert(strlen(network.prefixes) == strlen(network.prefixModes));
+			char *modes = strsep(&msg->params[i], ")");
+			char *prefixes = msg->params[i];
+			if (!modes || !prefixes || strlen(modes) != strlen(prefixes)) {
+				errx(EX_PROTOCOL, "invalid PREFIX value");
+			}
+			set(&network.prefixModes, modes);
+			set(&network.prefixes, prefixes);
 		} else if (!strcmp(key, "CHANMODES")) {
-			if (!msg->params[i]) continue;
-			set(&network.listModes, strsep(&msg->params[i], ","));
-			set(&network.paramModes, strsep(&msg->params[i], ","));
-			set(&network.setParamModes, strsep(&msg->params[i], ","));
-			set(&network.channelModes, strsep(&msg->params[i], ","));
+			char *list = strsep(&msg->params[i], ",");
+			char *param = strsep(&msg->params[i], ",");
+			char *setParam = strsep(&msg->params[i], ",");
+			char *channel = strsep(&msg->params[i], ",");
+			if (!list || !param || !setParam || !channel) {
+				errx(EX_PROTOCOL, "invalid CHANMODES value");
+			}
+			set(&network.listModes, list);
+			set(&network.paramModes, param);
+			set(&network.setParamModes, setParam);
+			set(&network.channelModes, channel);
 		} else if (!strcmp(key, "EXCEPTS")) {
 			network.excepts = (msg->params[i] ?: "e")[0];
 		} else if (!strcmp(key, "INVEX")) {
