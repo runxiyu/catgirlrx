@@ -197,9 +197,9 @@ static void commandMode(uint id, char *params) {
 	}
 }
 
-static void channelListMode(uint id, char pm, char l, char *params) {
+static void channelListMode(uint id, char pm, char l, const char *params) {
 	int count = 1;
-	for (char *ch = params; *ch; ++ch) {
+	for (const char *ch = params; *ch; ++ch) {
 		if (*ch == ' ') count++;
 	}
 	char modes[ParamCap - 2] = { l, l, l, l, l, l, l, l, l, l, l, l, l };
@@ -207,13 +207,15 @@ static void channelListMode(uint id, char pm, char l, char *params) {
 }
 
 static void commandOp(uint id, char *params) {
-	if (!params) return;
-	channelListMode(id, '+', 'o', params);
+	if (params) {
+		channelListMode(id, '+', 'o', params);
+	} else {
+		ircFormat("PRIVMSG ChanServ :OP %s\r\n", idNames[id]);
+	}
 }
 
 static void commandDeop(uint id, char *params) {
-	if (!params) return;
-	channelListMode(id, '-', 'o', params);
+	channelListMode(id, '-', 'o', (params ?: self.nick));
 }
 
 static void commandVoice(uint id, char *params) {
