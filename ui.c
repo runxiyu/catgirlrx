@@ -428,17 +428,23 @@ static void statusUpdate(void) {
 			others.unread += window->unreadWarm;
 			if (window->heat > others.heat) others.heat = window->heat;
 		}
-		int trunc;
+		int truncUnread, truncScroll;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), "\3%d%s %u %s %n(\3%02d%d\3%d) ",
+			buf, sizeof(buf), "\3%d%s %u %s %n(\3%02d%d\3%d) %n[%d] ",
 			idColors[window->id], (num == windows.show ? "\26" : ""),
 			num, idNames[window->id],
-			&trunc, (window->heat > Warm ? White : idColors[window->id]),
+			&truncUnread, (window->heat > Warm ? White : idColors[window->id]),
 			window->unreadWarm,
-			idColors[window->id]
+			idColors[window->id],
+			&truncScroll, window->scroll
 		);
-		if (!window->mark || !window->unreadWarm) buf[trunc] = '\0';
+		if (!window->scroll) {
+			buf[truncScroll] = '\0';
+			if (!window->mark || !window->unreadWarm) {
+				buf[truncUnread] = '\0';
+			}
+		}
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
