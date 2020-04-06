@@ -258,6 +258,8 @@ static void errExit(void) {
 	reset_shell_mode();
 }
 
+enum { SplitLines = 5 };
+
 void uiInit(void) {
 	initscr();
 	cbreak();
@@ -279,9 +281,8 @@ void uiInit(void) {
 	status = newwin(1, COLS, 0, 0);
 	if (!status) err(EX_OSERR, "newwin");
 
-	marker = newwin(1, COLS, LINES - 2, 0);
-	short fg = 8 + COLOR_BLACK;
-	wbkgd(marker, '~' | colorAttr(fg) | COLOR_PAIR(colorPair(fg, -1)));
+	marker = newwin(1, COLS, BOTTOM - SplitLines - 1, 0);
+	wbkgd(marker, ACS_BULLET);
 
 	input = newpad(1, 1024);
 	if (!input) err(EX_OSERR, "newpad");
@@ -311,6 +312,12 @@ void uiDraw(void) {
 	if (window->scroll) {
 		touchwin(marker);
 		wnoutrefresh(marker);
+		pnoutrefresh(
+			window->pad,
+			WindowLines - SplitLines, 0,
+			BOTTOM - SplitLines, 0,
+			BOTTOM - 1, RIGHT
+		);
 	}
 	int y, x;
 	getyx(input, y, x);
@@ -655,7 +662,7 @@ static void reflow(struct Window *window) {
 }
 
 static void resize(void) {
-	mvwin(marker, LINES - 2, 0);
+	mvwin(marker, BOTTOM - SplitLines - 1, 0);
 	int height, width;
 	getmaxyx(windows.ptrs[0]->pad, height, width);
 	if (width == COLS) return;
