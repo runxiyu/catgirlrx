@@ -219,13 +219,15 @@ static void commandDeop(uint id, char *params) {
 }
 
 static void commandVoice(uint id, char *params) {
-	if (!params) return;
-	channelListMode(id, '+', 'v', params);
+	if (params) {
+		channelListMode(id, '+', 'v', params);
+	} else {
+		ircFormat("PRIVMSG ChanServ :VOICE %s\r\n", idNames[id]);
+	}
 }
 
 static void commandDevoice(uint id, char *params) {
-	if (!params) return;
-	channelListMode(id, '-', 'v', params);
+	channelListMode(id, '-', 'v', (params ?: self.nick));
 }
 
 static void commandBan(uint id, char *params) {
