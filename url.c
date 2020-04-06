@@ -65,7 +65,7 @@ struct URL {
 	char *url;
 };
 
-enum { Cap = 32 };
+enum { Cap = 64 };
 static struct {
 	struct URL urls[Cap];
 	size_t len;
