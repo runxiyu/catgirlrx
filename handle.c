@@ -314,7 +314,7 @@ static void handleJoin(struct Message *msg) {
 		msg->params[2] = NULL;
 	}
 	uiFormat(
-		id, ignoreCheck(Cold, msg), tagTime(msg),
+		id, ignoreCheck(Cold, id, msg), tagTime(msg),
 		"\3%02d%s\3\t%s%s%sarrives in \3%02d%s\3",
 		hash(msg->user), msg->nick,
 		(msg->params[2] ? "(" : ""),
@@ -346,7 +346,7 @@ static void handlePart(struct Message *msg) {
 	completeRemove(id, msg->nick);
 	urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
-		id, ignoreCheck(Cold, msg), tagTime(msg),
+		id, ignoreCheck(Cold, id, msg), tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
@@ -393,7 +393,7 @@ static void handleNick(struct Message *msg) {
 			set(&idNames[id], msg->params[0]);
 		}
 		uiFormat(
-			id, ignoreCheck(Cold, msg), tagTime(msg),
+			id, ignoreCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
 		);
@@ -411,7 +411,7 @@ static void handleQuit(struct Message *msg) {
 	for (uint id; (id = completeID(msg->nick));) {
 		urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
-			id, ignoreCheck(Cold, msg), tagTime(msg),
+			id, ignoreCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tleaves%s%s",
 			hash(msg->user), msg->nick,
 			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
@@ -430,7 +430,7 @@ static void handleInvite(struct Message *msg) {
 	require(msg, true, 2);
 	if (!strcmp(msg->params[0], self.nick)) {
 		uiFormat(
-			Network, ignoreCheck(Hot, msg), tagTime(msg),
+			Network, ignoreCheck(Hot, Network, msg), tagTime(msg),
 			"\3%02d%s\3\tinvites you to \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
 		);
@@ -1106,12 +1106,13 @@ static void handlePrivmsg(struct Message *msg) {
 	bool mention = !mine && isMention(msg);
 	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
 	urlScan(id, msg->nick, msg->params[1]);
+	enum Heat heat = ignoreCheck((mention || query ? Hot : Warm), id, msg);
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
 		}
 		uiFormat(
-			id, ignoreCheck(Warm, msg), tagTime(msg),
+			id, ignoreCheck(Warm, id, msg), tagTime(msg),
 			"\3%d-%s-\3%d\t%s",
 			hash(msg->user), msg->nick, LightGray, msg->params[1]
 		);
@@ -1119,7 +1120,7 @@ static void handlePrivmsg(struct Message *msg) {
 		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
 		const char *mentions = colorMentions(id, msg);
 		uiFormat(
-			id, ignoreCheck((mention || query ? Hot : Warm), msg), tagTime(msg),
+			id, heat, tagTime(msg),
 			"%s\35\3%d* %s\17\35\t%s%s",
 			(mention ? "\26" : ""), hash(msg->user), msg->nick,
 			mentions, msg->params[1]
@@ -1128,7 +1129,7 @@ static void handlePrivmsg(struct Message *msg) {
 		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
 		const char *mentions = colorMentions(id, msg);
 		uiFormat(
-			id, ignoreCheck((mention || query ? Hot : Warm), msg), tagTime(msg),
+			id, heat, tagTime(msg),
 			"%s\3%d<%s>\17\t%s%s",
 			(mention ? "\26" : ""), hash(msg->user), msg->nick,
 			mentions, msg->params[1]

@@ -269,7 +269,7 @@ extern struct Ignore {
 } ignore;
 const char *ignoreAdd(const char *pattern);
 bool ignoreRemove(const char *pattern);
-enum Heat ignoreCheck(enum Heat heat, const struct Message *msg);
+enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg);
 
 extern bool logEnable;
 void logFormat(uint id, const time_t *time, const char *format, ...)
