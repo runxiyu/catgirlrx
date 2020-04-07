@@ -946,7 +946,6 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'K': edit(id, EditDeleteTail, 0);
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': uiShowNum(windows.show + 1);
-		break; case L'O': windowShow(windows.swap);
 		break; case L'P': uiShowNum(windows.show - 1);
 		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
