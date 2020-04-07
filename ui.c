@@ -215,6 +215,8 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
 	X(KeyMetaEnter, "\33\r", "\33\n") \
+	X(KeyMetaGt, "\33>", "\33.") \
+	X(KeyMetaLt, "\33<", "\33,") \
 	X(KeyMetaMinus, "\33-", "\33_") \
 	X(KeyMetaSlash, "\33/", NULL) \
 	X(KeyFocusIn, "\33[I", NULL) \
@@ -904,6 +906,9 @@ static void keyCode(int code) {
 		break; case KeyMetaMinus: window->ignore ^= true; reflow(window);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
+		break; case KeyMetaGt: windowScroll(window, -WindowLines);
+		break; case KeyMetaLt: windowScroll(window, +WindowLines);
+
 		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
 		break; case KeyMetaA: showAuto();
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
@@ -925,6 +930,8 @@ static void keyCode(int code) {
 		break; case KEY_NPAGE: windowScroll(window, -(PAGE_LINES - 2));
 		break; case KEY_PPAGE: windowScroll(window, +(PAGE_LINES - 2));
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
+		break; case KEY_SEND: windowScroll(window, -WindowLines);
+		break; case KEY_SHOME: windowScroll(window, +WindowLines);
 		break; case KEY_UP: windowScroll(window, +1);
 	}
 }
