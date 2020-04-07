@@ -90,9 +90,9 @@ struct Window {
 	bool mark;
 	bool ignore;
 	enum Heat heat;
-	uint unread;
+	uint unreadHard;
+	uint unreadSoft;
 	uint unreadWarm;
-	uint unreadLines;
 	struct Buffer buffer;
 };
 
@@ -469,9 +469,8 @@ static void statusUpdate(void) {
 static void mark(struct Window *window) {
 	if (window->scroll) return;
 	window->mark = true;
-	window->unread = 0;
+	window->unreadHard = 0;
 	window->unreadWarm = 0;
-	window->unreadLines = 0;
 }
 
 static void unmark(struct Window *window) {
@@ -513,7 +512,7 @@ static void windowScroll(struct Window *window, int n) {
 
 static void windowScrollUnread(struct Window *window) {
 	window->scroll = 0;
-	windowScroll(window, window->unreadLines - PAGE_LINES + 1);
+	windowScroll(window, window->unreadSoft - PAGE_LINES + 1);
 }
 
 static int wordWidth(const char *str) {
@@ -608,7 +607,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	if (heat < Cold && window->ignore) return;
 
 	int lines = 0;
-	window->unread++;
+	if (!window->unreadHard++) window->unreadSoft = 0;
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
 			lines++;
@@ -619,7 +618,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	}
 
 	lines += wordWrap(window->pad, str);
-	window->unreadLines += lines;
+	window->unreadSoft += lines;
 	if (window->scroll) windowScroll(window, lines);
 
 	if (window->mark && heat > Warm) {
@@ -645,19 +644,19 @@ static void reflow(struct Window *window) {
 	wmove(window->pad, 0, 0);
 
 	int flowed = 0;
-	window->unreadLines = 0;
+	window->unreadSoft = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		struct Line line = bufferLine(&window->buffer, i);
 		if (!line.str) continue;
 		if (line.heat < Cold && window->ignore) continue;
 		int lines = 0;
-		if (i == (size_t)(BufferCap - window->unread)) {
+		if (i == (size_t)(BufferCap - window->unreadHard)) {
 			waddch(window->pad, '\n');
 			lines++;
 		}
 		lines += wordWrap(window->pad, line.str);
-		if (i >= (size_t)(BufferCap - window->unread)) {
-			window->unreadLines += lines;
+		if (i >= (size_t)(BufferCap - window->unreadHard)) {
+			window->unreadSoft += lines;
 		}
 		flowed += lines;
 	}
@@ -1038,7 +1037,7 @@ int uiSave(const char *name) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
 		if (writeTime(file, window->heat)) return -1;
-		if (writeTime(file, window->unread)) return -1;
+		if (writeTime(file, window->unreadHard)) return -1;
 		if (writeTime(file, window->unreadWarm)) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			struct Line line = bufferLine(&window->buffer, i);
@@ -1094,7 +1093,7 @@ void uiLoad(const char *name) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
 		if (version > 0) {
 			window->heat = readTime(file);
-			window->unread = readTime(file);
+			window->unreadHard = readTime(file);
 			window->unreadWarm = readTime(file);
 		}
 		for (;;) {
