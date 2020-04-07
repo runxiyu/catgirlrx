@@ -234,6 +234,7 @@ enum Edit {
 	EditDeleteNextWord,
 	EditPaste,
 	EditTranspose,
+	EditCollapse,
 	EditInsert,
 	EditComplete,
 	EditExpand,

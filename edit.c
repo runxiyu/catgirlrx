@@ -232,6 +232,19 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 			buf[pos - 1] = buf[pos];
 			buf[pos++] = t;
 		}
+		break; case EditCollapse: {
+			size_t ws;
+			for (pos = 0; pos < len;) {
+				for (; pos < len && !iswspace(buf[pos]); ++pos);
+				for (ws = pos; ws < len && iswspace(buf[ws]); ++ws);
+				if (pos && ws < len) {
+					delete(false, pos, ws - pos - 1);
+					buf[pos++] = L' ';
+				} else {
+					delete(false, pos, ws - pos);
+				}
+			}
+		}
 
 		break; case EditInsert: {
 			if (reserve(pos, 1)) {

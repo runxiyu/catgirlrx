@@ -211,6 +211,7 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaF, "\33f", NULL) \
 	X(KeyMetaL, "\33l", NULL) \
 	X(KeyMetaM, "\33m", NULL) \
+	X(KeyMetaQ, "\33q", NULL) \
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
 	X(KeyMetaEnter, "\33\r", "\33\n") \
@@ -911,6 +912,7 @@ static void keyCode(int code) {
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(&window->buffer);
 		break; case KeyMetaM: waddch(window->pad, '\n');
+		break; case KeyMetaQ: edit(id, EditCollapse, 0);
 		break; case KeyMetaU: windowScrollUnread(window);
 		break; case KeyMetaV: windowScroll(window, +(PAGE_LINES - 2));
 
