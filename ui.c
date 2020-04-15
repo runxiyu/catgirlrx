@@ -88,6 +88,7 @@ struct Window {
 	WINDOW *pad;
 	int scroll;
 	bool mark;
+	bool mute;
 	bool ignore;
 	enum Heat heat;
 	uint unreadHard;
@@ -217,8 +218,9 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaEnter, "\33\r", "\33\n") \
 	X(KeyMetaGt, "\33>", "\33.") \
 	X(KeyMetaLt, "\33<", "\33,") \
+	X(KeyMetaEqual, "\33=", "\33+") \
 	X(KeyMetaMinus, "\33-", "\33_") \
-	X(KeyMetaSlash, "\33/", NULL) \
+	X(KeyMetaSlash, "\33/", "\33?") \
 	X(KeyFocusIn, "\33[I", NULL) \
 	X(KeyFocusOut, "\33[O", NULL) \
 	X(KeyPasteOn, "\33[200~", NULL) \
@@ -426,7 +428,10 @@ static void statusUpdate(void) {
 	wmove(status, 0, 0);
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
-		if (window->heat < Warm && num != windows.show) continue;
+		if (num != windows.show) {
+			if (window->heat < Warm) continue;
+			if (window->mute && window->heat < Hot) continue;
+		}
 		if (num != windows.show) {
 			others.unread += window->unreadWarm;
 			if (window->heat > others.heat) others.heat = window->heat;
@@ -434,9 +439,9 @@ static void statusUpdate(void) {
 		int truncUnread, truncScroll;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), "\3%d%s %u%s %s %n(\3%02d%d\3%d) %n[%d] ",
+			buf, sizeof(buf), "\3%d%s %u%s%s %s %n(\3%02d%d\3%d) %n[%d] ",
 			idColors[window->id], (num == windows.show ? "\26" : ""),
-			num, (window->ignore ? "" : "-"),
+			num, (window->mute ? "=" : ""), (window->ignore ? "" : "-"),
 			idNames[window->id],
 			&truncUnread, (window->heat > Warm ? White : idColors[window->id]),
 			window->unreadWarm,
@@ -879,14 +884,15 @@ static void showAuto(void) {
 	uint minHot = UINT_MAX, numHot;
 	uint minWarm = UINT_MAX, numWarm;
 	for (uint num = 0; num < windows.len; ++num) {
-		if (windows.ptrs[num]->heat >= Hot) {
-			if (windows.ptrs[num]->unreadWarm >= minHot) continue;
-			minHot = windows.ptrs[num]->unreadWarm;
+		struct Window *window = windows.ptrs[num];
+		if (window->heat >= Hot) {
+			if (window->unreadWarm >= minHot) continue;
+			minHot = window->unreadWarm;
 			numHot = num;
 		}
-		if (windows.ptrs[num]->heat >= Warm) {
-			if (windows.ptrs[num]->unreadWarm >= minWarm) continue;
-			minWarm = windows.ptrs[num]->unreadWarm;
+		if (window->heat >= Warm && !window->mute) {
+			if (window->unreadWarm >= minWarm) continue;
+			minWarm = window->unreadWarm;
 			numWarm = num;
 		}
 	}
@@ -910,6 +916,7 @@ static void keyCode(int code) {
 		break; case KeyFocusOut: mark(window);
 
 		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
+		break; case KeyMetaEqual: window->mute ^= true; statusUpdate();
 		break; case KeyMetaMinus: toggleIgnore(window);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
@@ -1023,7 +1030,8 @@ static const time_t Signatures[] = {
 	0x6C72696774616301, // no heat, unread, unreadWarm
 	0x6C72696774616302, // no self.pos
 	0x6C72696774616303, // no buffer line heat
-	0x6C72696774616304,
+	0x6C72696774616304, // no mute
+	0x6C72696774616305,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -1044,11 +1052,12 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeTime(file, Signatures[3])) return -1;
+	if (writeTime(file, Signatures[4])) return -1;
 	if (writeTime(file, self.pos)) return -1;
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		if (writeString(file, idNames[window->id])) return -1;
+		if (writeTime(file, window->mute)) return -1;
 		if (writeTime(file, window->heat)) return -1;
 		if (writeTime(file, window->unreadHard)) return -1;
 		if (writeTime(file, window->unreadWarm)) return -1;
@@ -1104,6 +1113,7 @@ void uiLoad(const char *name) {
 	size_t cap = 0;
 	while (0 < readString(file, &buf, &cap)) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
+		if (version > 3) window->mute = readTime(file);
 		if (version > 0) {
 			window->heat = readTime(file);
 			window->unreadHard = readTime(file);
