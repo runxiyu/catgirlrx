@@ -434,9 +434,10 @@ static void statusUpdate(void) {
 		int truncUnread, truncScroll;
 		char buf[256];
 		snprintf(
-			buf, sizeof(buf), "\3%d%s %u %s %n(\3%02d%d\3%d) %n[%d] ",
+			buf, sizeof(buf), "\3%d%s %u%s %s %n(\3%02d%d\3%d) %n[%d] ",
 			idColors[window->id], (num == windows.show ? "\26" : ""),
-			num, idNames[window->id],
+			num, (window->ignore ? "" : "-"),
+			idNames[window->id],
 			&truncUnread, (window->heat > Warm ? White : idColors[window->id]),
 			window->unreadWarm,
 			idColors[window->id],
@@ -864,6 +865,12 @@ void uiCloseNum(uint num) {
 	if (num < windows.len) windowClose(num);
 }
 
+static void toggleIgnore(struct Window *window) {
+	window->ignore ^= true;
+	reflow(window);
+	statusUpdate();
+}
+
 static void showAuto(void) {
 	static uint swap;
 	if (windows.swap != swap) {
@@ -903,7 +910,7 @@ static void keyCode(int code) {
 		break; case KeyFocusOut: mark(window);
 
 		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
-		break; case KeyMetaMinus: window->ignore ^= true; reflow(window);
+		break; case KeyMetaMinus: toggleIgnore(window);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaGt: windowScroll(window, -WindowLines);
