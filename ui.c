@@ -901,7 +901,7 @@ static void showAuto(void) {
 	} else if (minWarm < UINT_MAX) {
 		windowShow(numWarm);
 		windows.user = user;
-	} else {
+	} else if (user != windows.show) {
 		windowShow(user);
 	}
 }
