@@ -102,6 +102,7 @@ static struct {
 	uint len;
 	uint show;
 	uint swap;
+	uint user;
 } windows;
 
 static uint windowPush(struct Window *window) {
@@ -825,6 +826,7 @@ static void windowShow(uint num) {
 	touchwin(windows.ptrs[num]->pad);
 	windows.swap = windows.show;
 	windows.show = num;
+	windows.user = num;
 	mark(windows.ptrs[windows.swap]);
 	unmark(windows.ptrs[windows.show]);
 	inputUpdate();
@@ -877,10 +879,6 @@ static void toggleIgnore(struct Window *window) {
 }
 
 static void showAuto(void) {
-	static uint swap;
-	if (windows.swap != swap) {
-		swap = windows.show;
-	}
 	uint minHot = UINT_MAX, numHot;
 	uint minWarm = UINT_MAX, numWarm;
 	for (uint num = 0; num < windows.len; ++num) {
@@ -896,14 +894,15 @@ static void showAuto(void) {
 			numWarm = num;
 		}
 	}
+	uint user = windows.user;
 	if (minHot < UINT_MAX) {
 		windowShow(numHot);
-		windows.swap = swap;
+		windows.user = user;
 	} else if (minWarm < UINT_MAX) {
 		windowShow(numWarm);
-		windows.swap = swap;
+		windows.user = user;
 	} else {
-		windowShow(windows.swap);
+		windowShow(user);
 	}
 }
 
