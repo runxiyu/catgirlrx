@@ -117,9 +117,11 @@ void completeReject(void) {
 	match = NULL;
 }
 
+static struct Node *iter;
+
 uint completeID(const char *str) {
-	for (match = (match ? match->next : head); match; match = match->next) {
-		if (match->id && !strcmp(match->str, str)) return match->id;
+	for (iter = (iter ? iter->next : head); iter; iter = iter->next) {
+		if (iter->id && !strcmp(iter->str, str)) return iter->id;
 	}
 	return None;
 }
@@ -144,6 +146,7 @@ void completeRemove(uint id, const char *str) {
 		if (id && node->id != id) continue;
 		if (strcmp(node->str, str)) continue;
 		if (match == node) match = NULL;
+		if (iter == node) iter = NULL;
 		detach(node);
 		free(node->str);
 		free(node);
@@ -156,6 +159,7 @@ void completeClear(uint id) {
 		next = node->next;
 		if (node->id != id) continue;
 		if (match == node) match = NULL;
+		if (iter == node) iter = NULL;
 		detach(node);
 		free(node->str);
 		free(node);
