@@ -162,9 +162,9 @@ void ircFormat(const char *format, ...)
 	__attribute__((format(printf, 1, 2)));
 void ircClose(void);
 
-uint execID;
-int execPipe[2];
-int utilPipe[2];
+extern uint execID;
+extern int execPipe[2];
+extern int utilPipe[2];
 
 enum { UtilCap = 16 };
 struct Util {
