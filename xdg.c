@@ -42,10 +42,7 @@ FILE *configOpen(const char *path, const char *mode) {
 	}
 	FILE *file = fopen(buf, mode);
 	if (file) return file;
-	if (errno != ENOENT) {
-		warn("%s", buf);
-		return NULL;
-	}
+	if (errno != ENOENT) warn("%s", buf);
 
 	if (!configDirs) configDirs = "/etc/xdg";
 	while (*configDirs) {
@@ -56,10 +53,7 @@ FILE *configOpen(const char *path, const char *mode) {
 		);
 		file = fopen(buf, mode);
 		if (file) return file;
-		if (errno != ENOENT) {
-			warn("%s", buf);
-			return NULL;
-		}
+		if (errno != ENOENT) warn("%s", buf);
 		configDirs += len;
 		if (*configDirs) configDirs++;
 	}
@@ -92,10 +86,7 @@ FILE *dataOpen(const char *path, const char *mode) {
 	}
 	FILE *file = fopen(homePath, mode);
 	if (file) return file;
-	if (errno != ENOENT) {
-		warn("%s", homePath);
-		return NULL;
-	}
+	if (errno != ENOENT) warn("%s", homePath);
 
 	char buf[PATH_MAX];
 	if (!dataDirs) dataDirs = "/usr/local/share:/usr/share";
@@ -107,10 +98,7 @@ FILE *dataOpen(const char *path, const char *mode) {
 		);
 		file = fopen(buf, mode);
 		if (file) return file;
-		if (errno != ENOENT) {
-			warn("%s", buf);
-			return NULL;
-		}
+		if (errno != ENOENT) warn("%s", buf);
 		dataDirs += len;
 		if (*dataDirs) dataDirs++;
 	}
