@@ -519,6 +519,11 @@ static void windowScroll(struct Window *window, int n) {
 	unmark(window);
 }
 
+static void windowScrollPage(struct Window *window, int n) {
+	// -1 for split marker, -1 for line of overlap.
+	windowScroll(window, n * (PAGE_LINES - SplitLines - 2));
+}
+
 static void windowScrollUnread(struct Window *window) {
 	window->scroll = 0;
 	windowScroll(window, window->unreadSoft - PAGE_LINES + 1);
@@ -931,7 +936,7 @@ static void keyCode(int code) {
 		break; case KeyMetaM: waddch(window->pad, '\n');
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
 		break; case KeyMetaU: windowScrollUnread(window);
-		break; case KeyMetaV: windowScroll(window, +(PAGE_LINES - 2));
+		break; case KeyMetaV: windowScrollPage(window, +1);
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
@@ -940,8 +945,8 @@ static void keyCode(int code) {
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHead, 0);
 		break; case KEY_LEFT: edit(id, EditPrev, 0);
-		break; case KEY_NPAGE: windowScroll(window, -(PAGE_LINES - 2));
-		break; case KEY_PPAGE: windowScroll(window, +(PAGE_LINES - 2));
+		break; case KEY_NPAGE: windowScrollPage(window, -1);
+		break; case KEY_PPAGE: windowScrollPage(window, +1);
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
 		break; case KEY_SEND: windowScroll(window, -WindowLines);
 		break; case KEY_SHOME: windowScroll(window, +WindowLines);
@@ -969,7 +974,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'P': uiShowNum(windows.show - 1);
 		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
-		break; case L'V': windowScroll(window, -(PAGE_LINES - 2));
+		break; case L'V': windowScrollPage(window, -1);
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
 		break; case L'X': edit(id, EditExpand, 0);
 		break; case L'Y': edit(id, EditPaste, 0);
