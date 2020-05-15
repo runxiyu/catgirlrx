@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
 		{ .events = POLLIN, .fd = execPipe[0] },
 	};
 	while (!self.quit) {
-		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), 600000);
+		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 		if (nfds > 0) {
 			if (fds[0].revents) uiRead();
@@ -280,11 +280,6 @@ int main(int argc, char *argv[]) {
 			if (fds[2].revents) utilRead();
 			if (fds[3].revents) execRead();
 		}
-
-		// XXX: Socket seems to just stop working when connected to something
-		// like pounce which sends no pings and there is no activity for a long
-		// time, so just send something...
-		if (!nfds) ircFormat("\r\n");
 
 		if (signals[SIGHUP]) self.quit = "zzz";
 		if (signals[SIGINT] || signals[SIGTERM]) break;
