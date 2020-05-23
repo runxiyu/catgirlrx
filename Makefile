@@ -1,9 +1,12 @@
 PREFIX = /usr/local
 MANDIR = ${PREFIX}/share/man
 
+CFLAGS += -I${PREFIX}/include
+LDFLAGS += -L${PREFIX}/lib
+
 CEXTS = gnu-case-range gnu-conditional-omitted-operand
 CFLAGS += -std=c11 -Wall -Wextra -Wpedantic ${CEXTS:%=-Wno-%}
-LDLIBS = -lcrypto -ltls -lncursesw
+LDLIBS = -lncursesw -ltls
 
 -include config.mk
 
@@ -36,23 +39,23 @@ clean:
 	rm -f tags catgirl ${OBJS}
 
 install: catgirl catgirl.1
-	install -d ${PREFIX}/bin ${MANDIR}/man1
-	install catgirl ${PREFIX}/bin
-	gzip -c catgirl.1 > ${MANDIR}/man1/catgirl.1.gz
+	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANDIR}/man1
+	install catgirl ${DESTDIR}${PREFIX}/bin
+	install -m 644 catgirl.1 ${DESTDIR}${MANDIR}/man1
 
 uninstall:
-	rm -f ${PREFIX}/bin/catgirl ${MANDIR}/man1/catgirl.1.gz
+	rm -f ${DESTDIR}${PREFIX}/bin/catgirl ${DESTDIR}${MANDIR}/man1/catgirl.1
 
 scripts/sandman: scripts/sandman.o
 	${CC} ${LDFLAGS} scripts/sandman.o -framework Cocoa -o $@
 
 install-sandman: scripts/sandman scripts/sandman.1
-	install -d ${PREFIX}/bin ${MANDIR}/man1
-	install scripts/sandman ${PREFIX}/bin
-	gzip -c scripts/sandman.1 > ${MANDIR}/man1/sandman.1.gz
+	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANDIR}/man1
+	install scripts/sandman ${DESTDIR}${PREFIX}/bin
+	install -m 644 scripts/sandman.1 ${DESTDIR}${MANDIR}/man1
 
 uninstall-sandman:
-	rm -f ${PREFIX}/bin/sandman ${MANDIR}/man1/sandman.1.gz
+	rm -f ${DESTDIR}${PREFIX}/bin/sandman ${DESTDIR}${MANDIR}/man1/sandman.1
 
 CHROOT_USER = chat
 CHROOT_GROUP = ${CHROOT_USER}
@@ -87,7 +90,7 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 	cp -af /usr/share/locale root/usr/share
 	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
 	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
-	${MAKE} install PREFIX=root/usr
+	${MAKE} install DESTDIR=root PREFIX=/usr
 	install scripts/chroot-prompt.sh root/usr/bin/catgirl-prompt
 	install scripts/chroot-man.sh root/usr/bin/man
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
