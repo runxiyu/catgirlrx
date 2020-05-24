@@ -437,23 +437,28 @@ static void statusUpdate(void) {
 			others.unread += window->unreadWarm;
 			if (window->heat > others.heat) others.heat = window->heat;
 		}
-		int truncUnread, truncScroll;
-		char buf[256];
-		snprintf(
-			buf, sizeof(buf), "\3%d%s %u%s%s %s %n(\3%02d%d\3%d) %n[%d] ",
-			idColors[window->id], (num == windows.show ? "\26" : ""),
-			num, (window->mute ? "=" : ""), (window->ignore ? "" : "-"),
-			idNames[window->id],
-			&truncUnread, (window->heat > Warm ? White : idColors[window->id]),
-			window->unreadWarm,
-			idColors[window->id],
-			&truncScroll, window->scroll
+		char buf[256] = "";
+		catf(
+			buf, sizeof(buf), "\3%d%s %u ",
+			idColors[window->id], (num == windows.show ? "\26" : ""), num
 		);
-		if (!window->scroll) {
-			buf[truncScroll] = '\0';
-			if (!window->mark || !window->unreadWarm) {
-				buf[truncUnread] = '\0';
-			}
+		if (!window->ignore || window->mute) {
+			catf(
+				buf, sizeof(buf), "%s%s ",
+				&"-"[window->ignore], &"="[!window->mute]
+			);
+		}
+		catf(buf, sizeof(buf), "%s ", idNames[window->id]);
+		if (window->mark && window->unreadWarm) {
+			catf(
+				buf, sizeof(buf), "\3%d+%d\3%d%s",
+				(window->heat > Warm ? White : idColors[window->id]),
+				window->unreadWarm, idColors[window->id],
+				(window->scroll ? "" : " ")
+			);
+		}
+		if (window->scroll) {
+			catf(buf, sizeof(buf), "~%d ", window->scroll);
 		}
 		statusAdd(buf);
 	}
@@ -463,14 +468,14 @@ static void statusUpdate(void) {
 	snprintf(title, sizeof(title), "%s %s", network.name, idNames[window->id]);
 	if (window->mark && window->unreadWarm) {
 		catf(
-			title, sizeof(title), " (%d%s)",
-			window->unreadWarm, (window->heat > Warm ? "!" : "")
+			title, sizeof(title), " +%d%s",
+			window->unreadWarm, &"!"[window->heat < Hot]
 		);
 	}
 	if (others.unread) {
 		catf(
 			title, sizeof(title), " (+%d%s)",
-			others.unread, (others.heat > Warm ? "!" : "")
+			others.unread, &"!"[others.heat < Hot]
 		);
 	}
 }
