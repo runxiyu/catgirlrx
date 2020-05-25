@@ -46,9 +46,18 @@
 #define A_ITALIC A_NORMAL
 #endif
 
+enum {
+	StatusLines = 1,
+	WindowLines = 1024,
+	MarkerLines = 1,
+	SplitLines = 5,
+	InputLines = 1,
+	InputCols = 1024,
+};
+
 #define BOTTOM (LINES - 1)
 #define RIGHT (COLS - 1)
-#define PAGE_LINES (LINES - 2)
+#define MAIN_LINES (LINES - StatusLines - InputLines)
 
 static WINDOW *status;
 static WINDOW *marker;
@@ -82,7 +91,6 @@ static struct Line bufferLine(const struct Buffer *buffer, size_t i) {
 	return buffer->lines[(buffer->len + i) % BufferCap];
 }
 
-enum { WindowLines = BufferCap };
 struct Window {
 	uint id;
 	WINDOW *pad;
@@ -264,8 +272,6 @@ static void errExit(void) {
 	reset_shell_mode();
 }
 
-enum { SplitLines = 5 };
-
 void uiInit(void) {
 	initscr();
 	cbreak();
@@ -284,13 +290,16 @@ void uiInit(void) {
 	ENUM_KEY
 #undef X
 
-	status = newwin(1, COLS, 0, 0);
+	status = newwin(StatusLines, COLS, 0, 0);
 	if (!status) err(EX_OSERR, "newwin");
 
-	marker = newwin(1, COLS, BOTTOM - SplitLines - 1, 0);
+	marker = newwin(
+		MarkerLines, COLS,
+		LINES - InputLines - SplitLines - MarkerLines, 0
+	);
 	wbkgd(marker, ACS_BULLET);
 
-	input = newpad(1, 1024);
+	input = newpad(InputLines, InputCols);
 	if (!input) err(EX_OSERR, "newpad");
 	keypad(input, true);
 	nodelay(input, true);
@@ -309,20 +318,27 @@ void uiDraw(void) {
 	if (hidden) return;
 	wnoutrefresh(status);
 	const struct Window *window = windows.ptrs[windows.show];
-	pnoutrefresh(
-		window->pad,
-		WindowLines - window->scroll - PAGE_LINES + !!window->scroll, 0,
-		1, 0,
-		BOTTOM - 1 - !!window->scroll, RIGHT
-	);
-	if (window->scroll) {
+	if (!window->scroll) {
+		pnoutrefresh(
+			window->pad,
+			WindowLines - MAIN_LINES, 0,
+			StatusLines, 0,
+			BOTTOM - InputLines, RIGHT
+		);
+	} else {
+		pnoutrefresh(
+			window->pad,
+			WindowLines - window->scroll - MAIN_LINES + MarkerLines, 0,
+			StatusLines, 0,
+			BOTTOM - InputLines - SplitLines - MarkerLines, RIGHT
+		);
 		touchwin(marker);
 		wnoutrefresh(marker);
 		pnoutrefresh(
 			window->pad,
 			WindowLines - SplitLines, 0,
-			BOTTOM - SplitLines, 0,
-			BOTTOM - 1, RIGHT
+			LINES - InputLines - SplitLines, 0,
+			BOTTOM - InputLines, RIGHT
 		);
 	}
 	int y, x;
@@ -330,7 +346,7 @@ void uiDraw(void) {
 	pnoutrefresh(
 		input,
 		0, (x + 1 > RIGHT ? x + 1 - RIGHT : 0),
-		BOTTOM, 0,
+		LINES - InputLines, 0,
 		BOTTOM, RIGHT
 	);
 	(void)y;
@@ -517,21 +533,20 @@ void uiHide(void) {
 static void windowScroll(struct Window *window, int n) {
 	mark(window);
 	window->scroll += n;
-	if (window->scroll > WindowLines - PAGE_LINES) {
-		window->scroll = WindowLines - PAGE_LINES;
+	if (window->scroll > WindowLines - MAIN_LINES) {
+		window->scroll = WindowLines - MAIN_LINES;
 	}
 	if (window->scroll < 0) window->scroll = 0;
 	unmark(window);
 }
 
 static void windowScrollPage(struct Window *window, int n) {
-	// -1 for split marker, -1 for line of overlap.
-	windowScroll(window, n * (PAGE_LINES - SplitLines - 2));
+	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
 }
 
 static void windowScrollUnread(struct Window *window) {
 	window->scroll = 0;
-	windowScroll(window, window->unreadSoft - PAGE_LINES + 1);
+	windowScroll(window, window->unreadSoft - MAIN_LINES);
 }
 
 static int wordWidth(const char *str) {
@@ -687,7 +702,7 @@ static void reflow(struct Window *window) {
 }
 
 static void resize(void) {
-	mvwin(marker, BOTTOM - SplitLines - 1, 0);
+	mvwin(marker, LINES - InputLines - SplitLines - MarkerLines, 0);
 	int height, width;
 	getmaxyx(windows.ptrs[0]->pad, height, width);
 	if (width == COLS) return;
