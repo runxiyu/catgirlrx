@@ -563,6 +563,19 @@ static int wordWidth(const char *str) {
 	return width;
 }
 
+// XXX: ncurses likes to render zero-width characters as spaces...
+static int waddnstrnzw(WINDOW *win, const char *str, int len) {
+	wchar_t wc;
+	while (len) {
+		int n = mbtowc(&wc, str, len);
+		if (n < 1) return waddnstr(win, str, len);
+		if (wcwidth(wc)) waddnstr(win, str, n);
+		str += n;
+		len -= n;
+	}
+	return OK;
+}
+
 static int wordWrap(WINDOW *win, const char *str) {
 	int y, x, width;
 	getmaxyx(win, y, width);
@@ -601,7 +614,7 @@ static int wordWrap(WINDOW *win, const char *str) {
 			colorPair(Colors[style.fg], Colors[style.bg]),
 			NULL
 		);
-		waddnstr(win, str, len);
+		waddnstrnzw(win, str, len);
 		str += len;
 	}
 	return lines;
