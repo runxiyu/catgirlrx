@@ -1,5 +1,5 @@
-PREFIX = /usr/local
-MANDIR = ${PREFIX}/share/man
+PREFIX ?= /usr/local
+MANDIR ?= ${PREFIX}/share/man
 
 CFLAGS += -I${PREFIX}/include
 LDFLAGS += -L${PREFIX}/lib
