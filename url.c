@@ -25,7 +25,6 @@
  * covered work.
  */
 
-#include <assert.h>
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
@@ -81,7 +80,7 @@ static struct {
 	struct URL urls[Cap];
 	size_t len;
 } ring;
-static_assert(!(Cap & (Cap - 1)), "Cap is power of two");
+_Static_assert(!(Cap & (Cap - 1)), "Cap is power of two");
 
 static void push(uint id, const char *nick, const char *str, size_t len) {
 	struct URL *url = &ring.urls[ring.len++ % Cap];

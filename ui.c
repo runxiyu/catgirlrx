@@ -85,7 +85,7 @@ struct Buffer {
 	size_t len;
 	struct Line lines[BufferCap];
 };
-static_assert(!(BufferCap & (BufferCap - 1)), "BufferCap is power of two");
+_Static_assert(!(BufferCap & (BufferCap - 1)), "BufferCap is power of two");
 
 static void bufferPush(
 	struct Buffer *buffer, enum Heat heat, time_t time, const char *str
