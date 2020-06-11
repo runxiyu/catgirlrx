@@ -1,4 +1,4 @@
-.Dd May 23, 2020
+.Dd June 11, 2020
 .Dt README 7
 .Os "Causal Agency"
 .\" To view this file, run: man ./README.7
@@ -87,13 +87,20 @@ requires LibreSSL
 and ncurses
 .Pq Fl lncursesw .
 It primarily targets
-.Fx
+.Fx ,
+.Ox
 and macOS,
 as well as Linux.
 The
 .Pa configure
 step is not necessary on
-.Fx .
+.Fx
+or
+.Ox .
+On
+.Ox ,
+additionally set
+.Ev MANDIR=/usr/local/man .
 .Bd -literal -offset indent
 \&./configure
 make all
