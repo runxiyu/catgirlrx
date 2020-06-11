@@ -3,12 +3,18 @@ set -eu
 
 exec >config.mk
 
+if [ $# -gt 0 ]; then
+	echo 'warning: this script does not process arguments' >&2
+fi
+
 libs='libcrypto libtls ncursesw'
+
 pkg-config --print-errors $libs
+exec_prefix=$(pkg-config --variable=exec_prefix openssl)
 
 cat <<EOF
 CFLAGS += $(pkg-config --cflags $libs)
-CFLAGS += -D'OPENSSL_BIN="$(pkg-config --variable=exec_prefix openssl)/bin/openssl"'
+CFLAGS += -D'OPENSSL_BIN="${exec_prefix}/bin/openssl"'
 LDFLAGS += $(pkg-config --libs-only-L $libs)
 LDLIBS = $(pkg-config --libs-only-l $libs)
 EOF
