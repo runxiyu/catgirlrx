@@ -213,7 +213,9 @@ static void channelListMode(uint id, char pm, char l, const char *params) {
 	for (const char *ch = params; *ch; ++ch) {
 		if (*ch == ' ') count++;
 	}
-	char modes[ParamCap - 2] = { l, l, l, l, l, l, l, l, l, l, l, l, l };
+	char modes[ParamCap - 2 + 1] = {
+		l, l, l, l, l, l, l, l, l, l, l, l, l, '\0'
+	};
 	ircFormat("MODE %s %c%.*s %s\r\n", idNames[id], pm, count, modes, params);
 }
 
