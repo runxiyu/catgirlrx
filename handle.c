@@ -1060,7 +1060,7 @@ static bool isMention(const struct Message *msg) {
 }
 
 static const char *colorMentions(uint id, struct Message *msg) {
-	char *split = strchr(msg->params[1], ':');
+	char *split = strstr(msg->params[1], ": ");
 	if (!split) {
 		split = strchr(msg->params[1], ' ');
 		if (split) split = strchr(&split[1], ' ');
