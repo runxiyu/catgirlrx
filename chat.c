@@ -337,7 +337,7 @@ int main(int argc, char *argv[]) {
 		.cmd = "QUIT",
 		.params[0] = self.quit,
 	};
-	handle(msg);
+	handle(&msg);
 
 	ircClose();
 	logClose();

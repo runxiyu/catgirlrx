@@ -279,7 +279,8 @@ void ircRecv(void) {
 		if (!crlf) break;
 		*crlf = '\0';
 		debug(">>", line);
-		handle(parse(line));
+		struct Message msg = parse(line);
+		handle(&msg);
 		line = crlf + 2;
 	}
 

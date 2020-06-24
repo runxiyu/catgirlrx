@@ -1228,17 +1228,17 @@ static int compar(const void *cmd, const void *_handler) {
 	return strcmp(cmd, handler->cmd);
 }
 
-void handle(struct Message msg) {
-	if (!msg.cmd) return;
-	if (msg.tags[TagPos]) {
-		self.pos = strtoull(msg.tags[TagPos], NULL, 10);
+void handle(struct Message *msg) {
+	if (!msg->cmd) return;
+	if (msg->tags[TagPos]) {
+		self.pos = strtoull(msg->tags[TagPos], NULL, 10);
 	}
 	const struct Handler *handler = bsearch(
-		msg.cmd, Handlers, ARRAY_LEN(Handlers), sizeof(*handler), compar
+		msg->cmd, Handlers, ARRAY_LEN(Handlers), sizeof(*handler), compar
 	);
 	if (handler) {
-		handler->fn(&msg);
-	} else if (strcmp(msg.cmd, "400") >= 0 && strcmp(msg.cmd, "599") <= 0) {
-		handleErrorGeneric(&msg);
+		handler->fn(msg);
+	} else if (strcmp(msg->cmd, "400") >= 0 && strcmp(msg->cmd, "599") <= 0) {
+		handleErrorGeneric(msg);
 	}
 }

@@ -61,7 +61,7 @@ static void echoMessage(char *cmd, uint id, char *params) {
 		.params[0] = idNames[id],
 		.params[1] = params,
 	};
-	handle(msg);
+	handle(&msg);
 }
 
 static void splitMessage(char *cmd, uint id, char *params) {
@@ -213,9 +213,7 @@ static void channelListMode(uint id, char pm, char l, const char *params) {
 	for (const char *ch = params; *ch; ++ch) {
 		if (*ch == ' ') count++;
 	}
-	char modes[ParamCap - 2 + 1] = {
-		l, l, l, l, l, l, l, l, l, l, l, l, l, '\0'
-	};
+	char modes[13 + 1] = { l, l, l, l, l, l, l, l, l, l, l, l, l, '\0' };
 	ircFormat("MODE %s %c%.*s %s\r\n", idNames[id], pm, count, modes, params);
 }
 

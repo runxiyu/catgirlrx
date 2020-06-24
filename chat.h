@@ -155,7 +155,7 @@ enum Tag {
 	TagCap,
 };
 
-enum { ParamCap = 15 };
+enum { ParamCap = 254 };
 struct Message {
 	char *tags[TagCap];
 	char *nick;
@@ -204,7 +204,7 @@ extern struct Replies {
 	uint whois;
 } replies;
 
-void handle(struct Message msg);
+void handle(struct Message *msg);
 void command(uint id, char *input);
 const char *commandIsPrivmsg(uint id, const char *input);
 const char *commandIsNotice(uint id, const char *input);
