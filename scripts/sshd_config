@@ -5,9 +5,5 @@ Match User chat
 	PermitEmptyPasswords yes
 	ChrootDirectory /home/chat
 	ForceCommand catgirl-prompt
-
-	AllowAgentForwarding no
-	AllowTcpForwarding no
-	AllowStreamLocalForwarding no
+	DisableForwarding yes
 	MaxSessions 1
-	X11Forwarding no
