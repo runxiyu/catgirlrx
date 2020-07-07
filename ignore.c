@@ -46,10 +46,12 @@ const char *ignoreAdd(const char *pattern) {
 	}
 	char **dest = &ignore.patterns[ignore.len++];
 	if (!ex && !sp) {
-		asprintf(dest, "%s!*@* * *", pattern);
+		asprintf(dest, "%s!*@* * * *", pattern);
 	} else if (sp < 1) {
-		asprintf(dest, "%s * *", pattern);
+		asprintf(dest, "%s * * *", pattern);
 	} else if (sp < 2) {
+		asprintf(dest, "%s * *", pattern);
+	} else if (sp < 3) {
 		asprintf(dest, "%s *", pattern);
 	} else {
 		*dest = strdup(pattern);
@@ -72,8 +74,9 @@ bool ignoreRemove(const char *pattern) {
 enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg) {
 	char match[512];
 	snprintf(
-		match, sizeof(match), "%s!%s@%s %s %s",
-		msg->nick, msg->user, msg->host, msg->cmd, idNames[id]
+		match, sizeof(match), "%s!%s@%s %s %s %s",
+		msg->nick, msg->user, msg->host,
+		msg->cmd, idNames[id], (msg->params[1] ?: "")
 	);
 	for (size_t i = 0; i < ignore.len; ++i) {
 		if (fnmatch(ignore.patterns[i], match, FNM_CASEFOLD)) continue;
