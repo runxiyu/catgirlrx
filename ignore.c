@@ -72,6 +72,7 @@ bool ignoreRemove(const char *pattern) {
 }
 
 enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg) {
+	if (!ignore.len) return heat;
 	char match[512];
 	snprintf(
 		match, sizeof(match), "%s!%s@%s %s %s %s",
