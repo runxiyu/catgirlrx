@@ -355,9 +355,10 @@ static void handlePart(struct Message *msg) {
 		completeClear(id);
 	}
 	completeRemove(id, msg->nick);
-	urlScan(id, msg->nick, msg->params[1]);
+	enum Heat heat = ignoreCheck(Cold, id, msg);
+	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
-		id, ignoreCheck(Cold, id, msg), tagTime(msg),
+		id, heat, tagTime(msg),
 		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
 		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
@@ -420,9 +421,10 @@ static void handleNick(struct Message *msg) {
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	for (uint id; (id = completeID(msg->nick));) {
-		urlScan(id, msg->nick, msg->params[0]);
+		enum Heat heat = ignoreCheck(Cold, id, msg);
+		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
-			id, ignoreCheck(Cold, id, msg), tagTime(msg),
+			id, heat, tagTime(msg),
 			"\3%02d%s\3\tleaves%s%s",
 			hash(msg->user), msg->nick,
 			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
@@ -1116,8 +1118,8 @@ static void handlePrivmsg(struct Message *msg) {
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
 	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
-	urlScan(id, msg->nick, msg->params[1]);
 	enum Heat heat = ignoreCheck((mention || query ? Hot : Warm), id, msg);
+	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
