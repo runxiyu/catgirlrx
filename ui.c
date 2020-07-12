@@ -456,7 +456,7 @@ static void statusUpdate(void) {
 	wmove(status, 0, 0);
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
-		if (num != windows.show) {
+		if (num != windows.show && !window->scroll) {
 			if (window->heat < Warm) continue;
 			if (window->mute && window->heat < Hot) continue;
 		}
