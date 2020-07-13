@@ -528,11 +528,25 @@ static void handleReplyNoTopic(struct Message *msg) {
 	);
 }
 
+static void topicComplete(uint id, const char *topic) {
+	char buf[512];
+	const char *prev = complete(id, "/topic ");
+	if (prev) {
+		snprintf(buf, sizeof(buf), "%s", prev);
+		completeRemove(id, buf);
+	}
+	if (topic) {
+		snprintf(buf, sizeof(buf), "/topic %s", topic);
+		completeAdd(id, buf, Default);
+	}
+}
+
 static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
+	uint id = idFor(msg->params[1]);
+	topicComplete(id, msg->params[2]);
 	if (!replies.topic) return;
 	replies.topic--;
-	uint id = idFor(msg->params[1]);
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
 		id, Cold, tagTime(msg),
@@ -549,6 +563,7 @@ static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
 	if (msg->params[1][0]) {
+		topicComplete(id, msg->params[1]);
 		urlScan(id, msg->nick, msg->params[1]);
 		uiFormat(
 			id, Warm, tagTime(msg),
@@ -561,6 +576,7 @@ static void handleTopic(struct Message *msg) {
 			msg->nick, msg->params[0], msg->params[1]
 		);
 	} else {
+		topicComplete(id, NULL);
 		uiFormat(
 			id, Warm, tagTime(msg),
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",

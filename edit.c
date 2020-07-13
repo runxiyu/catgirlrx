@@ -164,7 +164,7 @@ static void tabComplete(uint id) {
 
 	delete(false, tab.pos, tab.len);
 	tab.len = n;
-	if (wcs[0] == L'\\') {
+	if (wcs[0] == L'\\' || wcschr(wcs, L' ')) {
 		reserve(tab.pos, tab.len);
 	} else if (wcs[0] != L'/' && !tab.pos) {
 		tab.len += 2;
