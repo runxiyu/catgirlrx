@@ -1,26 +1,44 @@
 #!/bin/sh
 set -eu
 
+cflags() {
+	echo "CFLAGS += $*"
+}
+ldlibs() {
+	echo "LDLIBS ${o:-}= $*"
+	o=+
+}
+config() {
+	pkg-config --print-errors "$@"
+	cflags $(pkg-config --cflags "$@")
+	ldlibs $(pkg-config --libs "$@")
+}
+defstr() {
+	cflags "-D'$1=\"$2\"'"
+}
+defvar() {
+	defstr "$1" "$(pkg-config --variable=$3 $2)${4:-}"
+}
+
 exec >config.mk
 
-if [ $# -gt 0 ]; then
-	echo 'warning: this script does not process arguments' >&2
-fi
-
-libs='libcrypto libtls ncursesw'
-
-pkg-config --print-errors $libs
-exec_prefix=$(pkg-config --variable=exec_prefix openssl)
-
-cat <<EOF
-CFLAGS += $(pkg-config --cflags $libs)
-CFLAGS += -D'OPENSSL_BIN="${exec_prefix}/bin/openssl"'
-LDFLAGS += $(pkg-config --libs-only-L $libs)
-LDLIBS = $(pkg-config --libs-only-l $libs)
-EOF
-
-if [ "$(uname)" = 'Linux' ]; then
-	cat <<-EOF
-	CFLAGS += -D_GNU_SOURCE
-	EOF
-fi
+case "$(uname)" in
+	(FreeBSD)
+		ldlibs -lncursesw
+		config libtls
+		defvar OPENSSL_BIN openssl exec_prefix /bin/openssl
+		;;
+	(OpenBSD)
+		ldlibs -lncursesw -ltls
+		defstr OPENSSL_BIN /usr/bin/openssl
+		;;
+	(Linux)
+		cflags -Wno-pedantic -D_GNU_SOURCE
+		config libcrypto libtls ncursesw
+		defvar OPENSSL_BIN openssl exec_prefix /bin/openssl
+		;;
+	(*)
+		config libcrypto libtls ncursesw
+		defvar OPENSSL_BIN openssl exec_prefix /bin/openssl
+		;;
+esac
