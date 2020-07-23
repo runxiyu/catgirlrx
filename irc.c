@@ -289,7 +289,6 @@ void ircRecv(void) {
 }
 
 void ircClose(void) {
-	int error = tls_close(client);
-	if (error) errx(EX_IOERR, "tls_close: %s", tls_error(client));
+	tls_close(client);
 	tls_free(client);
 }
