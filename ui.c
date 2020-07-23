@@ -928,8 +928,8 @@ static void toggleIgnore(struct Window *window) {
 }
 
 static void showAuto(void) {
-	uint minHot = UINT_MAX, numHot;
-	uint minWarm = UINT_MAX, numWarm;
+	uint minHot = UINT_MAX, numHot = 0;
+	uint minWarm = UINT_MAX, numWarm = 0;
 	for (uint num = 0; num < windows.len; ++num) {
 		struct Window *window = windows.ptrs[num];
 		if (window->heat >= Hot) {
