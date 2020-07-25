@@ -77,9 +77,9 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 		/lib/libncursesw.so.8 \
 		/lib/libthr.so.3 \
 		/lib/libz.so.6 \
-		/usr/local/lib/libcrypto.so.45 \
-		/usr/local/lib/libssl.so.47 \
-		/usr/local/lib/libtls.so.19 \
+		/usr/local/lib/libcrypto.so.46 \
+		/usr/local/lib/libssl.so.48 \
+		/usr/local/lib/libtls.so.20 \
 		root/lib
 	chflags noschg root/libexec/* root/lib/*
 	cp -fp /etc/hosts /etc/resolv.conf root/etc
