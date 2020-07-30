@@ -295,6 +295,3 @@ int getopt_config(
 	int argc, char *const *argv,
 	const char *optstring, const struct option *longopts, int *longindex
 );
-
-// Defined in libcrypto if missing from libc:
-void explicit_bzero(void *b, size_t len);
