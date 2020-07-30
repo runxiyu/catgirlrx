@@ -67,8 +67,7 @@ static const char *capList(enum Cap caps) {
 	buf[0] = '\0';
 	for (size_t i = 0; i < ARRAY_LEN(CapNames); ++i) {
 		if (caps & (1 << i)) {
-			if (buf[0]) strlcat(buf, " ", sizeof(buf));
-			strlcat(buf, CapNames[i], sizeof(buf));
+			catf(buf, sizeof(buf), "%s%s", (buf[0] ? " " : ""), CapNames[i]);
 		}
 	}
 	return buf;

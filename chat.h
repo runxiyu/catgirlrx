@@ -298,6 +298,3 @@ int getopt_config(
 
 // Defined in libcrypto if missing from libc:
 void explicit_bzero(void *b, size_t len);
-#ifndef strlcat
-size_t strlcat(char *restrict dst, const char *restrict src, size_t dstsize);
-#endif
