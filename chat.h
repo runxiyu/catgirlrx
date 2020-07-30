@@ -43,13 +43,20 @@
 typedef unsigned uint;
 typedef unsigned char byte;
 
-static inline void __attribute__((format(printf, 3, 4)))
-catf(char *buf, size_t cap, const char *format, ...) {
-	size_t len = strnlen(buf, cap);
+struct Cat {
+	char *buf;
+	size_t cap;
+	size_t len;
+};
+static inline void __attribute__((format(printf, 2, 3)))
+catf(struct Cat *cat, const char *format, ...) {
 	va_list ap;
 	va_start(ap, format);
-	assert(0 <= vsnprintf(&buf[len], cap - len, format, ap));
+	int len = vsnprintf(&cat->buf[cat->len], cat->cap - cat->len, format, ap);
+	assert(len >= 0);
 	va_end(ap);
+	cat->len += len;
+	if (cat->len >= cat->cap) cat->len = cat->cap - 1;
 }
 
 enum Color {

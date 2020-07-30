@@ -465,45 +465,38 @@ static void statusUpdate(void) {
 			if (window->heat > others.heat) others.heat = window->heat;
 		}
 		char buf[256] = "";
+		struct Cat cat = { buf, sizeof(buf), 0 };
 		catf(
-			buf, sizeof(buf), "\3%d%s %u ",
+			&cat, "\3%d%s %u ",
 			idColors[window->id], (num == windows.show ? "\26" : ""), num
 		);
 		if (!window->ignore || window->mute) {
-			catf(
-				buf, sizeof(buf), "%s%s ",
-				&"-"[window->ignore], &"="[!window->mute]
-			);
+			catf(&cat, "%s%s ", &"-"[window->ignore], &"="[!window->mute]);
 		}
-		catf(buf, sizeof(buf), "%s ", idNames[window->id]);
+		catf(&cat, "%s ", idNames[window->id]);
 		if (window->mark && window->unreadWarm) {
 			catf(
-				buf, sizeof(buf), "\3%d+%d\3%d%s",
+				&cat, "\3%d+%d\3%d%s",
 				(window->heat > Warm ? White : idColors[window->id]),
 				window->unreadWarm, idColors[window->id],
 				(window->scroll ? "" : " ")
 			);
 		}
 		if (window->scroll) {
-			catf(buf, sizeof(buf), "~%d ", window->scroll);
+			catf(&cat, "~%d ", window->scroll);
 		}
 		statusAdd(buf);
 	}
 	wclrtoeol(status);
 
+	struct Cat cat = { title, sizeof(title), 0 };
 	const struct Window *window = windows.ptrs[windows.show];
-	snprintf(title, sizeof(title), "%s %s", network.name, idNames[window->id]);
+	catf(&cat, "%s %s", network.name, idNames[window->id]);
 	if (window->mark && window->unreadWarm) {
-		catf(
-			title, sizeof(title), " +%d%s",
-			window->unreadWarm, &"!"[window->heat < Hot]
-		);
+		catf(&cat, " +%d%s", window->unreadWarm, &"!"[window->heat < Hot]);
 	}
 	if (others.unread) {
-		catf(
-			title, sizeof(title), " (+%d%s)",
-			others.unread, &"!"[others.heat < Hot]
-		);
+		catf(&cat, " (+%d%s)", others.unread, &"!"[others.heat < Hot]);
 	}
 }
 
@@ -638,10 +631,11 @@ static void notify(uint id, const char *str) {
 	struct Util util = uiNotifyUtil;
 	utilPush(&util, idNames[id]);
 	char buf[1024] = "";
+	struct Cat cat = { buf, sizeof(buf), 0 };
 	while (*str) {
 		struct Style style = Reset;
 		size_t len = styleParse(&style, &str);
-		catf(buf, sizeof(buf), "%.*s", (int)len, str);
+		catf(&cat, "%.*s", (int)len, str);
 		str += len;
 	}
 	utilPush(&util, buf);
