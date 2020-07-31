@@ -61,11 +61,12 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 	install -d -o root -g wheel \
 		root \
 		root/bin \
-		root/etc/ssl \
+		root/etc \
 		root/home \
 		root/lib \
 		root/libexec \
 		root/usr/bin \
+		root/usr/local/etc/ssl \
 		root/usr/share/man \
 		root/usr/share/misc
 	install -d -o ${CHROOT_USER} -g ${CHROOT_GROUP} \
@@ -83,7 +84,7 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 		root/lib
 	chflags noschg root/libexec/* root/lib/*
 	cp -fp /etc/hosts /etc/resolv.conf root/etc
-	cp -fp /etc/ssl/cert.pem root/etc/ssl
+	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
 	cp -af /usr/share/locale root/usr/share
 	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
 	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
