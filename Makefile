@@ -73,15 +73,8 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 		root/home/${CHROOT_USER} \
 		root/home/${CHROOT_USER}/.local/share
 	cp -fp /libexec/ld-elf.so.1 root/libexec
-	cp -fp \
-		/lib/libc.so.7 \
-		/lib/libncursesw.so.8 \
-		/lib/libthr.so.3 \
-		/lib/libz.so.6 \
-		/usr/local/lib/libcrypto.so.46 \
-		/usr/local/lib/libssl.so.48 \
-		/usr/local/lib/libtls.so.20 \
-		root/lib
+	ldd -f '%p\n' catgirl /usr/bin/mandoc /usr/bin/less \
+		| sort -u | xargs -t -J % cp -fp % root/lib
 	chflags noschg root/libexec/* root/lib/*
 	cp -fp /etc/hosts /etc/resolv.conf root/etc
 	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
