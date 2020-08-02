@@ -45,17 +45,19 @@ const char *ignoreAdd(const char *pattern) {
 		if (*ch == ' ') sp++;
 	}
 	char **dest = &ignore.patterns[ignore.len++];
+	int n = 0;
 	if (!ex && !sp) {
-		asprintf(dest, "%s!*@* * * *", pattern);
+		n = asprintf(dest, "%s!*@* * * *", pattern);
 	} else if (sp < 1) {
-		asprintf(dest, "%s * * *", pattern);
+		n = asprintf(dest, "%s * * *", pattern);
 	} else if (sp < 2) {
-		asprintf(dest, "%s * *", pattern);
+		n = asprintf(dest, "%s * *", pattern);
 	} else if (sp < 3) {
-		asprintf(dest, "%s *", pattern);
+		n = asprintf(dest, "%s *", pattern);
 	} else {
 		*dest = strdup(pattern);
 	}
+	if (n < 0) err(EX_OSERR, "asprintf");
 	if (!*dest) err(EX_OSERR, "strdup");
 	return *dest;
 }
