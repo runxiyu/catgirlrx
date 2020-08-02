@@ -87,6 +87,7 @@ static const struct {
 	const wchar_t *name;
 	const wchar_t *string;
 } Macros[] = {
+	{ L"\\banhammer", L"▬▬▬▬▬▬▬▋ Ò╭╮Ó" },
 	{ L"\\bear", L"ʕっ•ᴥ•ʔっ" },
 	{ L"\\blush", L"（˶′◡‵˶）" },
 	{ L"\\cool", L"(⌐■_■)" },
