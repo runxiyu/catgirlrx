@@ -1,4 +1,4 @@
-.Dd July 23, 2020
+.Dd August  4, 2020
 .Dt README 7
 .Os "Causal Agency"
 .\" To view this file, run: man ./README.7
@@ -82,10 +82,12 @@ and certificates are easy to obtain.
 .
 .Sh INSTALLING
 .Nm
-requires LibreSSL
-.Pq Fl ltls
-and ncurses
-.Pq Fl lncursesw .
+requires ncurses and
+.Sy libtls ,
+provided by either
+.Lk https://git.causal.agency/libretls/about LibreTLS
+(with OpenSSL)
+or by LibreSSL.
 It targets
 .Fx ,
 .Ox ,
@@ -102,32 +104,28 @@ sudo make install
 .Ed
 .
 .Pp
-If your system installs LibreSSL
-in a non-standard path, set
+If installing
+.Sy libtls
+manually to
+.Pa /usr/local ,
+for example,
+make sure
+.Pa /usr/local/lib
+appears in
+.Pa /etc/ld.so.conf
+or
+.Pa /etc/ld.so.conf.d/*
+and be sure to run
+.Xr ldconfig 8
+once the library is installed.
+Set
 .Ev PKG_CONFIG_PATH
 for
-.Nm ./configure .
-For example,
+.Nm ./configure
+to find it.
 .Bd -literal -offset indent
-PKG_CONFIG_PATH=/opt/libressl/lib/pkgconfig ./configure
+PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure
 .Ed
-.
-.Pp
-If your system is incapable of providing LibreSSL,
-consider building it manually and installing to
-.Pa /usr/local ,
-adding
-.Pa /usr/local/lib
-to
-.Pa /etc/ld.so.conf
-and running
-.Xr ldconfig 8
-if needed.
-It may also be necessary to create
-.Pa /etc/ssl/cert.pem
-as a symbolic link to
-.Pa /etc/ssl/certs/ca-certificates.crt
-or similar path.
 .
 .Pp
 The
