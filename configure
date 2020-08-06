@@ -34,7 +34,7 @@ case "$(uname)" in
 	(FreeBSD)
 		ldlibs -lncursesw
 		config libtls
-		defvar OPENSSL_BIN openssl exec_prefix /bin/openssl
+		defstr OPENSSL_BIN /usr/bin/openssl
 		;;
 	(OpenBSD)
 		ldlibs -lncursesw -ltls
