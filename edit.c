@@ -163,11 +163,13 @@ static void tabComplete(uint id) {
 		return;
 	}
 
+	bool colon = (tab.len >= 2 && buf[tab.pos + tab.len - 2] == L':');
+
 	delete(false, tab.pos, tab.len);
 	tab.len = n;
 	if (wcs[0] == L'\\' || wcschr(wcs, L' ')) {
 		reserve(tab.pos, tab.len);
-	} else if (wcs[0] != L'/' && !tab.pos) {
+	} else if (wcs[0] != L'/' && (!tab.pos || colon)) {
 		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n + 0] = L':';
