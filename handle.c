@@ -1061,7 +1061,7 @@ static bool isAction(struct Message *msg) {
 static bool isMention(const struct Message *msg) {
 	size_t len = strlen(self.nick);
 	const char *match = msg->params[1];
-	while (NULL != (match = strcasestr(match, self.nick))) {
+	while (NULL != (match = strstr(match, self.nick))) {
 		char a = (match > msg->params[1] ? match[-1] : ' ');
 		char b = (match[len] ?: ' ');
 		if ((isspace(a) || ispunct(a)) && (isspace(b) || ispunct(b))) {
