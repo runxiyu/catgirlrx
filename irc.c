@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <err.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -43,22 +44,7 @@
 
 struct tls *client;
 
-static byte *readFile(size_t *len, FILE *file) {
-	struct stat stat;
-	int error = fstat(fileno(file), &stat);
-	if (error) err(EX_IOERR, "fstat");
-
-	byte *buf = malloc(stat.st_size);
-	if (!buf) err(EX_OSERR, "malloc");
-
-	rewind(file);
-	*len = fread(buf, 1, stat.st_size, file);
-	if (ferror(file)) err(EX_IOERR, "fread");
-
-	return buf;
-}
-
-void ircConfig(bool insecure, FILE *cert, FILE *priv) {
+void ircConfig(bool insecure, const char *cert, const char *priv) {
 	struct tls_config *config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
@@ -75,29 +61,28 @@ void ircConfig(bool insecure, FILE *cert, FILE *priv) {
 		tls_config_insecure_noverifyname(config);
 	}
 
+	const char *path;
+	const char *dirs;
+	char buf[PATH_MAX];
 	if (cert) {
-		size_t len;
-		byte *buf = readFile(&len, cert);
-		error = tls_config_set_cert_mem(config, buf, len);
-		if (error) {
-			errx(
-				EX_CONFIG, "tls_config_set_cert_mem: %s",
-				tls_config_error(config)
-			);
+		dirs = NULL;
+		while (NULL != (path = configPath(buf, sizeof(buf), &dirs, cert))) {
+			if (priv) {
+				error = tls_config_set_cert_file(config, path);
+			} else {
+				error = tls_config_set_keypair_file(config, path, path);
+			}
+			if (!error) break;
 		}
-		if (priv) {
-			free(buf);
-			buf = readFile(&len, priv);
+		if (error) errx(EX_NOINPUT, "%s: %s", cert, tls_config_error(config));
+	}
+	if (priv) {
+		dirs = NULL;
+		while (NULL != (path = configPath(buf, sizeof(buf), &dirs, priv))) {
+			error = tls_config_set_key_file(config, path);
+			if (!error) break;
 		}
-		error = tls_config_set_key_mem(config, buf, len);
-		if (error) {
-			errx(
-				EX_CONFIG, "tls_config_set_key_mem: %s",
-				tls_config_error(config)
-			);
-		}
-		explicit_bzero(buf, len);
-		free(buf);
+		if (error) errx(EX_NOINPUT, "%s: %s", priv, tls_config_error(config));
 	}
 
 	client = tls_client();

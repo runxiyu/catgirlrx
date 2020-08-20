@@ -220,19 +220,7 @@ int main(int argc, char *argv[]) {
 	editCompleteAdd();
 	commandCompleteAdd();
 
-	FILE *certFile = NULL;
-	FILE *privFile = NULL;
-	if (cert) {
-		certFile = configOpen(cert, "r");
-		if (!certFile) return EX_NOINPUT;
-	}
-	if (priv) {
-		privFile = configOpen(priv, "r");
-		if (!privFile) return EX_NOINPUT;
-	}
-	ircConfig(insecure, certFile, privFile);
-	if (certFile) fclose(certFile);
-	if (privFile) fclose(privFile);
+	ircConfig(insecure, cert, priv);
 
 	uiInit();
 	if (save) {
