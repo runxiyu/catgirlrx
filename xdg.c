@@ -37,121 +37,113 @@
 
 #define SUBDIR "catgirl"
 
-FILE *configOpen(const char *path, const char *mode) {
-	if (path[0] == '/' || path[0] == '.') goto local;
+struct Base {
+	const char *envHome;
+	const char *envDirs;
+	const char *defHome;
+	const char *defDirs;
+};
+
+static const struct Base Config = {
+	.envHome = "XDG_CONFIG_HOME",
+	.envDirs = "XDG_CONFIG_DIRS",
+	.defHome = ".config",
+	.defDirs = "/etc/xdg",
+};
+
+static const struct Base Data = {
+	.envHome = "XDG_DATA_HOME",
+	.envDirs = "XDG_DATA_DIRS",
+	.defHome = ".local/share",
+	.defDirs = "/usr/local/share:/usr/share",
+};
+
+static const char *basePath(
+	struct Base base,
+	char *buf, size_t cap, const char **dirs, const char *path
+) {
+	if (*dirs) {
+		if (!**dirs) return NULL;
+		size_t len = strcspn(*dirs, ":");
+		snprintf(buf, cap, "%.*s/" SUBDIR "/%s", (int)len, *dirs, path);
+		*dirs += len;
+		if (**dirs) *dirs += 1;
+		return buf;
+	}
+
+	if (path[0] == '/' || path[0] == '.') {
+		*dirs = "";
+		return path;
+	}
+
+	*dirs = getenv(base.envDirs);
+	if (!*dirs) *dirs = base.defDirs;
 
 	const char *home = getenv("HOME");
-	const char *configHome = getenv("XDG_CONFIG_HOME");
-	const char *configDirs = getenv("XDG_CONFIG_DIRS");
-
-	char buf[PATH_MAX];
-	if (configHome) {
-		snprintf(buf, sizeof(buf), "%s/" SUBDIR "/%s", configHome, path);
+	const char *baseHome = getenv(base.envHome);
+	if (baseHome) {
+		snprintf(buf, cap, "%s/" SUBDIR "/%s", baseHome, path);
 	} else {
-		if (!home) goto local;
-		snprintf(buf, sizeof(buf), "%s/.config/" SUBDIR "/%s", home, path);
+		if (!home) return NULL;
+		snprintf(buf, cap, "%s/%s/" SUBDIR "/%s", home, base.defHome, path);
 	}
-	FILE *file = fopen(buf, mode);
-	if (file) return file;
-	if (errno != ENOENT) warn("%s", buf);
-
-	if (!configDirs) configDirs = "/etc/xdg";
-	while (*configDirs) {
-		size_t len = strcspn(configDirs, ":");
-		snprintf(
-			buf, sizeof(buf), "%.*s/" SUBDIR "/%s",
-			(int)len, configDirs, path
-		);
-		file = fopen(buf, mode);
-		if (file) return file;
-		if (errno != ENOENT) warn("%s", buf);
-		configDirs += len;
-		if (*configDirs) configDirs++;
-	}
-
-local:
-	file = fopen(path, mode);
-	if (!file) warn("%s", path);
-	return file;
+	return buf;
 }
 
-FILE *dataOpen(const char *path, const char *mode) {
-	if (path[0] == '/' || path[0] == '.') goto local;
+const char *
+configPath(char *buf, size_t cap, const char **dirs, const char *path) {
+	return basePath(Config, buf, cap, dirs, path);
+}
 
-	const char *home = getenv("HOME");
-	const char *dataHome = getenv("XDG_DATA_HOME");
-	const char *dataDirs = getenv("XDG_DATA_DIRS");
+const char *
+dataPath(char *buf, size_t cap, const char **dirs, const char *path) {
+	return basePath(Data, buf, cap, dirs, path);
+}
 
-	char homePath[PATH_MAX];
-	if (dataHome) {
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/" SUBDIR "/%s", dataHome, path
-		);
-	} else {
-		if (!home) goto local;
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/.local/share/" SUBDIR "/%s", home, path
-		);
-	}
-	FILE *file = fopen(homePath, mode);
-	if (file) return file;
-	if (errno != ENOENT) warn("%s", homePath);
-
+FILE *configOpen(const char *path, const char *mode) {
+	const char *abs;
 	char buf[PATH_MAX];
-	if (!dataDirs) dataDirs = "/usr/local/share:/usr/share";
-	while (*dataDirs) {
-		size_t len = strcspn(dataDirs, ":");
-		snprintf(
-			buf, sizeof(buf), "%.*s/" SUBDIR "/%s",
-			(int)len, dataDirs, path
-		);
-		file = fopen(buf, mode);
+	const char *dirs = NULL;
+	while (NULL != (abs = configPath(buf, sizeof(buf), &dirs, path))) {
+		FILE *file = fopen(abs, mode);
 		if (file) return file;
-		if (errno != ENOENT) warn("%s", buf);
-		dataDirs += len;
-		if (*dataDirs) dataDirs++;
+		if (errno != ENOENT) warn("%s", abs);
 	}
-
-	if (mode[0] != 'r') {
-		char *base = strrchr(homePath, '/');
-		*base = '\0';
-		int error = mkdir(homePath, S_IRWXU);
-		if (error && errno != EEXIST) {
-			warn("%s", homePath);
-			return NULL;
-		}
-		*base = '/';
-		file = fopen(homePath, mode);
-		if (!file) warn("%s", homePath);
-		return file;
-	}
-
-local:
-	file = fopen(path, mode);
+	FILE *file = fopen(path, mode);
 	if (!file) warn("%s", path);
 	return file;
 }
 
 void dataMkdir(const char *path) {
-	const char *home = getenv("HOME");
-	const char *dataHome = getenv("XDG_DATA_HOME");
+	char buf[PATH_MAX];
+	const char *dirs = NULL;
+	const char *abs = dataPath(buf, sizeof(buf), &dirs, path);
+	int error = mkdir(abs, S_IRWXU);
+	if (error && errno != EEXIST) warn("%s", abs);
+}
 
-	char homePath[PATH_MAX];
-	if (dataHome) {
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/" SUBDIR "/%s", dataHome, path
-		);
-	} else {
-		if (!home) return;
-		snprintf(
-			homePath, sizeof(homePath),
-			"%s/.local/share/" SUBDIR "/%s", home, path
-		);
+FILE *dataOpen(const char *path, const char *mode) {
+	const char *abs;
+	char buf[PATH_MAX];
+	const char *dirs = NULL;
+	while (NULL != (abs = dataPath(buf, sizeof(buf), &dirs, path))) {
+		FILE *file = fopen(abs, mode);
+		if (file) return file;
+		if (errno != ENOENT) warn("%s", abs);
 	}
 
-	int error = mkdir(homePath, S_IRWXU);
-	if (error && errno != EEXIST) warn("%s", homePath);
+	if (mode[0] != 'r') {
+		dirs = NULL;
+		abs = dataPath(buf, sizeof(buf), &dirs, path);
+		if (!abs) return NULL;
+
+		dataMkdir("");
+		FILE *file = fopen(abs, mode);
+		if (!file) warn("%s", abs);
+		return file;
+	}
+
+	FILE *file = fopen(path, mode);
+	if (!file) warn("%s", path);
+	return file;
 }
