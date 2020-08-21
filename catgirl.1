@@ -1,4 +1,4 @@
-.Dd July 13, 2020
+.Dd August 20, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -121,6 +121,10 @@ it is recommended to use SASL EXTERNAL instead with
 .It Fl c Ar path , Cm cert = Ar path
 Load the TLS client certificate from
 .Ar path .
+The
+.Ar path
+is searched for in the same manner
+as configuration files.
 If the private key is in a separate file,
 it is loaded with
 .Fl k .
@@ -172,6 +176,10 @@ Join the comma-separated list of channels
 .It Fl k Ar path , Cm priv = Ar priv
 Load the TLS client private key from
 .Ar path .
+The
+.Ar path
+is searched for in the same manner
+as configuration files.
 .
 .It Fl l , Cm log
 Log chat events to files in paths
