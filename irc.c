@@ -27,7 +27,6 @@
 
 #include <assert.h>
 #include <err.h>
-#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -61,12 +60,9 @@ void ircConfig(bool insecure, const char *cert, const char *priv) {
 		tls_config_insecure_noverifyname(config);
 	}
 
-	const char *path;
-	const char *dirs;
-	char buf[PATH_MAX];
 	if (cert) {
-		dirs = NULL;
-		while (NULL != (path = configPath(buf, sizeof(buf), &dirs, cert))) {
+		const char *dirs = NULL;
+		for (const char *path; NULL != (path = configPath(&dirs, cert));) {
 			if (priv) {
 				error = tls_config_set_cert_file(config, path);
 			} else {
@@ -77,8 +73,8 @@ void ircConfig(bool insecure, const char *cert, const char *priv) {
 		if (error) errx(EX_NOINPUT, "%s: %s", cert, tls_config_error(config));
 	}
 	if (priv) {
-		dirs = NULL;
-		while (NULL != (path = configPath(buf, sizeof(buf), &dirs, priv))) {
+		const char *dirs = NULL;
+		for (const char *path; NULL != (path = configPath(&dirs, priv));) {
 			error = tls_config_set_key_file(config, path);
 			if (!error) break;
 		}

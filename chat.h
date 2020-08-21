@@ -294,12 +294,8 @@ void logFormat(uint id, const time_t *time, const char *format, ...)
 	__attribute__((format(printf, 3, 4)));
 void logClose(void);
 
-const char *configPath(
-	char *buf, size_t cap, const char **dirs, const char *path
-);
-const char *dataPath(
-	char *buf, size_t cap, const char **dirs, const char *path
-);
+const char *configPath(const char **dirs, const char *path);
+const char *dataPath(const char **dirs, const char *path);
 FILE *configOpen(const char *path, const char *mode);
 FILE *dataOpen(const char *path, const char *mode);
 void dataMkdir(const char *path);
