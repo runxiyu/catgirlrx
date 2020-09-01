@@ -372,12 +372,6 @@ void uiDraw(void) {
 	fflush(stdout);
 }
 
-struct Style {
-	attr_t attr;
-	enum Color fg, bg;
-};
-static const struct Style Reset = { A_NORMAL, Default, Default };
-
 static const short Colors[ColorCap] = {
 	[Default]    = -1,
 	[White]      = 8 + COLOR_WHITE,
@@ -405,43 +399,24 @@ static const short Colors[ColorCap] = {
 	16, 233, 235, 237, 239, 241, 244, 247, 250, 254, 231,
 };
 
-enum { B = '\2', C = '\3', O = '\17', R = '\26', I = '\35', U = '\37' };
+static attr_t styleAttr(struct Style style) {
+	attr_t attr = A_NORMAL;
+	if (style.attr & Bold) attr |= A_BOLD;
+	if (style.attr & Reverse) attr |= A_REVERSE;
+	if (style.attr & Italic) attr |= A_ITALIC;
+	if (style.attr & Underline) attr |= A_UNDERLINE;
+	return attr | colorAttr(Colors[style.fg]);
+}
 
-static size_t styleParse(struct Style *style, const char **str) {
-	switch (**str) {
-		break; case B: (*str)++; style->attr ^= A_BOLD;
-		break; case O: (*str)++; *style = Reset;
-		break; case R: (*str)++; style->attr ^= A_REVERSE;
-		break; case I: (*str)++; style->attr ^= A_ITALIC;
-		break; case U: (*str)++; style->attr ^= A_UNDERLINE;
-		break; case C: {
-			(*str)++;
-			if (!isdigit(**str)) {
-				style->fg = Default;
-				style->bg = Default;
-				break;
-			}
-			style->fg = *(*str)++ - '0';
-			if (isdigit(**str)) style->fg = style->fg * 10 + *(*str)++ - '0';
-			if ((*str)[0] != ',' || !isdigit((*str)[1])) break;
-			(*str)++;
-			style->bg = *(*str)++ - '0';
-			if (isdigit(**str)) style->bg = style->bg * 10 + *(*str)++ - '0';
-		}
-	}
-	return strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
+static short stylePair(struct Style style) {
+	return colorPair(Colors[style.fg], Colors[style.bg]);
 }
 
 static void statusAdd(const char *str) {
-	struct Style style = Reset;
+	struct Style style = StyleDefault;
 	while (*str) {
 		size_t len = styleParse(&style, &str);
-		wattr_set(
-			status,
-			style.attr | colorAttr(Colors[style.fg]),
-			colorPair(Colors[style.fg], Colors[style.bg]),
-			NULL
-		);
+		wattr_set(status, styleAttr(style), stylePair(style), NULL);
 		waddnstr(status, str, len);
 		str += len;
 	}
@@ -587,7 +562,7 @@ static int wordWrap(WINDOW *win, const char *str) {
 
 	int lines = 1;
 	int align = 0;
-	struct Style style = Reset;
+	struct Style style = StyleDefault;
 	while (*str) {
 		char ch = *str;
 		if (ch == ' ' || ch == '\t') {
@@ -612,12 +587,7 @@ static int wordWrap(WINDOW *win, const char *str) {
 		size_t ws = strcspn(str, " \t");
 		if (ws < len) len = ws;
 
-		wattr_set(
-			win,
-			style.attr | colorAttr(Colors[style.fg]),
-			colorPair(Colors[style.fg], Colors[style.bg]),
-			NULL
-		);
+		wattr_set(win, styleAttr(style), stylePair(style), NULL);
 		waddnstrnzw(win, str, len);
 		str += len;
 	}
@@ -633,7 +603,7 @@ static void notify(uint id, const char *str) {
 	char buf[1024] = "";
 	struct Cat cat = { buf, sizeof(buf), 0 };
 	while (*str) {
-		struct Style style = Reset;
+		struct Style style = StyleDefault;
 		size_t len = styleParse(&style, &str);
 		catf(&cat, "%.*s", (int)len, str);
 		str += len;
@@ -749,7 +719,7 @@ static void bufferList(const struct Buffer *buffer) {
 		printf("[%s] ", buf);
 
 		bool align = false;
-		struct Style style = Reset;
+		struct Style style = StyleDefault;
 		while (*line.str) {
 			if (*line.str == '\t') {
 				printf("%c", (align ? '\t' : ' '));
@@ -761,11 +731,7 @@ static void bufferList(const struct Buffer *buffer) {
 			size_t tab = strcspn(line.str, "\t");
 			if (tab < len) len = tab;
 
-			vid_attr(
-				style.attr | colorAttr(Colors[style.fg]),
-				colorPair(Colors[style.fg], Colors[style.bg]),
-				NULL
-			);
+			vid_attr(styleAttr(style), stylePair(style), NULL);
 			printf("%.*s", (int)len, line.str);
 			line.str += len;
 		}
@@ -794,12 +760,7 @@ static void inputAdd(struct Style *style, const char *str) {
 		}
 		size_t nl = strcspn(str, "\n");
 		if (nl < len) len = nl;
-		wattr_set(
-			input,
-			style->attr | colorAttr(Colors[style->fg]),
-			colorPair(Colors[style->fg], Colors[style->bg]),
-			NULL
-		);
+		wattr_set(input, styleAttr(*style), stylePair(*style), NULL);
 		waddnstr(input, str, len);
 		str += len;
 	}
@@ -815,7 +776,7 @@ static void inputUpdate(void) {
 	const char *suffix = "";
 	const char *skip = buf;
 	struct Style stylePrompt = { .fg = self.color, .bg = Default };
-	struct Style styleInput = Reset;
+	struct Style styleInput = StyleDefault;
 
 	const char *privmsg = commandIsPrivmsg(id, buf);
 	const char *notice = commandIsNotice(id, buf);
@@ -829,8 +790,8 @@ static void inputUpdate(void) {
 		skip = notice;
 	} else if (action) {
 		prefix = "* "; suffix = " ";
-		stylePrompt.attr |= A_ITALIC;
-		styleInput.attr |= A_ITALIC;
+		stylePrompt.attr |= Italic;
+		styleInput.attr |= Italic;
 		skip = action;
 	} else if (id == Debug && buf[0] != '/') {
 		prompt = "<< ";
@@ -845,12 +806,7 @@ static void inputUpdate(void) {
 
 	int y, x;
 	wmove(input, 0, 0);
-	wattr_set(
-		input,
-		stylePrompt.attr | colorAttr(Colors[stylePrompt.fg]),
-		colorPair(Colors[stylePrompt.fg], Colors[stylePrompt.bg]),
-		NULL
-	);
+	wattr_set(input, styleAttr(stylePrompt), stylePair(stylePrompt), NULL);
 	waddstr(input, prefix);
 	waddstr(input, prompt);
 	waddstr(input, suffix);

@@ -26,6 +26,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <err.h>
 #include <getopt.h>
 #include <stdarg.h>
@@ -59,12 +60,50 @@ catf(struct Cat *cat, const char *format, ...) {
 	if (cat->len >= cat->cap) cat->len = cat->cap - 1;
 }
 
+enum Attr {
+	BIT(Bold),
+	BIT(Reverse),
+	BIT(Italic),
+	BIT(Underline),
+};
 enum Color {
 	White, Black, Blue, Green, Red, Brown, Magenta, Orange,
 	Yellow, LightGreen, Cyan, LightCyan, LightBlue, Pink, Gray, LightGray,
 	Default = 99,
 	ColorCap,
 };
+struct Style {
+	enum Attr attr;
+	enum Color fg, bg;
+};
+
+static const struct Style StyleDefault = { 0, Default, Default };
+enum { B = '\2', C = '\3', O = '\17', R = '\26', I = '\35', U = '\37' };
+
+static inline size_t styleParse(struct Style *style, const char **str) {
+	switch (**str) {
+		break; case B: (*str)++; style->attr ^= Bold;
+		break; case O: (*str)++; *style = StyleDefault;
+		break; case R: (*str)++; style->attr ^= Reverse;
+		break; case I: (*str)++; style->attr ^= Italic;
+		break; case U: (*str)++; style->attr ^= Underline;
+		break; case C: {
+			(*str)++;
+			if (!isdigit(**str)) {
+				style->fg = Default;
+				style->bg = Default;
+				break;
+			}
+			style->fg = *(*str)++ - '0';
+			if (isdigit(**str)) style->fg = style->fg * 10 + *(*str)++ - '0';
+			if ((*str)[0] != ',' || !isdigit((*str)[1])) break;
+			(*str)++;
+			style->bg = *(*str)++ - '0';
+			if (isdigit(**str)) style->bg = style->bg * 10 + *(*str)++ - '0';
+		}
+	}
+	return strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
+}
 
 enum { None, Debug, Network, IDCap = 256 };
 extern char *idNames[IDCap];
