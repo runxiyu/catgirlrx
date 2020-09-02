@@ -33,6 +33,7 @@
 #include <sysexits.h>
 #include <time.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #include "chat.h"
 
@@ -160,10 +161,10 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		if (!line->str) err(EX_OSERR, "malloc");
 
 		struct Cat cat = { line->str, cap, 0 };
+		catf(&cat, "%*s%n", align, "", &width);
 		styleCat(&cat, style);
 		str = &line->str[cat.len];
-		catf(&cat, "%*s%n%s", align, "", &width, &wrap[n]);
-		str += width;
+		catf(&cat, "%s", &wrap[n]);
 
 		*wrap = '\0';
 		wrap = NULL;
