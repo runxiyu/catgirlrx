@@ -447,19 +447,24 @@ void uiHide(void) {
 	endwin();
 }
 
+static void mainAdd(int y, const char *str) {
+	int ny, nx;
+	wmove(main, y, 0);
+	styleAdd(main, str);
+	getyx(main, ny, nx);
+	if (ny == y) wclrtoeol(main);
+}
+
 static void windowUpdate(void) {
 	struct Window *window = windows.ptrs[windows.show];
 
 	int y = MAIN_LINES - 1;
-	for (size_t i = BufferCap - 1 - window->scroll; i < BufferCap; --i) {
+	size_t bottom = BufferCap - 1 - window->scroll + !!window->scroll;
+	for (size_t i = bottom; i < BufferCap; --i) {
 		const struct Line *line = bufferHard(window->buffer, i);
 		if (!line) continue;
 		if (line->heat < Cold && window->ignore) continue;
-		wmove(main, y, 0);
-		styleAdd(main, line->str);
-		int ny, nx;
-		getyx(main, ny, nx);
-		if (ny == y) wclrtoeol(main);
+		mainAdd(y, line->str);
 		if (!y--) break;
 	}
 
@@ -467,6 +472,18 @@ static void windowUpdate(void) {
 		wmove(main, y--, 0);
 		wclrtoeol(main);
 	}
+	if (!window->scroll) return;
+
+	y = MAIN_LINES - 1;
+	for (size_t i = BufferCap - 1; i < BufferCap; --i) {
+		const struct Line *line = bufferHard(window->buffer, i);
+		if (!line) continue;
+		if (line->heat < Cold && window->ignore) continue;
+		mainAdd(y, line->str);
+		if (--y < MAIN_LINES - SplitLines) break;
+	}
+	wattr_set(main, A_NORMAL, 0, NULL);
+	mvwhline(main, y, 0, ACS_BULLET, COLS);
 }
 
 static void windowScroll(struct Window *window, int n) {
