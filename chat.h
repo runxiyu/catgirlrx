@@ -287,7 +287,7 @@ struct Buffer *bufferAlloc(void);
 void bufferFree(struct Buffer *buffer);
 const struct Line *bufferSoft(const struct Buffer *buffer, size_t i);
 const struct Line *bufferHard(const struct Buffer *buffer, size_t i);
-void bufferPush(
+int bufferPush(
 	struct Buffer *buffer, int cols,
 	enum Heat heat, time_t time, const char *str
 );

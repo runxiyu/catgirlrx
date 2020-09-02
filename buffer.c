@@ -28,8 +28,10 @@
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sysexits.h>
 #include <time.h>
+#include <wchar.h>
 
 #include "chat.h"
 
@@ -63,6 +65,12 @@ static const struct Line *linesLine(const struct Lines *lines, size_t i) {
 	return (line->str ? line : NULL);
 }
 
+static struct Line *linesNext(struct Lines *lines) {
+	struct Line *line = &lines->lines[lines->len++ % BufferCap];
+	free(line->str);
+	return line;
+}
+
 const struct Line *bufferSoft(const struct Buffer *buffer, size_t i) {
 	return linesLine(&buffer->soft, i);
 }
@@ -71,23 +79,103 @@ const struct Line *bufferHard(const struct Buffer *buffer, size_t i) {
 	return linesLine(&buffer->hard, i);
 }
 
-static void flow(struct Lines *hard, int cols, const struct Line *soft) {
-	(void)hard;
-	(void)cols;
-	(void)soft;
+enum { StyleCap = 10 };
+static void styleCat(struct Cat *cat, struct Style style) {
+	catf(
+		cat, "%s%s%s%s",
+		(style.attr & Bold ? (const char []) { B, '\0' } : ""),
+		(style.attr & Reverse ? (const char []) { R, '\0' } : ""),
+		(style.attr & Italic ? (const char []) { I, '\0' } : ""),
+		(style.attr & Underline ? (const char []) { U, '\0' } : "")
+	);
+	if (style.fg != Default || style.bg != Default) {
+		catf(cat, "\3%02d,%02d", style.fg, style.bg);
+	}
 }
 
-void bufferPush(
+static const wchar_t ZWS = L'\u200B';
+static const wchar_t ZWNJ = L'\u200C';
+
+static int flow(struct Lines *hard, int cols, const struct Line *soft) {
+	int flowed = 1;
+
+	struct Line *line = linesNext(hard);
+	line->heat = soft->heat;
+	line->time = soft->time;
+	line->str = strdup(soft->str);
+	if (!line->str) err(EX_OSERR, "strdup");
+
+	int width = 0;
+	int align = 0;
+	char *wrap = NULL;
+	struct Style style = StyleDefault;
+	for (char *str = line->str; *str;) {
+		size_t len = styleParse(&style, (const char **)&str);
+		if (*str == '\t' && !align) {
+			align = width + 1;
+			*str = ' ';
+		}
+		if (isspace(*str) || *str == '-') {
+			wrap = str;
+		}
+
+		wchar_t wc;
+		int n = mbtowc(&wc, str, len);
+		if (n <= 0) continue;
+		if (wc == ZWS || wc == ZWNJ) {
+			// XXX: ncurses likes to render these as spaces when they should be
+			// zero-width, so just remove them entirely.
+			memmove(str, &str[n], strlen(&str[n]) + 1);
+			continue;
+		} else if (wc < L' ') {
+			// XXX: ncurses will render these as "^A".
+			width += 2;
+		} else if (wcwidth(wc) > 0) {
+			width += wcwidth(wc);
+		}
+
+		if (width < cols) {
+			str += n;
+			continue;
+		}
+		if (!wrap) wrap = str;
+
+		flowed++;
+		line = linesNext(hard);
+		line->heat = soft->heat;
+		line->time = soft->time;
+
+		size_t cap = StyleCap + align + strlen(&wrap[1]) + 1;
+		line->str = malloc(cap);
+		if (!line->str) err(EX_OSERR, "malloc");
+
+		struct Cat cat = { line->str, cap, 0 };
+		styleCat(&cat, style);
+		str = &line->str[cat.len];
+		catf(&cat, "%*s%n%s", align, "", &width, &wrap[1]);
+		str += width;
+
+		if (isspace(*wrap)) {
+			wrap[0] = '\0';
+		} else {
+			wrap[1] = '\0';
+		}
+		wrap = NULL;
+	}
+
+	return flowed;
+}
+
+int bufferPush(
 	struct Buffer *buffer, int cols,
 	enum Heat heat, time_t time, const char *str
 ) {
-	struct Line *soft = &buffer->soft.lines[buffer->soft.len++ % BufferCap];
-	free(soft->str);
+	struct Line *soft = linesNext(&buffer->soft);
 	soft->heat = heat;
 	soft->time = time;
 	soft->str = strdup(str);
 	if (!soft->str) err(EX_OSERR, "strdup");
-	flow(&buffer->hard, cols, soft);
+	return flow(&buffer->hard, cols, soft);
 }
 
 void bufferReflow(struct Buffer *buffer, int cols) {
