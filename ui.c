@@ -462,8 +462,7 @@ static void windowUpdate(void) {
 	size_t bottom = BufferCap - 1 - window->scroll + !!window->scroll;
 	for (size_t i = bottom; i < BufferCap; --i) {
 		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line) continue;
-		if (line->heat < Cold && window->ignore) continue;
+		if (!line) break;
 		mainAdd(y, line->str);
 		if (!y--) break;
 	}
@@ -477,8 +476,7 @@ static void windowUpdate(void) {
 	y = MAIN_LINES - 1;
 	for (size_t i = BufferCap - 1; i < BufferCap; --i) {
 		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line) continue;
-		if (line->heat < Cold && window->ignore) continue;
+		if (!line) break;
 		mainAdd(y, line->str);
 		if (--y < MAIN_LINES - SplitLines) break;
 	}
@@ -537,21 +535,19 @@ static void notify(uint id, const char *str) {
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
-	if (heat < Cold && window->ignore) {
-		window->unreadHard += bufferPush(window->buffer, COLS, heat, ts, str);
-		return;
-	}
 
 	int lines = 0;
-	if (!window->unreadSoft++) window->unreadHard = 0;
+	if (heat > Ice || !window->ignore) {
+		if (!window->unreadSoft++) window->unreadHard = 0;
+	}
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
-			lines += bufferPush(window->buffer, COLS, Cold, 0, "");
+			lines += bufferPush(window->buffer, COLS, false, Cold, 0, "");
 		}
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
-	lines += bufferPush(window->buffer, COLS, heat, ts, str);
+	lines += bufferPush(window->buffer, COLS, window->ignore, heat, ts, str);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (window == windows.ptrs[windows.show]) windowUpdate();
@@ -579,7 +575,8 @@ static void resize(void) {
 	wclear(main);
 	wresize(main, MAIN_LINES, COLS);
 	for (uint num = 0; num < windows.len; ++num) {
-		bufferReflow(windows.ptrs[num]->buffer, COLS);
+		struct Window *window = windows.ptrs[num];
+		bufferReflow(window->buffer, COLS, window->ignore);
 	}
 	windowUpdate();
 }
@@ -756,6 +753,7 @@ void uiCloseNum(uint num) {
 
 static void toggleIgnore(struct Window *window) {
 	window->ignore ^= true;
+	bufferReflow(window->buffer, COLS, window->ignore);
 	windowUpdate();
 	statusUpdate();
 }
@@ -789,7 +787,7 @@ static void showAuto(void) {
 }
 
 static void insertBlank(struct Window *window) {
-	int lines = bufferPush(window->buffer, COLS, Cold, 0, "");
+	int lines = bufferPush(window->buffer, COLS, false, Cold, 0, "");
 	window->unreadHard += lines;
 	if (window->scroll) {
 		windowScroll(window, lines);
@@ -1015,7 +1013,7 @@ void uiLoad(const char *name) {
 			if (!time) break;
 			enum Heat heat = (version > 2 ? readTime(file) : Cold);
 			readString(file, &buf, &cap);
-			bufferPush(window->buffer, COLS, heat, time, buf);
+			bufferPush(window->buffer, COLS, window->ignore, heat, time, buf);
 		}
 	}
 

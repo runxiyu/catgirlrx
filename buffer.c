@@ -174,7 +174,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 }
 
 int bufferPush(
-	struct Buffer *buffer, int cols,
+	struct Buffer *buffer, int cols, bool ignore,
 	enum Heat heat, time_t time, const char *str
 ) {
 	struct Line *soft = linesNext(&buffer->soft);
@@ -182,10 +182,11 @@ int bufferPush(
 	soft->time = time;
 	soft->str = strdup(str);
 	if (!soft->str) err(EX_OSERR, "strdup");
+	if (heat < Cold && ignore) return 0;
 	return flow(&buffer->hard, cols, soft);
 }
 
-void bufferReflow(struct Buffer *buffer, int cols) {
+void bufferReflow(struct Buffer *buffer, int cols, bool ignore) {
 	buffer->hard.len = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		free(buffer->hard.lines[i].str);
@@ -193,6 +194,8 @@ void bufferReflow(struct Buffer *buffer, int cols) {
 	}
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const struct Line *soft = bufferSoft(buffer, i);
-		if (soft) flow(&buffer->hard, cols, soft);
+		if (!soft) continue;
+		if (soft->heat < Cold && ignore) continue;
+		flow(&buffer->hard, cols, soft);
 	}
 }
