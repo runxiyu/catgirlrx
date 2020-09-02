@@ -1129,9 +1129,12 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
-	if (!notice && !mine) completeTouch(id, msg->nick, hash(msg->user));
 	enum Heat heat = ignoreCheck((mention || query ? Hot : Warm), id, msg);
+	if (!notice && !mine && heat > Ice) {
+		completeTouch(id, msg->nick, hash(msg->user));
+	}
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
+
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
