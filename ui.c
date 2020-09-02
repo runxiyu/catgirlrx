@@ -546,7 +546,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	if (!window->unreadSoft++) window->unreadHard = 0;
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
-			lines += bufferBlank(window->buffer);
+			lines += bufferPush(window->buffer, COLS, Cold, 0, "");
 		}
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
@@ -788,6 +788,16 @@ static void showAuto(void) {
 	}
 }
 
+static void insertBlank(struct Window *window) {
+	int lines = bufferPush(window->buffer, COLS, Cold, 0, "");
+	window->unreadHard += lines;
+	if (window->scroll) {
+		windowScroll(window, lines);
+	} else {
+		windowUpdate();
+	}
+}
+
 static void keyCode(int code) {
 	struct Window *window = windows.ptrs[windows.show];
 	uint id = window->id;
@@ -810,7 +820,7 @@ static void keyCode(int code) {
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(window->buffer);
-		break; case KeyMetaM: bufferBlank(window->buffer); windowUpdate();
+		break; case KeyMetaM: insertBlank(window);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
 		break; case KeyMetaU: windowScrollUnread(window);
 		break; case KeyMetaV: windowScrollPage(window, +1);

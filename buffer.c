@@ -184,11 +184,6 @@ int bufferPush(
 	return flow(&buffer->hard, cols, soft);
 }
 
-int bufferBlank(struct Buffer *buffer) {
-	struct Line blank = { .heat = Cold, .str = "" };
-	return flow(&buffer->hard, 1, &blank);
-}
-
 void bufferReflow(struct Buffer *buffer, int cols) {
 	buffer->hard.len = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
