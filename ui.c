@@ -457,7 +457,9 @@ static void windowUpdate(void) {
 		if (line->heat < Cold && window->ignore) continue;
 		wmove(main, y, 0);
 		styleAdd(main, line->str);
-		wclrtoeol(main);
+		int ny, nx;
+		getyx(main, ny, nx);
+		if (ny == y) wclrtoeol(main);
 		if (!y--) break;
 	}
 

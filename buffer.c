@@ -26,6 +26,7 @@
  */
 
 #include <err.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,18 +112,17 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 	struct Style style = StyleDefault;
 	for (char *str = line->str; *str;) {
 		size_t len = styleParse(&style, (const char **)&str);
-		if (*str == '\t' && !align) {
-			align = width + 1;
-			*str = ' ';
-		}
-		if (isspace(*str) || *str == '-') {
-			wrap = str;
-		}
+		if (!len) continue;
 
-		wchar_t wc;
+		bool tab = (*str == '\t' && !align);
+		if (tab) *str = ' ';
+
+		wchar_t wc = L'\0';
 		int n = mbtowc(&wc, str, len);
-		if (n <= 0) continue;
-		if (wc == ZWS || wc == ZWNJ) {
+		if (n < 0) {
+			n = 1;
+			width++;
+		} else if (wc == ZWS || wc == ZWNJ) {
 			// XXX: ncurses likes to render these as spaces when they should be
 			// zero-width, so just remove them entirely.
 			memmove(str, &str[n], strlen(&str[n]) + 1);
@@ -134,32 +134,38 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 			width += wcwidth(wc);
 		}
 
-		if (width < cols) {
+		if (width <= cols) {
+			if (tab && width < cols) align = width;
+			if (iswspace(wc)) wrap = str;
+			if (*str == '-') wrap = &str[1];
 			str += n;
 			continue;
 		}
+
 		if (!wrap) wrap = str;
+		n = mbtowc(&wc, wrap, strlen(wrap));
+		if (n < 0) {
+			n = 1;
+		} else if (!iswspace(wc)) {
+			n = 0;
+		}
 
 		flowed++;
 		line = linesNext(hard);
 		line->heat = soft->heat;
 		line->time = soft->time;
 
-		size_t cap = StyleCap + align + strlen(&wrap[1]) + 1;
+		size_t cap = StyleCap + align + strlen(&wrap[n]) + 1;
 		line->str = malloc(cap);
 		if (!line->str) err(EX_OSERR, "malloc");
 
 		struct Cat cat = { line->str, cap, 0 };
 		styleCat(&cat, style);
 		str = &line->str[cat.len];
-		catf(&cat, "%*s%n%s", align, "", &width, &wrap[1]);
+		catf(&cat, "%*s%n%s", align, "", &width, &wrap[n]);
 		str += width;
 
-		if (isspace(*wrap)) {
-			wrap[0] = '\0';
-		} else {
-			wrap[1] = '\0';
-		}
+		*wrap = '\0';
 		wrap = NULL;
 	}
 
