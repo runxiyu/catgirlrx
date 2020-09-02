@@ -291,6 +291,7 @@ int bufferPush(
 	struct Buffer *buffer, int cols,
 	enum Heat heat, time_t time, const char *str
 );
+int bufferBlank(struct Buffer *buffer);
 void bufferReflow(struct Buffer *buffer, int cols);
 
 enum Edit {
