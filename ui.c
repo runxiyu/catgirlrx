@@ -542,7 +542,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	}
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
-			lines += bufferPush(window->buffer, COLS, false, Cold, 0, "");
+			lines += bufferPush(window->buffer, COLS, false, Cold, ts, "");
 		}
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
@@ -787,7 +787,7 @@ static void showAuto(void) {
 }
 
 static void insertBlank(struct Window *window) {
-	int lines = bufferPush(window->buffer, COLS, false, Cold, 0, "");
+	int lines = bufferPush(window->buffer, COLS, false, Cold, time(NULL), "");
 	window->unreadHard += lines;
 	if (window->scroll) {
 		windowScroll(window, lines);
