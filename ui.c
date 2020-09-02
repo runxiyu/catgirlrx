@@ -556,6 +556,7 @@ void uiFormat(
 
 static void resize(void) {
 	statusUpdate();
+	wclear(main);
 	wresize(main, MAIN_LINES, COLS);
 	for (uint num = 0; num < windows.len; ++num) {
 		bufferReflow(windows.ptrs[num]->buffer, COLS);
