@@ -520,10 +520,12 @@ static void notify(uint id, const char *str) {
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
+	if (heat < Cold && window->ignore) {
+		bufferPush(window->buffer, COLS, heat, ts, str);
+		return;
+	}
 
-	int lines = bufferPush(window->buffer, COLS, heat, ts, str);
-	if (heat < Cold && window->ignore) return;
-
+	int lines = 0;
 	if (!window->unreadSoft++) window->unreadHard = 0;
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
@@ -532,6 +534,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
+	lines += bufferPush(window->buffer, COLS, heat, ts, str);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (window == windows.ptrs[windows.show]) windowUpdate();
