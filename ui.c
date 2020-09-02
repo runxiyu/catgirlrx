@@ -477,7 +477,7 @@ static void windowScroll(struct Window *window, int n) {
 	}
 	if (window->scroll < 0) window->scroll = 0;
 	unmark(window);
-	windowUpdate();
+	if (window == windows.ptrs[windows.show]) windowUpdate();
 }
 
 static void windowScrollPage(struct Window *window, int n) {
@@ -534,7 +534,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	}
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
-	windowUpdate();
+	if (window == windows.ptrs[windows.show]) windowUpdate();
 
 	if (window->mark && heat > Warm) {
 		beep();
