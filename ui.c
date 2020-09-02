@@ -74,34 +74,6 @@ static WINDOW *status;
 static WINDOW *marker;
 static WINDOW *input;
 
-struct Line {
-	enum Heat heat;
-	time_t time;
-	char *str;
-};
-
-enum { BufferCap = 1024 };
-struct Buffer {
-	size_t len;
-	struct Line lines[BufferCap];
-};
-_Static_assert(!(BufferCap & (BufferCap - 1)), "BufferCap is power of two");
-
-static void bufferPush(
-	struct Buffer *buffer, enum Heat heat, time_t time, const char *str
-) {
-	struct Line *line = &buffer->lines[buffer->len++ % BufferCap];
-	free(line->str);
-	line->heat = heat;
-	line->time = time;
-	line->str = strdup(str);
-	if (!line->str) err(EX_OSERR, "strdup");
-}
-
-static struct Line bufferLine(const struct Buffer *buffer, size_t i) {
-	return buffer->lines[(buffer->len + i) % BufferCap];
-}
-
 struct Window {
 	uint id;
 	WINDOW *pad;
@@ -113,7 +85,7 @@ struct Window {
 	uint unreadHard;
 	uint unreadSoft;
 	uint unreadWarm;
-	struct Buffer buffer;
+	struct Buffer *buffer;
 };
 
 static struct {
@@ -170,14 +142,13 @@ static uint windowFor(uint id) {
 	wmove(window->pad, WindowLines - 1, 0);
 	window->mark = true;
 	window->ignore = true;
+	window->buffer = bufferAlloc();
 
 	return windowPush(window);
 }
 
 static void windowFree(struct Window *window) {
-	for (size_t i = 0; i < BufferCap; ++i) {
-		free(window->buffer.lines[i].str);
-	}
+	bufferFree(window->buffer);
 	delwin(window->pad);
 	free(window);
 }
@@ -625,7 +596,7 @@ static void notify(uint id, const char *str) {
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
-	bufferPush(&window->buffer, heat, ts, str);
+	bufferPush(window->buffer, COLS, heat, ts, str);
 	if (heat < Cold && window->ignore) return;
 
 	int lines = 0;
@@ -668,15 +639,15 @@ static void reflow(struct Window *window) {
 	int flowed = 0;
 	window->unreadSoft = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
-		struct Line line = bufferLine(&window->buffer, i);
-		if (!line.str) continue;
-		if (line.heat < Cold && window->ignore) continue;
+		const struct Line *line = bufferSoft(window->buffer, i);
+		if (!line) continue;
+		if (line->heat < Cold && window->ignore) continue;
 		int lines = 0;
 		if (i == (size_t)(BufferCap - window->unreadHard)) {
 			waddch(window->pad, '\n');
 			lines++;
 		}
-		lines += wordWrap(window->pad, line.str);
+		lines += wordWrap(window->pad, line->str);
 		if (i >= (size_t)(BufferCap - window->unreadHard)) {
 			window->unreadSoft += lines;
 		}
@@ -695,7 +666,7 @@ static void resize(void) {
 	getmaxyx(windows.ptrs[0]->pad, height, width);
 	if (width == COLS) return;
 	for (uint num = 0; num < windows.len; ++num) {
-		wresize(windows.ptrs[num]->pad, BufferCap, COLS);
+		wresize(windows.ptrs[num]->pad, WindowLines, COLS);
 		reflow(windows.ptrs[num]);
 	}
 	(void)height;
@@ -707,10 +678,10 @@ static void bufferList(const struct Buffer *buffer) {
 	waiting = true;
 
 	for (size_t i = 0; i < BufferCap; ++i) {
-		struct Line line = bufferLine(buffer, i);
-		if (!line.str) continue;
+		const struct Line *line = bufferSoft(buffer, i);
+		if (!line) continue;
 
-		struct tm *tm = localtime(&line.time);
+		struct tm *tm = localtime(&line->time);
 		if (!tm) err(EX_OSERR, "localtime");
 
 		char buf[sizeof("00:00:00")];
@@ -720,20 +691,20 @@ static void bufferList(const struct Buffer *buffer) {
 
 		bool align = false;
 		struct Style style = StyleDefault;
-		while (*line.str) {
-			if (*line.str == '\t') {
+		for (const char *str = line->str; *str;) {
+			if (*str == '\t') {
 				printf("%c", (align ? '\t' : ' '));
 				align = true;
-				line.str++;
+				str++;
 			}
 
-			size_t len = styleParse(&style, (const char **)&line.str);
-			size_t tab = strcspn(line.str, "\t");
+			size_t len = styleParse(&style, &str);
+			size_t tab = strcspn(str, "\t");
 			if (tab < len) len = tab;
 
 			vid_attr(styleAttr(style), stylePair(style), NULL);
-			printf("%.*s", (int)len, line.str);
-			line.str += len;
+			printf("%.*s", (int)len, str);
+			str += len;
 		}
 		printf("\n");
 	}
@@ -926,7 +897,7 @@ static void keyCode(int code) {
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
-		break; case KeyMetaL: bufferList(&window->buffer);
+		break; case KeyMetaL: bufferList(window->buffer);
 		break; case KeyMetaM: waddch(window->pad, '\n');
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
 		break; case KeyMetaU: windowScrollUnread(window);
@@ -1060,11 +1031,11 @@ int uiSave(const char *name) {
 		if (writeTime(file, window->unreadHard)) return -1;
 		if (writeTime(file, window->unreadWarm)) return -1;
 		for (size_t i = 0; i < BufferCap; ++i) {
-			struct Line line = bufferLine(&window->buffer, i);
-			if (!line.str) continue;
-			if (writeTime(file, line.time)) return -1;
-			if (writeTime(file, line.heat)) return -1;
-			if (writeString(file, line.str)) return -1;
+			const struct Line *line = bufferSoft(window->buffer, i);
+			if (!line) continue;
+			if (writeTime(file, line->time)) return -1;
+			if (writeTime(file, line->heat)) return -1;
+			if (writeString(file, line->str)) return -1;
 		}
 		if (writeTime(file, 0)) return -1;
 	}
@@ -1122,7 +1093,7 @@ void uiLoad(const char *name) {
 			if (!time) break;
 			enum Heat heat = (version > 2 ? readTime(file) : Cold);
 			readString(file, &buf, &cap);
-			bufferPush(&window->buffer, heat, time, buf);
+			bufferPush(window->buffer, COLS, heat, time, buf);
 		}
 		reflow(window);
 	}

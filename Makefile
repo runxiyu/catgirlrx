@@ -7,6 +7,7 @@ LDLIBS = -lncursesw -ltls
 
 -include config.mk
 
+OBJS += buffer.o
 OBJS += chat.o
 OBJS += command.o
 OBJS += complete.o

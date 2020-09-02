@@ -276,6 +276,23 @@ void uiFormat(
 void uiLoad(const char *name);
 int uiSave(const char *name);
 
+enum { BufferCap = 1024 };
+struct Buffer;
+struct Line {
+	enum Heat heat;
+	time_t time;
+	char *str;
+};
+struct Buffer *bufferAlloc(void);
+void bufferFree(struct Buffer *buffer);
+const struct Line *bufferSoft(const struct Buffer *buffer, size_t i);
+const struct Line *bufferHard(const struct Buffer *buffer, size_t i);
+void bufferPush(
+	struct Buffer *buffer, int cols,
+	enum Heat heat, time_t time, const char *str
+);
+void bufferReflow(struct Buffer *buffer, int cols);
+
 enum Edit {
 	EditHead,
 	EditTail,
