@@ -538,7 +538,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
 	if (heat < Cold && window->ignore) {
-		bufferPush(window->buffer, COLS, heat, ts, str);
+		window->unreadHard += bufferPush(window->buffer, COLS, heat, ts, str);
 		return;
 	}
 
