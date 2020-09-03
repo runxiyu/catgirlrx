@@ -196,6 +196,8 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaF, "\33f", NULL) \
 	X(KeyMetaL, "\33l", NULL) \
 	X(KeyMetaM, "\33m", NULL) \
+	X(KeyMetaN, "\33n", NULL) \
+	X(KeyMetaP, "\33p", NULL) \
 	X(KeyMetaQ, "\33q", NULL) \
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
@@ -499,9 +501,21 @@ static void windowScrollPage(struct Window *window, int n) {
 	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
 }
 
-static void windowScrollUnread(struct Window *window) {
+static void windowScrollTo(struct Window *window, int top) {
 	window->scroll = 0;
-	windowScroll(window, window->unreadHard - MAIN_LINES + MarkerLines);
+	windowScroll(window, top - MAIN_LINES + MarkerLines);
+}
+
+static void windowScrollHot(struct Window *window, int dir) {
+	size_t from = BufferCap - window->scroll - MAIN_LINES + MarkerLines + dir;
+	for (size_t i = from; i < BufferCap; i += dir) {
+		const struct Line *line = bufferHard(window->buffer, i);
+		const struct Line *prev = bufferHard(window->buffer, i - 1);
+		if (!line || line->heat < Hot) continue;
+		if (prev && prev->heat > Warm) continue;
+		windowScrollTo(window, BufferCap - i);
+		break;
+	}
 }
 
 struct Util uiNotifyUtil;
@@ -823,8 +837,10 @@ static void keyCode(int code) {
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(window->buffer);
 		break; case KeyMetaM: insertBlank(window);
+		break; case KeyMetaN: windowScrollHot(window, +1);
+		break; case KeyMetaP: windowScrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
-		break; case KeyMetaU: windowScrollUnread(window);
+		break; case KeyMetaU: windowScrollTo(window, window->unreadHard);
 		break; case KeyMetaV: windowScrollPage(window, +1);
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
