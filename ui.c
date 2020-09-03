@@ -501,7 +501,7 @@ static void windowScrollPage(struct Window *window, int n) {
 
 static void windowScrollUnread(struct Window *window) {
 	window->scroll = 0;
-	windowScroll(window, window->unreadHard - MAIN_LINES);
+	windowScroll(window, window->unreadHard - MAIN_LINES + MarkerLines);
 }
 
 struct Util uiNotifyUtil;
@@ -536,19 +536,18 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
 
-	int lines = 0;
 	if (heat > Ice || !window->ignore) {
 		if (!window->unreadSoft++) window->unreadHard = 0;
 	}
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
-			window->unreadSoft++;
-			lines += bufferPush(window->buffer, COLS, false, Cold, ts, "");
+			int lines = bufferPush(window->buffer, COLS, false, Cold, ts, "");
+			if (window->scroll) windowScroll(window, lines);
 		}
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
-	lines += bufferPush(window->buffer, COLS, window->ignore, heat, ts, str);
+	int lines = bufferPush(window->buffer, COLS, window->ignore, heat, ts, str);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (window == windows.ptrs[windows.show]) windowUpdate();
