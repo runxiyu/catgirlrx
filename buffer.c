@@ -186,16 +186,19 @@ int bufferPush(
 	return flow(&buffer->hard, cols, soft);
 }
 
-void bufferReflow(struct Buffer *buffer, int cols, bool ignore) {
+int bufferReflow(struct Buffer *buffer, int cols, bool ignore, size_t tail) {
 	buffer->hard.len = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		free(buffer->hard.lines[i].str);
 		buffer->hard.lines[i].str = NULL;
 	}
+	int flowed = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const struct Line *soft = bufferSoft(buffer, i);
 		if (!soft) continue;
 		if (soft->heat < Cold && ignore) continue;
-		flow(&buffer->hard, cols, soft);
+		int n = flow(&buffer->hard, cols, soft);
+		if (i >= BufferCap - tail) flowed += n;
 	}
+	return flowed;
 }

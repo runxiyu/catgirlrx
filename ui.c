@@ -542,6 +542,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	}
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
+			window->unreadSoft++;
 			lines += bufferPush(window->buffer, COLS, false, Cold, ts, "");
 		}
 		if (heat > window->heat) window->heat = heat;
@@ -576,7 +577,9 @@ static void resize(void) {
 	wresize(main, MAIN_LINES, COLS);
 	for (uint num = 0; num < windows.len; ++num) {
 		struct Window *window = windows.ptrs[num];
-		bufferReflow(window->buffer, COLS, window->ignore);
+		window->unreadHard = bufferReflow(
+			window->buffer, COLS, window->ignore, window->unreadSoft
+		);
 	}
 	windowUpdate();
 }
@@ -753,7 +756,9 @@ void uiCloseNum(uint num) {
 
 static void toggleIgnore(struct Window *window) {
 	window->ignore ^= true;
-	bufferReflow(window->buffer, COLS, window->ignore);
+	window->unreadHard = bufferReflow(
+		window->buffer, COLS, window->ignore, window->unreadSoft
+	);
 	windowUpdate();
 	statusUpdate();
 }
@@ -1015,6 +1020,9 @@ void uiLoad(const char *name) {
 			readString(file, &buf, &cap);
 			bufferPush(window->buffer, COLS, window->ignore, heat, time, buf);
 		}
+		window->unreadHard = bufferReflow(
+			window->buffer, COLS, window->ignore, window->unreadSoft
+		);
 	}
 
 	free(buf);
