@@ -138,10 +138,10 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 			width += wcwidth(wc);
 		}
 
+		if (tab && width < cols) align = width;
+		if (iswspace(wc) && !tab) wrap = str;
 		if (width <= cols) {
-			if (tab && width < cols) align = width;
-			if (iswspace(wc) && !tab) wrap = str;
-			if (*str == '-') wrap = &str[1];
+			if (wc == L'-') wrap = &str[n];
 			str += n;
 			continue;
 		}
