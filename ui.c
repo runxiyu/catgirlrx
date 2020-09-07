@@ -518,6 +518,17 @@ static void windowScrollHot(struct Window *window, int dir) {
 	}
 }
 
+static void
+windowScrollSearch(struct Window *window, const char *str, int dir) {
+	size_t from = BufferCap - window->scroll - MAIN_LINES + MarkerLines + dir;
+	for (size_t i = from; i < BufferCap; i += dir) {
+		const struct Line *line = bufferHard(window->buffer, i);
+		if (!line || !strcasestr(line->str, str)) continue;
+		windowScrollTo(window, BufferCap - i);
+		break;
+	}
+}
+
 struct Util uiNotifyUtil;
 static void notify(uint id, const char *str) {
 	if (!uiNotifyUtil.argc) return;
@@ -877,6 +888,8 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': uiShowNum(windows.show + 1);
 		break; case L'P': uiShowNum(windows.show - 1);
+		break; case L'R': windowScrollSearch(window, editBuffer(NULL), -1);
+		break; case L'S': windowScrollSearch(window, editBuffer(NULL), +1);
 		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
 		break; case L'V': windowScrollPage(window, -1);
