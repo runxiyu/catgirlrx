@@ -128,6 +128,9 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 			// zero-width, so just remove them entirely.
 			memmove(str, &str[n], strlen(&str[n]) + 1);
 			continue;
+		} else if (wc == L'\t') {
+			// XXX: Assuming TABSIZE = 8.
+			width += 8 - (width % 8);
 		} else if (wc < L' ') {
 			// XXX: ncurses will render these as "^A".
 			width += 2;
