@@ -131,7 +131,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		} else if (wc == L'\t') {
 			// XXX: Assuming TABSIZE = 8.
 			width += 8 - (width % 8);
-		} else if (wc < L' ') {
+		} else if (wc < L' ' || wc == L'\177') {
 			// XXX: ncurses will render these as "^A".
 			width += 2;
 		} else if (wcwidth(wc) > 0) {
