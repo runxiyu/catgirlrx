@@ -568,6 +568,10 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 		if (!window->unreadWarm++) {
 			int lines = bufferPush(window->buffer, COLS, false, Cold, ts, "");
 			if (window->scroll) windowScroll(window, lines);
+			if (window->unreadSoft > 1) {
+				window->unreadSoft++;
+				window->unreadHard += lines;
+			}
 		}
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
