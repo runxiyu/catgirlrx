@@ -815,16 +815,6 @@ static void showAuto(void) {
 	}
 }
 
-static void insertBlank(struct Window *window) {
-	int lines = bufferPush(window->buffer, COLS, false, Cold, time(NULL), "");
-	window->unreadHard += lines;
-	if (window->scroll) {
-		windowScroll(window, lines);
-	} else {
-		windowUpdate();
-	}
-}
-
 static void keyCode(int code) {
 	struct Window *window = windows.ptrs[windows.show];
 	uint id = window->id;
@@ -847,7 +837,7 @@ static void keyCode(int code) {
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(window->buffer);
-		break; case KeyMetaM: insertBlank(window);
+		break; case KeyMetaM: uiWrite(id, Cold, NULL, "");
 		break; case KeyMetaN: windowScrollHot(window, +1);
 		break; case KeyMetaP: windowScrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
