@@ -455,6 +455,7 @@ static void mainAdd(int y, const char *str) {
 	styleAdd(main, str);
 	getyx(main, ny, nx);
 	if (ny == y) wclrtoeol(main);
+	(void)nx;
 }
 
 static void windowUpdate(void) {
