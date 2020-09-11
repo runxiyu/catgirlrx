@@ -111,6 +111,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 	int align = 0;
 	char *wrap = NULL;
 	struct Style style = StyleDefault;
+	struct Style wrapStyle = StyleDefault;
 	for (char *str = line->str; *str;) {
 		size_t len = styleParse(&style, (const char **)&str);
 		if (!len) continue;
@@ -138,15 +139,26 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 			width += wcwidth(wc);
 		}
 
-		if (tab && width < cols) align = width;
-		if (iswspace(wc) && !tab) wrap = str;
-		if (width <= cols) {
-			if (wc == L'-') wrap = &str[n];
-			str += n;
-			continue;
+		if (tab && width < cols) {
+			align = width;
+		}
+		if (iswspace(wc) && !tab) {
+			wrap = str;
+			wrapStyle = style;
+		}
+		if (wc == L'-' && width <= cols) {
+			wrap = &str[n];
+			wrapStyle = style;
 		}
 
-		if (!wrap) wrap = str;
+		if (width <= cols) {
+			str += n;
+			continue;
+		} else if (!wrap) {
+			wrap = str;
+			wrapStyle = style;
+		}
+
 		n = mbtowc(&wc, wrap, strlen(wrap));
 		if (n < 0) {
 			n = 1;
@@ -165,8 +177,9 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 
 		struct Cat cat = { line->str, cap, 0 };
 		catf(&cat, "%*s%n", align, "", &width);
-		styleCat(&cat, style);
+		styleCat(&cat, wrapStyle);
 		str = &line->str[cat.len];
+		style = wrapStyle;
 		catf(&cat, "%s", &wrap[n]);
 
 		*wrap = '\0';
