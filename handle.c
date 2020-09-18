@@ -76,7 +76,7 @@ static const char *capList(enum Cap caps) {
 
 static void require(struct Message *msg, bool origin, uint len) {
 	if (origin) {
-		if (!msg->nick) msg->nick = "*";
+		if (!msg->nick) msg->nick = "*.*";
 		if (!msg->user) msg->user = msg->nick;
 		if (!msg->host) msg->host = msg->user;
 	}
@@ -1114,7 +1114,7 @@ static const char *colorMentions(uint id, struct Message *msg) {
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
 	bool query = !strchr(network.chanTypes, msg->params[0][0]);
-	bool server = (msg->host == msg->nick);
+	bool server = strchr(msg->nick, '.');
 	bool mine = !strcmp(msg->nick, self.nick);
 	uint id;
 	if (query && server) {
