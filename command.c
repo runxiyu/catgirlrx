@@ -296,8 +296,12 @@ static void commandList(uint id, char *params) {
 static void commandWhois(uint id, char *params) {
 	(void)id;
 	if (!params) return;
-	ircFormat("WHOIS :%s\r\n", params);
-	replies.whois++;
+	uint count = 1;
+	for (char *ch = params; *ch; ++ch) {
+		if (*ch == ',') count++;
+	}
+	ircFormat("WHOIS %s\r\n", params);
+	replies.whois += count;
 }
 
 static void commandNS(uint id, char *params) {
