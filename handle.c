@@ -499,26 +499,52 @@ static void handleReplyNames(struct Message *msg) {
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
-		if (replies.ops && (prefixes == nick || prefixes[0] == '+')) continue;
-		if (!replies.ops && !replies.names) continue;
+		if (!replies.names) continue;
 		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), color, prefixes);
 	}
 	if (!cat.len) return;
 	uiFormat(
 		id, Cold, tagTime(msg),
-		"%s \3%02d%s\3 are %s",
-		(replies.ops ? "The operators of" : "In"),
+		"In \3%02d%s\3 are %s",
 		hash(msg->params[2]), msg->params[2], buf
 	);
 }
 
 static void handleReplyEndOfNames(struct Message *msg) {
 	(void)msg;
-	if (replies.ops) {
-		replies.ops--;
-	} else if (replies.names) {
-		replies.names--;
+	if (replies.names) replies.names--;
+}
+
+static char whoBuf[1024];
+static struct Cat whoCat = { whoBuf, sizeof(whoBuf), 0 };
+
+static void handleReplyWho(struct Message *msg) {
+	require(msg, false, 7);
+	if (!replies.who) return;
+	if (!whoCat.len) {
+		catf(
+			&whoCat, "The operators of \3%02d%s\3 are ",
+			hash(msg->params[1]), msg->params[1]
+		);
 	}
+	char *prefixes = &msg->params[6][1];
+	if (prefixes[0] == '*') prefixes++;
+	prefixes[strspn(prefixes, network.prefixes)] = '\0';
+	if (!prefixes[0] || prefixes[0] == '+') return;
+	catf(
+		&whoCat, "%s\3%02d%s%s\3%s",
+		(whoCat.buf[whoCat.len - 1] == ' ' ? "" : ", "),
+		hash(msg->params[2]), prefixes, msg->params[5],
+		(msg->params[6][0] == 'H' ? "" : " (away)")
+	);
+}
+
+static void handleReplyEndOfWho(struct Message *msg) {
+	require(msg, false, 2);
+	if (!replies.who) return;
+	replies.who--;
+	uiWrite(idFor(msg->params[1]), Cold, tagTime(msg), whoBuf);
+	whoCat.len = 0;
 }
 
 static void handleReplyNoTopic(struct Message *msg) {
@@ -1196,6 +1222,7 @@ static const struct Handler {
 	{ "311", handleReplyWhoisUser },
 	{ "312", handleReplyWhoisServer },
 	{ "313", handleReplyWhoisGeneric },
+	{ "315", handleReplyEndOfWho },
 	{ "317", handleReplyWhoisIdle },
 	{ "318", handleReplyEndOfWhois },
 	{ "319", handleReplyWhoisChannels },
@@ -1210,6 +1237,7 @@ static const struct Handler {
 	{ "347", handleReplyEndOfInviteList },
 	{ "348", handleReplyExceptList },
 	{ "349", handleReplyEndOfExceptList },
+	{ "352", handleReplyWho },
 	{ "353", handleReplyNames },
 	{ "366", handleReplyEndOfNames },
 	{ "367", handleReplyBanList },

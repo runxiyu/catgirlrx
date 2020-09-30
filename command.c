@@ -176,8 +176,8 @@ static void commandNames(uint id, char *params) {
 
 static void commandOps(uint id, char *params) {
 	(void)params;
-	ircFormat("NAMES %s\r\n", idNames[id]);
-	replies.ops++;
+	ircFormat("WHO %s\r\n", idNames[id]);
+	replies.who++;
 }
 
 static void commandInvite(uint id, char *params) {

@@ -246,8 +246,8 @@ extern struct Replies {
 	uint list;
 	uint mode;
 	uint names;
-	uint ops;
 	uint topic;
+	uint who;
 	uint whois;
 } replies;
 
