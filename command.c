@@ -174,6 +174,12 @@ static void commandNames(uint id, char *params) {
 	replies.names++;
 }
 
+static void commandOps(uint id, char *params) {
+	(void)params;
+	ircFormat("NAMES %s\r\n", idNames[id]);
+	replies.ops++;
+}
+
 static void commandInvite(uint id, char *params) {
 	if (!params) return;
 	char *nick = strsep(&params, " ");
@@ -468,6 +474,7 @@ static const struct Handler {
 	{ "/o", commandOpen, Restricted },
 	{ "/op", commandOp, 0 },
 	{ "/open", commandOpen, Restricted },
+	{ "/ops", commandOps, 0 },
 	{ "/part", commandPart, 0 },
 	{ "/query", commandQuery, Restricted },
 	{ "/quit", commandQuit, 0 },

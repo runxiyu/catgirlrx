@@ -499,20 +499,26 @@ static void handleReplyNames(struct Message *msg) {
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
-		if (!replies.names) continue;
+		if (replies.ops && (prefixes == nick || prefixes[0] == '+')) continue;
+		if (!replies.ops && !replies.names) continue;
 		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), color, prefixes);
 	}
-	if (!replies.names) return;
+	if (!cat.len) return;
 	uiFormat(
 		id, Cold, tagTime(msg),
-		"In \3%02d%s\3 are %s",
+		"%s \3%02d%s\3 are %s",
+		(replies.ops ? "The operators of" : "In"),
 		hash(msg->params[2]), msg->params[2], buf
 	);
 }
 
 static void handleReplyEndOfNames(struct Message *msg) {
 	(void)msg;
-	if (replies.names) replies.names--;
+	if (replies.ops) {
+		replies.ops--;
+	} else if (replies.names) {
+		replies.names--;
+	}
 }
 
 static void handleReplyNoTopic(struct Message *msg) {
