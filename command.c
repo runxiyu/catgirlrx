@@ -421,14 +421,20 @@ static void commandExec(uint id, char *params) {
 
 static void commandHelp(uint id, char *params) {
 	(void)id;
-	uiHide();
 
+	if (params) {
+		ircFormat("HELP :%s\r\n", params);
+		replies.help++;
+		return;
+	}
+
+	uiHide();
 	pid_t pid = fork();
 	if (pid < 0) err(EX_OSERR, "fork");
 	if (pid) return;
 
 	char buf[256];
-	snprintf(buf, sizeof(buf), "ip%s$", (params ?: "COMMANDS"));
+	snprintf(buf, sizeof(buf), "%spCOMMANDS$", (getenv("LESS") ?: ""));
 	setenv("LESS", buf, 1);
 	execlp("man", "man", "1", "catgirl", NULL);
 	dup2(utilPipe[1], STDERR_FILENO);

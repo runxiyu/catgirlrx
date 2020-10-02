@@ -241,6 +241,7 @@ extern struct Replies {
 	uint away;
 	uint ban;
 	uint excepts;
+	uint help;
 	uint invex;
 	uint join;
 	uint list;

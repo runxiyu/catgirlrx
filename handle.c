@@ -302,6 +302,18 @@ static void handleErrorNoMOTD(struct Message *msg) {
 	(void)msg;
 }
 
+static void handleReplyHelp(struct Message *msg) {
+	require(msg, false, 3);
+	if (!replies.help) return;
+	urlScan(Network, msg->nick, msg->params[2]);
+	uiWrite(Network, Warm, tagTime(msg), msg->params[2]);
+}
+
+static void handleReplyEndOfHelp(struct Message *msg) {
+	(void)msg;
+	if (replies.help) replies.help--;
+}
+
 static void handleJoin(struct Message *msg) {
 	require(msg, true, 1);
 	uint id = idFor(msg->params[0]);
@@ -1253,6 +1265,9 @@ static const struct Handler {
 	{ "478", handleErrorBanListFull },
 	{ "482", handleErrorChanopPrivsNeeded },
 	{ "671", handleReplyWhoisGeneric },
+	{ "704", handleReplyHelp },
+	{ "705", handleReplyHelp },
+	{ "706", handleReplyEndOfHelp },
 	{ "900", handleReplyLoggedIn },
 	{ "904", handleErrorSASLFail },
 	{ "905", handleErrorSASLFail },

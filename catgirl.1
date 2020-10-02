@@ -1,4 +1,4 @@
-.Dd September 30, 2020
+.Dd October  2, 2020
 .Dt CATGIRL 1
 .Os
 .
@@ -338,12 +338,17 @@ with
 and interpret its output
 as input to the current window,
 including as commands.
-.It Ic /help Op Ar search
+.It Ic /help
 View this manual.
 Type
 .Ic q
 to return to
 .Nm .
+.It Ic /help Ar topic
+List the server help for a topic.
+Try
+.Ic /help index
+for a list of topics.
 .It Ic /ignore Op Ar pattern
 List message filtering patterns
 or temporarily add a pattern.
