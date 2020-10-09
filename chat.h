@@ -105,6 +105,15 @@ static inline size_t styleParse(struct Style *style, const char **str) {
 	return strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
 }
 
+static inline void styleStrip(struct Cat *cat, const char *str) {
+	struct Style style = StyleDefault;
+	while (*str) {
+		size_t len = styleParse(&style, &str);
+		catf(cat, "%.*s", (int)len, str);
+		str += len;
+	}
+}
+
 enum { None, Debug, Network, IDCap = 256 };
 extern char *idNames[IDCap];
 extern enum Color idColors[IDCap];

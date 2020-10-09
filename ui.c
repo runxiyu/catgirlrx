@@ -534,16 +534,11 @@ struct Util uiNotifyUtil;
 static void notify(uint id, const char *str) {
 	if (!uiNotifyUtil.argc) return;
 
+	char buf[1024] = "";
+	styleStrip(&(struct Cat) { buf, sizeof(buf), 0 }, str);
+
 	struct Util util = uiNotifyUtil;
 	utilPush(&util, idNames[id]);
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
-	while (*str) {
-		struct Style style = StyleDefault;
-		size_t len = styleParse(&style, &str);
-		catf(&cat, "%.*s", (int)len, str);
-		str += len;
-	}
 	utilPush(&util, buf);
 
 	pid_t pid = fork();
