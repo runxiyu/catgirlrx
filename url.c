@@ -86,14 +86,19 @@ static void push(uint id, const char *nick, const char *str, size_t len) {
 	struct URL *url = &ring.urls[ring.len++ % Cap];
 	free(url->nick);
 	free(url->url);
+
 	url->id = id;
 	url->nick = NULL;
 	if (nick) {
 		url->nick = strdup(nick);
 		if (!url->nick) err(EX_OSERR, "strdup");
 	}
-	url->url = strndup(str, len);
-	if (!url->url) err(EX_OSERR, "strndup");
+	url->url = malloc(len + 1);
+	if (!url->url) err(EX_OSERR, "malloc");
+
+	char buf[1024];
+	snprintf(buf, sizeof(buf), "%.*s", (int)len, str);
+	styleStrip(&(struct Cat) { url->url, len + 1, 0 }, buf);
 }
 
 void urlScan(uint id, const char *nick, const char *mesg) {
