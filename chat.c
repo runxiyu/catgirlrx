@@ -222,7 +222,7 @@ int main(int argc, char *argv[]) {
 
 	ircConfig(insecure, cert, priv);
 
-	uiInit();
+	uiInitEarly();
 	if (save) {
 		uiLoad(save);
 		atexit(exitSave);
@@ -244,6 +244,7 @@ int main(int argc, char *argv[]) {
 	ircFormat("NICK :%s\r\n", nick);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
+	uiInitLate();
 	signal(SIGHUP, signalHandler);
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);

@@ -219,23 +219,6 @@ enum {
 #undef X
 };
 
-// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
-static void acquireKeys(void) {
-	struct termios term;
-	int error = tcgetattr(STDOUT_FILENO, &term);
-	if (error) err(EX_OSERR, "tcgetattr");
-	term.c_iflag &= ~IXON;
-	term.c_cc[VINTR] = _POSIX_VDISABLE;
-	term.c_cc[VSUSP] = _POSIX_VDISABLE;
-#ifdef VDSUSP
-	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
-#endif
-	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
-	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
-	error = tcsetattr(STDOUT_FILENO, TCSADRAIN, &term);
-	if (error) err(EX_OSERR, "tcsetattr");
-}
-
 // XXX: Assuming terminals will be fine with these even if they're unsupported,
 // since they're "private" modes.
 static const char *EnterFocusMode = "\33[?1004h";
@@ -249,14 +232,12 @@ static void errExit(void) {
 	reset_shell_mode();
 }
 
-void uiInit(void) {
+void uiInitEarly(void) {
 	initscr();
 	cbreak();
 	noecho();
-	acquireKeys();
-	def_prog_mode();
-	atexit(errExit);
 	colorInit();
+	atexit(errExit);
 
 	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
 		to_status_line = "\33]2;";
@@ -280,6 +261,28 @@ void uiInit(void) {
 
 	windowFor(Network);
 	uiShow();
+}
+
+// Avoid disabling VINTR until main loop.
+void uiInitLate(void) {
+	struct termios term;
+	int error = tcgetattr(STDOUT_FILENO, &term);
+	if (error) err(EX_OSERR, "tcgetattr");
+
+	// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
+	term.c_iflag &= ~IXON;
+	term.c_cc[VINTR] = _POSIX_VDISABLE;
+	term.c_cc[VSUSP] = _POSIX_VDISABLE;
+#ifdef VDSUSP
+	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
+#endif
+	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
+	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
+
+	error = tcsetattr(STDOUT_FILENO, TCSANOW, &term);
+	if (error) err(EX_OSERR, "tcsetattr");
+
+	def_prog_mode();
 }
 
 static bool hidden = true;

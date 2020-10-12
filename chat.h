@@ -270,7 +270,8 @@ void commandCompleteAdd(void);
 
 enum Heat { Ice, Cold, Warm, Hot };
 extern struct Util uiNotifyUtil;
-void uiInit(void);
+void uiInitEarly(void);
+void uiInitLate(void);
 void uiShow(void);
 void uiHide(void);
 void uiDraw(void);
