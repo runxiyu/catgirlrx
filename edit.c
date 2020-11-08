@@ -66,7 +66,7 @@ static struct {
 
 static bool reserve(size_t index, size_t count) {
 	if (len + count > Cap) return false;
-	memmove(&buf[index + count], &buf[index], sizeof(*buf) * (len - index));
+	wmemmove(&buf[index + count], &buf[index], len - index);
 	len += count;
 	return true;
 }
@@ -74,12 +74,10 @@ static bool reserve(size_t index, size_t count) {
 static void delete(bool copy, size_t index, size_t count) {
 	if (index + count > len) return;
 	if (copy) {
-		memcpy(cut.buf, &buf[index], sizeof(*buf) * count);
+		wmemcpy(cut.buf, &buf[index], count);
 		cut.len = count;
 	}
-	memmove(
-		&buf[index], &buf[index + count], sizeof(*buf) * (len - index - count)
-	);
+	wmemmove(&buf[index], &buf[index + count], len - index - count);
 	len -= count;
 }
 
@@ -185,7 +183,7 @@ static void tabComplete(uint id) {
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n] = L' ';
 	}
-	memcpy(&buf[tab.pos], wcs, sizeof(*wcs) * n);
+	wmemcpy(&buf[tab.pos], wcs, n);
 	pos = tab.pos + tab.len;
 }
 
@@ -234,7 +232,7 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 		}
 		break; case EditPaste: {
 			if (reserve(pos, cut.len)) {
-				memcpy(&buf[pos], cut.buf, sizeof(*buf) * cut.len);
+				wmemcpy(&buf[pos], cut.buf, cut.len);
 				pos += cut.len;
 			}
 		}
