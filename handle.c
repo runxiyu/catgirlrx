@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
+#include <wchar.h>
 
 #include "chat.h"
 
@@ -601,23 +602,16 @@ static void handleReplyTopic(struct Message *msg) {
 	);
 }
 
+static void swap(wchar_t *a, wchar_t *b) {
+	wchar_t x = *a;
+	*a = *b;
+	*b = x;
+}
+
 static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
-	if (msg->params[1][0]) {
-		topicComplete(id, msg->params[1]);
-		urlScan(id, msg->nick, msg->params[1]);
-		uiFormat(
-			id, Warm, tagTime(msg),
-			"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
-			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
-			msg->params[1]
-		);
-		logFormat(
-			id, tagTime(msg), "%s places a new sign in %s: %s",
-			msg->nick, msg->params[0], msg->params[1]
-		);
-	} else {
+	if (!msg->params[1][0]) {
 		topicComplete(id, NULL);
 		uiFormat(
 			id, Warm, tagTime(msg),
@@ -628,7 +622,58 @@ static void handleTopic(struct Message *msg) {
 			id, tagTime(msg), "%s removes the sign in %s",
 			msg->nick, msg->params[0]
 		);
+		return;
 	}
+
+	char buf[1024];
+	struct Cat cat = { buf, sizeof(buf), 0 };
+	const char *prev = complete(id, "/topic ");
+	completeReject();
+	if (prev) {
+		prev += 7;
+	} else {
+		goto plain;
+	}
+
+	wchar_t old[512];
+	wchar_t new[512];
+	if (swprintf(old, ARRAY_LEN(old), L"%s", prev) < 0) goto plain;
+	if (swprintf(new, ARRAY_LEN(new), L"%s", msg->params[1]) < 0) goto plain;
+
+	size_t pre;
+	for (pre = 0; old[pre] && new[pre] && old[pre] == new[pre]; ++pre);
+	wchar_t *osuf = &old[wcslen(old)];
+	wchar_t *nsuf = &new[wcslen(new)];
+	while (osuf > &old[pre] && nsuf > &new[pre] && osuf[-1] == nsuf[-1]) {
+		osuf--;
+		nsuf--;
+	}
+
+	wchar_t nul = L'\0';
+	swap(&new[pre], &nul);
+	catf(&cat, "%ls", new);
+	swap(&new[pre], &nul);
+	swap(osuf, &nul);
+	catf(&cat, "\399,%02d%ls", Brown, &old[pre]);
+	swap(osuf, &nul);
+	swap(nsuf, &nul);
+	catf(&cat, "\399,%02d%ls", Green, &new[pre]);
+	swap(nsuf, &nul);
+	catf(&cat, "\399,99%ls", nsuf);
+
+plain:
+	topicComplete(id, msg->params[1]);
+	urlScan(id, msg->nick, msg->params[1]);
+	uiFormat(
+		id, Warm, tagTime(msg),
+		"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
+		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
+		(cat.len ? cat.buf : msg->params[1])
+	);
+	logFormat(
+		id, tagTime(msg), "%s places a new sign in %s: %s",
+		msg->nick, msg->params[0], msg->params[1]
+	);
 }
 
 static const char *UserModes[256] = {
