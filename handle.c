@@ -1160,7 +1160,7 @@ static bool isMention(const struct Message *msg) {
 	return false;
 }
 
-static const char *colorMentions(uint id, struct Message *msg) {
+static void colorMentions(struct Cat *cat, uint id, struct Message *msg) {
 	char *split = strstr(msg->params[1], ": ");
 	if (!split) {
 		split = strchr(msg->params[1], ' ');
@@ -1168,19 +1168,16 @@ static const char *colorMentions(uint id, struct Message *msg) {
 	}
 	if (!split) split = &msg->params[1][strlen(msg->params[1])];
 	for (char *ch = msg->params[1]; ch < split; ++ch) {
-		if (iscntrl(*ch)) return "";
+		if (iscntrl(*ch)) return;
 	}
 	char delimit = *split;
 	char *mention = msg->params[1];
 	msg->params[1] = (delimit ? &split[1] : split);
 	*split = '\0';
 
-	static char buf[1024];
-	buf[0] = '\0';
-	struct Cat cat = { buf, sizeof(buf), 0 };
 	while (*mention) {
 		size_t skip = strspn(mention, ",<> ");
-		catf(&cat, "%.*s", (int)skip, mention);
+		catf(cat, "%.*s", (int)skip, mention);
 		mention += skip;
 
 		size_t len = strcspn(mention, ",<> ");
@@ -1188,15 +1185,14 @@ static const char *colorMentions(uint id, struct Message *msg) {
 		mention[len] = '\0';
 		enum Color color = completeColor(id, mention);
 		if (color != Default) {
-			catf(&cat, "\3%02d%s\3", color, mention);
+			catf(cat, "\3%02d%s\3", color, mention);
 		} else {
-			catf(&cat, "%s", mention);
+			catf(cat, "%s", mention);
 		}
 		mention[len] = punct;
 		mention += len;
 	}
-	catf(&cat, "%c", delimit);
-	return buf;
+	catf(cat, "%c", delimit);
 }
 
 static void handlePrivmsg(struct Message *msg) {
@@ -1223,6 +1219,8 @@ static void handlePrivmsg(struct Message *msg) {
 	}
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 
+	char buf[1024] = "";
+	struct Cat cat = { buf, sizeof(buf), 0 };
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
@@ -1234,21 +1232,21 @@ static void handlePrivmsg(struct Message *msg) {
 		);
 	} else if (action) {
 		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
-		const char *mentions = colorMentions(id, msg);
+		colorMentions(&cat, id, msg);
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\35\3%d* %s\17\35\t%s%s",
 			(mention ? "\26" : ""), hash(msg->user), msg->nick,
-			mentions, msg->params[1]
+			buf, msg->params[1]
 		);
 	} else {
 		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
-		const char *mentions = colorMentions(id, msg);
+		colorMentions(&cat, id, msg);
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\3%d<%s>\17\t%s%s",
 			(mention ? "\26" : ""), hash(msg->user), msg->nick,
-			mentions, msg->params[1]
+			buf, msg->params[1]
 		);
 	}
 }
