@@ -63,16 +63,13 @@ static enum Cap capParse(const char *list) {
 	return caps;
 }
 
-static const char *capList(enum Cap caps) {
-	static char buf[1024];
-	buf[0] = '\0';
-	struct Cat cat = { buf, sizeof(buf), 0 };
+static const char *capList(struct Cat *cat, enum Cap caps) {
 	for (size_t i = 0; i < ARRAY_LEN(CapNames); ++i) {
 		if (caps & (1 << i)) {
-			catf(&cat, "%s%s", (buf[0] ? " " : ""), CapNames[i]);
+			catf(cat, "%s%s", (cat->len ? " " : ""), CapNames[i]);
 		}
 	}
-	return buf;
+	return cat->buf;
 }
 
 static void require(struct Message *msg, bool origin, uint len) {
@@ -143,7 +140,9 @@ static void handleCap(struct Message *msg) {
 			caps &= ~CapConsumer;
 		}
 		if (caps) {
-			ircFormat("CAP REQ :%s\r\n", capList(caps));
+			char buf[512] = "";
+			struct Cat cat = { buf, sizeof(buf), 0 };
+			ircFormat("CAP REQ :%s\r\n", capList(&cat, caps));
 		} else {
 			if (!(self.caps & CapSASL)) ircFormat("CAP END\r\n");
 		}
