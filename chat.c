@@ -100,7 +100,7 @@ static void execRead(void) {
 	if (!len) return;
 	buf[len] = '\0';
 	for (char *ptr = buf; ptr;) {
-		char *line = strsep(&ptr, "\n");
+		char *line = strsep(&ptr, "\r\n");
 		if (line[0]) command(execID, line);
 	}
 }
@@ -112,7 +112,7 @@ static void utilRead(void) {
 	if (!len) return;
 	buf[len] = '\0';
 	for (char *ptr = buf; ptr;) {
-		char *line = strsep(&ptr, "\n");
+		char *line = strsep(&ptr, "\r\n");
 		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
 	}
 }
