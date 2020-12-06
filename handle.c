@@ -1302,6 +1302,7 @@ static const struct Handler {
 	{ "422", handleErrorNoMOTD },
 	{ "432", handleErrorErroneousNickname },
 	{ "433", handleErrorNicknameInUse },
+	{ "437", handleErrorNicknameInUse },
 	{ "441", handleErrorUserNotInChannel },
 	{ "443", handleErrorUserOnChannel },
 	{ "478", handleErrorBanListFull },
