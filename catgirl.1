@@ -173,10 +173,11 @@ wildcards as in
 .Xr sh 1 .
 The format of the pattern is as follows:
 .Bd -ragged -offset indent
-.Ar nick Ns Op Ar !user@host
-.Op Ar command
-.Op Ar channel
-.Op Ar message
+.Ar nick Ns Oo Ar !user@host
+.Oo Ar command
+.Oo Ar channel
+.Oo Ar message
+.Oc Oc Oc Oc
 .Ed
 .
 .It Fl j Ar join , Cm join = Ar join
