@@ -38,6 +38,16 @@ program is a TLS-only
 curses IRC client.
 .
 .Pp
+See
+.Sx EXAMPLES
+to get started.
+Type
+.Ic /help
+inside
+.Nm
+to view this manual again.
+.
+.Pp
 Options can be loaded from files
 listed on the command line.
 Files are searched for in
@@ -599,18 +609,27 @@ if the connection is lost,
 and >0 if an error occurs.
 .
 .Sh EXAMPLES
-Command line:
+Join
+.Li #ascii.town
+from the command line:
 .Bd -literal -offset indent
 catgirl -h chat.freenode.net -j '#ascii.town'
 .Ed
 .Pp
-Configuration file:
+Create a configuration file in
+.Pa ~/.config/catgirl/freenode :
 .Bd -literal -offset indent
 host = chat.freenode.net
 join = #ascii.town
 .Ed
 .Pp
-Filtering joins, parts and quits from a channel:
+Load the configuration file:
+.Bd -literal -offset indent
+catgirl freenode
+.Ed
+.
+.Ss Tips
+Hide joins, parts and quits from a channel:
 .Bd -literal -offset indent
 ignore = * [JPQ][OAU][IR][NT] #example
 .Ed
