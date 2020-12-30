@@ -316,6 +316,13 @@ static void commandWhois(uint id, char *params) {
 	replies.whois += count;
 }
 
+static void commandWhowas(uint id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("WHOWAS %s\r\n", params);
+	replies.whowas++;
+}
+
 static void commandNS(uint id, char *params) {
 	(void)id;
 	if (params) ircFormat("PRIVMSG NickServ :%s\r\n", params);
@@ -500,6 +507,7 @@ static const struct Handler {
 	{ "/uninvex", commandUninvex, 0 },
 	{ "/voice", commandVoice, 0 },
 	{ "/whois", commandWhois, 0 },
+	{ "/whowas", commandWhowas, 0 },
 	{ "/window", commandWindow, 0 },
 };
 

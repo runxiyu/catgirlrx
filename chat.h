@@ -260,6 +260,7 @@ extern struct Replies {
 	uint topic;
 	uint who;
 	uint whois;
+	uint whowas;
 } replies;
 
 void handle(struct Message *msg);

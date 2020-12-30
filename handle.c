@@ -1058,12 +1058,12 @@ static void handleReplyWhoisUser(struct Message *msg) {
 
 static void handleReplyWhoisServer(struct Message *msg) {
 	require(msg, false, 4);
-	if (!replies.whois) return;
+	if (!replies.whois && !replies.whowas) return;
 	uiFormat(
 		Network, Warm, tagTime(msg),
-		"\3%02d%s\3\tis connected to %s (%s)",
+		"\3%02d%s\3\t%s connected to %s (%s)",
 		completeColor(Network, msg->params[1]), msg->params[1],
-		msg->params[2], msg->params[3]
+		(replies.whowas ? "was" : "is"), msg->params[2], msg->params[3]
 	);
 }
 
@@ -1133,6 +1133,26 @@ static void handleReplyEndOfWhois(struct Message *msg) {
 		completeRemove(Network, msg->params[1]);
 	}
 	replies.whois--;
+}
+
+static void handleReplyWhowasUser(struct Message *msg) {
+	require(msg, false, 6);
+	if (!replies.whowas) return;
+	completeTouch(Network, msg->params[1], hash(msg->params[2]));
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"\3%02d%s\3\twas %s!%s@%s (%s)",
+		hash(msg->params[2]), msg->params[1],
+		msg->params[1], msg->params[2], msg->params[3], msg->params[5]
+	);
+}
+
+static void handleReplyEndOfWhowas(struct Message *msg) {
+	require(msg, false, 2);
+	if (strcmp(msg->params[1], self.nick)) {
+		completeRemove(Network, msg->params[1]);
+	}
+	if (replies.whowas) replies.whowas--;
 }
 
 static void handleReplyAway(struct Message *msg) {
@@ -1300,6 +1320,7 @@ static const struct Handler {
 	{ "311", handleReplyWhoisUser },
 	{ "312", handleReplyWhoisServer },
 	{ "313", handleReplyWhoisGeneric },
+	{ "314", handleReplyWhowasUser },
 	{ "315", handleReplyEndOfWho },
 	{ "317", handleReplyWhoisIdle },
 	{ "318", handleReplyEndOfWhois },
@@ -1320,6 +1341,7 @@ static const struct Handler {
 	{ "366", handleReplyEndOfNames },
 	{ "367", handleReplyBanList },
 	{ "368", handleReplyEndOfBanList },
+	{ "369", handleReplyEndOfWhowas },
 	{ "372", handleReplyMOTD },
 	{ "378", handleReplyWhoisGeneric },
 	{ "379", handleReplyWhoisGeneric },
