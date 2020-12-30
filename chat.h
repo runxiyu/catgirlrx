@@ -171,6 +171,7 @@ extern struct Network {
 	X("multi-prefix", CapMultiPrefix) \
 	X("sasl", CapSASL) \
 	X("server-time", CapServerTime) \
+	X("setname", CapSetname) \
 	X("userhost-in-names", CapUserhostInNames)
 
 enum Cap {
@@ -256,6 +257,7 @@ extern struct Replies {
 	uint list;
 	uint mode;
 	uint names;
+	uint setname;
 	uint topic;
 	uint who;
 	uint whois;

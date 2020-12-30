@@ -97,6 +97,10 @@ typedef void Handler(struct Message *msg);
 
 static void handleStandardReply(struct Message *msg) {
 	require(msg, false, 3);
+	if (!strcmp(msg->params[0], "SETNAME")) {
+		if (!replies.setname) return;
+		replies.setname--;
+	}
 	for (uint i = 2; i < ParamCap - 1; ++i) {
 		if (msg->params[i + 1]) continue;
 		uiFormat(
@@ -1150,6 +1154,17 @@ static void handleReplyNowAway(struct Message *msg) {
 	replies.away--;
 }
 
+static void handleSetname(struct Message *msg) {
+	require(msg, true, 1);
+	if (!replies.setname) return;
+	if (strcmp(msg->nick, self.nick)) return;
+	uiFormat(
+		Network, Warm, tagTime(msg),
+		"You update your name tag: %s", msg->params[0]
+	);
+	replies.setname--;
+}
+
 static bool isAction(struct Message *msg) {
 	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
 	msg->params[1] += 8;
@@ -1343,6 +1358,7 @@ static const struct Handler {
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
 	{ "QUIT", handleQuit },
+	{ "SETNAME", handleSetname },
 	{ "TOPIC", handleTopic },
 	{ "WARN", handleStandardReply },
 };

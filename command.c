@@ -159,6 +159,13 @@ static void commandAway(uint id, char *params) {
 	replies.away++;
 }
 
+static void commandSetname(uint id, char *params) {
+	(void)id;
+	if (!params) return;
+	ircFormat("SETNAME :%s\r\n", params);
+	replies.setname++;
+}
+
 static void commandTopic(uint id, char *params) {
 	if (params) {
 		ircFormat("TOPIC %s :%s\r\n", idNames[id], params);
@@ -486,6 +493,7 @@ static const struct Handler {
 	{ "/quit", commandQuit, 0 },
 	{ "/quote", commandQuote, Multiline | Restricted },
 	{ "/say", commandPrivmsg, Multiline },
+	{ "/setname", commandSetname, 0 },
 	{ "/topic", commandTopic, 0 },
 	{ "/unban", commandUnban, 0 },
 	{ "/unexcept", commandUnexcept, 0 },
