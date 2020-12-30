@@ -247,21 +247,24 @@ static inline void utilPush(struct Util *util, const char *arg) {
 	}
 }
 
-extern struct Replies {
-	uint away;
-	uint ban;
-	uint excepts;
-	uint help;
-	uint invex;
-	uint join;
-	uint list;
-	uint mode;
-	uint names;
-	uint topic;
-	uint who;
-	uint whois;
-	uint whowas;
-} replies;
+enum Reply {
+	ReplyAway = 1,
+	ReplyBan,
+	ReplyExcepts,
+	ReplyHelp,
+	ReplyInvex,
+	ReplyJoin,
+	ReplyList,
+	ReplyMode,
+	ReplyNames,
+	ReplyTopic,
+	ReplyWho,
+	ReplyWhois,
+	ReplyWhowas,
+	ReplyCap,
+};
+
+extern uint replies[ReplyCap];
 
 void handle(struct Message *msg);
 void command(uint id, char *input);

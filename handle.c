@@ -37,7 +37,7 @@
 
 #include "chat.h"
 
-struct Replies replies;
+uint replies[ReplyCap];
 
 static const char *CapNames[] = {
 #define X(name, id) [id##Bit] = name,
@@ -244,9 +244,9 @@ static void handleReplyWelcome(struct Message *msg) {
 			if (*ch == ',') count++;
 		}
 		ircFormat("JOIN %s\r\n", self.join);
-		replies.join += count;
-		replies.topic += count;
-		replies.names += count;
+		replies[ReplyJoin] += count;
+		replies[ReplyTopic] += count;
+		replies[ReplyNames] += count;
 	}
 }
 
@@ -316,14 +316,8 @@ static void handleErrorNoMOTD(struct Message *msg) {
 
 static void handleReplyHelp(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.help) return;
 	urlScan(Network, msg->nick, msg->params[2]);
 	uiWrite(Network, Warm, tagTime(msg), msg->params[2]);
-}
-
-static void handleReplyEndOfHelp(struct Message *msg) {
-	(void)msg;
-	if (replies.help) replies.help--;
 }
 
 static void handleJoin(struct Message *msg) {
@@ -339,9 +333,9 @@ static void handleJoin(struct Message *msg) {
 		}
 		idColors[id] = hash(msg->params[0]);
 		completeTouch(None, msg->params[0], idColors[id]);
-		if (replies.join) {
+		if (replies[ReplyJoin]) {
 			uiShowID(id);
-			replies.join--;
+			replies[ReplyJoin]--;
 		}
 	}
 	completeTouch(id, msg->nick, hash(msg->user));
@@ -535,7 +529,7 @@ static void handleReplyNames(struct Message *msg) {
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
-		if (!replies.names) continue;
+		if (!replies[ReplyNames]) continue;
 		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), color, prefixes);
 	}
 	if (!cat.len) return;
@@ -546,17 +540,11 @@ static void handleReplyNames(struct Message *msg) {
 	);
 }
 
-static void handleReplyEndOfNames(struct Message *msg) {
-	(void)msg;
-	if (replies.names) replies.names--;
-}
-
 static char whoBuf[1024];
 static struct Cat whoCat = { whoBuf, sizeof(whoBuf), 0 };
 
 static void handleReplyWho(struct Message *msg) {
 	require(msg, false, 7);
-	if (!replies.who) return;
 	if (!whoCat.len) {
 		catf(
 			&whoCat, "The operators of \3%02d%s\3 are ",
@@ -577,16 +565,12 @@ static void handleReplyWho(struct Message *msg) {
 
 static void handleReplyEndOfWho(struct Message *msg) {
 	require(msg, false, 2);
-	if (!replies.who) return;
-	replies.who--;
 	uiWrite(idFor(msg->params[1]), Cold, tagTime(msg), whoBuf);
 	whoCat.len = 0;
 }
 
 static void handleReplyNoTopic(struct Message *msg) {
 	require(msg, false, 2);
-	if (!replies.topic) return;
-	replies.topic--;
 	uiFormat(
 		idFor(msg->params[1]), Cold, tagTime(msg),
 		"There is no sign in \3%02d%s\3",
@@ -611,8 +595,8 @@ static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
 	uint id = idFor(msg->params[1]);
 	topicComplete(id, msg->params[2]);
-	if (!replies.topic) return;
-	replies.topic--;
+	if (!replies[ReplyTopic]) return;
+	replies[ReplyTopic]--;
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
 		id, Cold, tagTime(msg),
@@ -709,9 +693,6 @@ static const char *UserModes[256] = {
 
 static void handleReplyUserModeIs(struct Message *msg) {
 	require(msg, false, 2);
-	if (!replies.mode) return;
-	replies.mode--;
-
 	char buf[1024] = "";
 	struct Cat cat = { buf, sizeof(buf), 0 };
 	for (char *ch = msg->params[1]; *ch; ++ch) {
@@ -743,9 +724,6 @@ static const char *ChanModes[256] = {
 
 static void handleReplyChannelModeIs(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.mode) return;
-	replies.mode--;
-
 	uint param = 3;
 	char buf[1024] = "";
 	struct Cat cat = { buf, sizeof(buf), 0 };
@@ -955,7 +933,6 @@ static void handleErrorBanListFull(struct Message *msg) {
 
 static void handleReplyBanList(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.ban) return;
 	uint id = idFor(msg->params[1]);
 	if (msg->params[3] && msg->params[4]) {
 		char since[sizeof("0000-00-00 00:00:00")];
@@ -977,12 +954,8 @@ static void handleReplyBanList(struct Message *msg) {
 	}
 }
 
-static void handleReplyEndOfBanList(struct Message *msg) {
-	(void)msg;
-	if (replies.ban) replies.ban--;
-}
-
 static void onList(const char *list, struct Message *msg) {
+	require(msg, false, 3);
 	uint id = idFor(msg->params[1]);
 	if (msg->params[3] && msg->params[4]) {
 		char since[sizeof("0000-00-00 00:00:00")];
@@ -1005,30 +978,15 @@ static void onList(const char *list, struct Message *msg) {
 }
 
 static void handleReplyExceptList(struct Message *msg) {
-	require(msg, false, 3);
-	if (!replies.excepts) return;
 	onList("except", msg);
 }
 
-static void handleReplyEndOfExceptList(struct Message *msg) {
-	(void)msg;
-	if (replies.excepts) replies.excepts--;
-}
-
 static void handleReplyInviteList(struct Message *msg) {
-	require(msg, false, 3);
-	if (!replies.invex) return;
 	onList("invite", msg);
-}
-
-static void handleReplyEndOfInviteList(struct Message *msg) {
-	(void)msg;
-	if (replies.invex) replies.invex--;
 }
 
 static void handleReplyList(struct Message *msg) {
 	require(msg, false, 4);
-	if (!replies.list) return;
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"In \3%02d%s\3 are %ld under the banner: %s",
@@ -1038,15 +996,8 @@ static void handleReplyList(struct Message *msg) {
 	);
 }
 
-static void handleReplyListEnd(struct Message *msg) {
-	(void)msg;
-	if (!replies.list) return;
-	replies.list--;
-}
-
 static void handleReplyWhoisUser(struct Message *msg) {
 	require(msg, false, 6);
-	if (!replies.whois) return;
 	completeTouch(Network, msg->params[1], hash(msg->params[2]));
 	uiFormat(
 		Network, Warm, tagTime(msg),
@@ -1057,19 +1008,18 @@ static void handleReplyWhoisUser(struct Message *msg) {
 }
 
 static void handleReplyWhoisServer(struct Message *msg) {
+	if (!replies[ReplyWhois] && !replies[ReplyWhowas]) return;
 	require(msg, false, 4);
-	if (!replies.whois && !replies.whowas) return;
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s connected to %s (%s)",
 		completeColor(Network, msg->params[1]), msg->params[1],
-		(replies.whowas ? "was" : "is"), msg->params[2], msg->params[3]
+		(replies[ReplyWhowas] ? "was" : "is"), msg->params[2], msg->params[3]
 	);
 }
 
 static void handleReplyWhoisIdle(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.whois) return;
 	unsigned long idle = strtoul(msg->params[2], NULL, 10);
 	const char *unit = "second";
 	if (idle / 60) {
@@ -1095,7 +1045,6 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 
 static void handleReplyWhoisChannels(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.whois) return;
 	char buf[1024] = "";
 	struct Cat cat = { buf, sizeof(buf), 0 };
 	while (msg->params[2]) {
@@ -1112,7 +1061,6 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 
 static void handleReplyWhoisGeneric(struct Message *msg) {
 	require(msg, false, 3);
-	if (!replies.whois) return;
 	if (msg->params[3]) {
 		msg->params[0] = msg->params[2];
 		msg->params[2] = msg->params[3];
@@ -1128,16 +1076,13 @@ static void handleReplyWhoisGeneric(struct Message *msg) {
 
 static void handleReplyEndOfWhois(struct Message *msg) {
 	require(msg, false, 2);
-	if (!replies.whois) return;
 	if (strcmp(msg->params[1], self.nick)) {
 		completeRemove(Network, msg->params[1]);
 	}
-	replies.whois--;
 }
 
 static void handleReplyWhowasUser(struct Message *msg) {
 	require(msg, false, 6);
-	if (!replies.whowas) return;
 	completeTouch(Network, msg->params[1], hash(msg->params[2]));
 	uiFormat(
 		Network, Warm, tagTime(msg),
@@ -1152,7 +1097,6 @@ static void handleReplyEndOfWhowas(struct Message *msg) {
 	if (strcmp(msg->params[1], self.nick)) {
 		completeRemove(Network, msg->params[1]);
 	}
-	if (replies.whowas) replies.whowas--;
 }
 
 static void handleReplyAway(struct Message *msg) {
@@ -1177,9 +1121,7 @@ static void handleReplyAway(struct Message *msg) {
 
 static void handleReplyNowAway(struct Message *msg) {
 	require(msg, false, 2);
-	if (!replies.away) return;
 	uiFormat(Network, Warm, tagTime(msg), "%s", msg->params[1]);
-	replies.away--;
 }
 
 static bool isAction(struct Message *msg) {
@@ -1307,79 +1249,80 @@ static void handleError(struct Message *msg) {
 
 static const struct Handler {
 	const char *cmd;
+	int reply;
 	Handler *fn;
 } Handlers[] = {
-	{ "001", handleReplyWelcome },
-	{ "005", handleReplyISupport },
-	{ "221", handleReplyUserModeIs },
-	{ "276", handleReplyWhoisGeneric },
-	{ "301", handleReplyAway },
-	{ "305", handleReplyNowAway },
-	{ "306", handleReplyNowAway },
-	{ "307", handleReplyWhoisGeneric },
-	{ "311", handleReplyWhoisUser },
-	{ "312", handleReplyWhoisServer },
-	{ "313", handleReplyWhoisGeneric },
-	{ "314", handleReplyWhowasUser },
-	{ "315", handleReplyEndOfWho },
-	{ "317", handleReplyWhoisIdle },
-	{ "318", handleReplyEndOfWhois },
-	{ "319", handleReplyWhoisChannels },
-	{ "322", handleReplyList },
-	{ "323", handleReplyListEnd },
-	{ "324", handleReplyChannelModeIs },
-	{ "330", handleReplyWhoisGeneric },
-	{ "331", handleReplyNoTopic },
-	{ "332", handleReplyTopic },
-	{ "341", handleReplyInviting },
-	{ "346", handleReplyInviteList },
-	{ "347", handleReplyEndOfInviteList },
-	{ "348", handleReplyExceptList },
-	{ "349", handleReplyEndOfExceptList },
-	{ "352", handleReplyWho },
-	{ "353", handleReplyNames },
-	{ "366", handleReplyEndOfNames },
-	{ "367", handleReplyBanList },
-	{ "368", handleReplyEndOfBanList },
-	{ "369", handleReplyEndOfWhowas },
-	{ "372", handleReplyMOTD },
-	{ "378", handleReplyWhoisGeneric },
-	{ "379", handleReplyWhoisGeneric },
-	{ "422", handleErrorNoMOTD },
-	{ "432", handleErrorErroneousNickname },
-	{ "433", handleErrorNicknameInUse },
-	{ "437", handleErrorNicknameInUse },
-	{ "441", handleErrorUserNotInChannel },
-	{ "443", handleErrorUserOnChannel },
-	{ "478", handleErrorBanListFull },
-	{ "482", handleErrorChanopPrivsNeeded },
-	{ "671", handleReplyWhoisGeneric },
-	{ "704", handleReplyHelp },
-	{ "705", handleReplyHelp },
-	{ "706", handleReplyEndOfHelp },
-	{ "900", handleReplyLoggedIn },
-	{ "904", handleErrorSASLFail },
-	{ "905", handleErrorSASLFail },
-	{ "906", handleErrorSASLFail },
-	{ "AUTHENTICATE", handleAuthenticate },
-	{ "CAP", handleCap },
-	{ "CHGHOST", handleChghost },
-	{ "ERROR", handleError },
-	{ "FAIL", handleStandardReply },
-	{ "INVITE", handleInvite },
-	{ "JOIN", handleJoin },
-	{ "KICK", handleKick },
-	{ "MODE", handleMode },
-	{ "NICK", handleNick },
-	{ "NOTE", handleStandardReply },
-	{ "NOTICE", handlePrivmsg },
-	{ "PART", handlePart },
-	{ "PING", handlePing },
-	{ "PRIVMSG", handlePrivmsg },
-	{ "QUIT", handleQuit },
-	{ "SETNAME", handleSetname },
-	{ "TOPIC", handleTopic },
-	{ "WARN", handleStandardReply },
+	{ "001", 0, handleReplyWelcome },
+	{ "005", 0, handleReplyISupport },
+	{ "221", -ReplyMode, handleReplyUserModeIs },
+	{ "276", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "301", 0, handleReplyAway },
+	{ "305", -ReplyAway, handleReplyNowAway },
+	{ "306", -ReplyAway, handleReplyNowAway },
+	{ "307", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "311", +ReplyWhois, handleReplyWhoisUser },
+	{ "312", 0, handleReplyWhoisServer },
+	{ "313", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "314", +ReplyWhowas, handleReplyWhowasUser },
+	{ "315", -ReplyWho, handleReplyEndOfWho },
+	{ "317", +ReplyWhois, handleReplyWhoisIdle },
+	{ "318", -ReplyWhois, handleReplyEndOfWhois },
+	{ "319", +ReplyWhois, handleReplyWhoisChannels },
+	{ "322", +ReplyList, handleReplyList },
+	{ "323", -ReplyList, NULL },
+	{ "324", -ReplyMode, handleReplyChannelModeIs },
+	{ "330", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "331", -ReplyTopic, handleReplyNoTopic },
+	{ "332", 0, handleReplyTopic },
+	{ "341", 0, handleReplyInviting },
+	{ "346", +ReplyInvex, handleReplyInviteList },
+	{ "347", -ReplyInvex, NULL },
+	{ "348", +ReplyExcepts, handleReplyExceptList },
+	{ "349", -ReplyExcepts, NULL },
+	{ "352", +ReplyWho, handleReplyWho },
+	{ "353", 0, handleReplyNames },
+	{ "366", -ReplyNames, NULL },
+	{ "367", +ReplyBan, handleReplyBanList },
+	{ "368", -ReplyBan, NULL },
+	{ "369", -ReplyWhowas, handleReplyEndOfWhowas },
+	{ "372", 0, handleReplyMOTD },
+	{ "378", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "379", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "422", 0, handleErrorNoMOTD },
+	{ "432", 0, handleErrorErroneousNickname },
+	{ "433", 0, handleErrorNicknameInUse },
+	{ "437", 0, handleErrorNicknameInUse },
+	{ "441", 0, handleErrorUserNotInChannel },
+	{ "443", 0, handleErrorUserOnChannel },
+	{ "478", 0, handleErrorBanListFull },
+	{ "482", 0, handleErrorChanopPrivsNeeded },
+	{ "671", +ReplyWhois, handleReplyWhoisGeneric },
+	{ "704", +ReplyHelp, handleReplyHelp },
+	{ "705", +ReplyHelp, handleReplyHelp },
+	{ "706", -ReplyHelp, NULL },
+	{ "900", 0, handleReplyLoggedIn },
+	{ "904", 0, handleErrorSASLFail },
+	{ "905", 0, handleErrorSASLFail },
+	{ "906", 0, handleErrorSASLFail },
+	{ "AUTHENTICATE", 0, handleAuthenticate },
+	{ "CAP", 0, handleCap },
+	{ "CHGHOST", 0, handleChghost },
+	{ "ERROR", 0, handleError },
+	{ "FAIL", 0, handleStandardReply },
+	{ "INVITE", 0, handleInvite },
+	{ "JOIN", 0, handleJoin },
+	{ "KICK", 0, handleKick },
+	{ "MODE", 0, handleMode },
+	{ "NICK", 0, handleNick },
+	{ "NOTE", 0, handleStandardReply },
+	{ "NOTICE", 0, handlePrivmsg },
+	{ "PART", 0, handlePart },
+	{ "PING", 0, handlePing },
+	{ "PRIVMSG", 0, handlePrivmsg },
+	{ "QUIT", 0, handleQuit },
+	{ "SETNAME", 0, handleSetname },
+	{ "TOPIC", 0, handleTopic },
+	{ "WARN", 0, handleStandardReply },
 };
 
 static int compar(const void *cmd, const void *_handler) {
@@ -1396,7 +1339,9 @@ void handle(struct Message *msg) {
 		msg->cmd, Handlers, ARRAY_LEN(Handlers), sizeof(*handler), compar
 	);
 	if (handler) {
-		handler->fn(msg);
+		if (handler->reply && !replies[abs(handler->reply)]) return;
+		if (handler->fn) handler->fn(msg);
+		if (handler->reply < 0) replies[abs(handler->reply)]--;
 	} else if (strcmp(msg->cmd, "400") >= 0 && strcmp(msg->cmd, "599") <= 0) {
 		handleErrorGeneric(msg);
 	}

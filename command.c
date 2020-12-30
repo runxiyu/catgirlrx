@@ -125,9 +125,9 @@ static void commandJoin(uint id, char *params) {
 		if (*ch == ',') count++;
 	}
 	ircFormat("JOIN %s\r\n", params);
-	replies.join += count;
-	replies.topic += count;
-	replies.names += count;
+	replies[ReplyJoin] += count;
+	replies[ReplyTopic] += count;
+	replies[ReplyNames] += count;
 }
 
 static void commandPart(uint id, char *params) {
@@ -156,7 +156,7 @@ static void commandAway(uint id, char *params) {
 	} else {
 		ircFormat("AWAY\r\n");
 	}
-	replies.away++;
+	replies[ReplyAway]++;
 }
 
 static void commandSetname(uint id, char *params) {
@@ -170,20 +170,20 @@ static void commandTopic(uint id, char *params) {
 		ircFormat("TOPIC %s :%s\r\n", idNames[id], params);
 	} else {
 		ircFormat("TOPIC %s\r\n", idNames[id]);
-		replies.topic++;
+		replies[ReplyTopic]++;
 	}
 }
 
 static void commandNames(uint id, char *params) {
 	(void)params;
 	ircFormat("NAMES %s\r\n", idNames[id]);
-	replies.names++;
+	replies[ReplyNames]++;
 }
 
 static void commandOps(uint id, char *params) {
 	(void)params;
 	ircFormat("WHO %s\r\n", idNames[id]);
-	replies.who++;
+	replies[ReplyWho]++;
 }
 
 static void commandInvite(uint id, char *params) {
@@ -208,14 +208,14 @@ static void commandMode(uint id, char *params) {
 			ircFormat("MODE %s %s\r\n", self.nick, params);
 		} else {
 			ircFormat("MODE %s\r\n", self.nick);
-			replies.mode++;
+			replies[ReplyMode]++;
 		}
 	} else {
 		if (params) {
 			ircFormat("MODE %s %s\r\n", idNames[id], params);
 		} else {
 			ircFormat("MODE %s\r\n", idNames[id]);
-			replies.mode++;
+			replies[ReplyMode]++;
 		}
 	}
 }
@@ -258,7 +258,7 @@ static void commandBan(uint id, char *params) {
 		channelListMode(id, '+', 'b', params);
 	} else {
 		ircFormat("MODE %s b\r\n", idNames[id]);
-		replies.ban++;
+		replies[ReplyBan]++;
 	}
 }
 
@@ -272,7 +272,7 @@ static void commandExcept(uint id, char *params) {
 		channelListMode(id, '+', network.excepts, params);
 	} else {
 		ircFormat("MODE %s %c\r\n", idNames[id], network.excepts);
-		replies.excepts++;
+		replies[ReplyExcepts]++;
 	}
 }
 
@@ -286,7 +286,7 @@ static void commandInvex(uint id, char *params) {
 		channelListMode(id, '+', network.invex, params);
 	} else {
 		ircFormat("MODE %s %c\r\n", idNames[id], network.invex);
-		replies.invex++;
+		replies[ReplyInvex]++;
 	}
 }
 
@@ -302,7 +302,7 @@ static void commandList(uint id, char *params) {
 	} else {
 		ircFormat("LIST\r\n");
 	}
-	replies.list++;
+	replies[ReplyList]++;
 }
 
 static void commandWhois(uint id, char *params) {
@@ -313,14 +313,14 @@ static void commandWhois(uint id, char *params) {
 		if (*ch == ',') count++;
 	}
 	ircFormat("WHOIS %s\r\n", params);
-	replies.whois += count;
+	replies[ReplyWhois] += count;
 }
 
 static void commandWhowas(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("WHOWAS %s\r\n", params);
-	replies.whowas++;
+	replies[ReplyWhowas]++;
 }
 
 static void commandNS(uint id, char *params) {
@@ -437,7 +437,7 @@ static void commandHelp(uint id, char *params) {
 
 	if (params) {
 		ircFormat("HELP :%s\r\n", params);
-		replies.help++;
+		replies[ReplyHelp]++;
 		return;
 	}
 
