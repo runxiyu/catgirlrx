@@ -95,6 +95,18 @@ static const time_t *tagTime(const struct Message *msg) {
 
 typedef void Handler(struct Message *msg);
 
+static void handleStandardReply(struct Message *msg) {
+	require(msg, false, 3);
+	for (uint i = 2; i < ParamCap - 1; ++i) {
+		if (msg->params[i + 1]) continue;
+		uiFormat(
+			Network, Warm, tagTime(msg),
+			"%s", msg->params[i]
+		);
+		break;
+	}
+}
+
 static void handleErrorGeneric(struct Message *msg) {
 	require(msg, false, 2);
 	if (msg->params[2]) {
@@ -1319,17 +1331,20 @@ static const struct Handler {
 	{ "CAP", handleCap },
 	{ "CHGHOST", handleChghost },
 	{ "ERROR", handleError },
+	{ "FAIL", handleStandardReply },
 	{ "INVITE", handleInvite },
 	{ "JOIN", handleJoin },
 	{ "KICK", handleKick },
 	{ "MODE", handleMode },
 	{ "NICK", handleNick },
+	{ "NOTE", handleStandardReply },
 	{ "NOTICE", handlePrivmsg },
 	{ "PART", handlePart },
 	{ "PING", handlePing },
 	{ "PRIVMSG", handlePrivmsg },
 	{ "QUIT", handleQuit },
 	{ "TOPIC", handleTopic },
+	{ "WARN", handleStandardReply },
 };
 
 static int compar(const void *cmd, const void *_handler) {
