@@ -163,7 +163,6 @@ static void commandSetname(uint id, char *params) {
 	(void)id;
 	if (!params) return;
 	ircFormat("SETNAME :%s\r\n", params);
-	replies.setname++;
 }
 
 static void commandTopic(uint id, char *params) {

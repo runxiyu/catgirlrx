@@ -97,10 +97,6 @@ typedef void Handler(struct Message *msg);
 
 static void handleStandardReply(struct Message *msg) {
 	require(msg, false, 3);
-	if (!strcmp(msg->params[0], "SETNAME")) {
-		if (!replies.setname) return;
-		replies.setname--;
-	}
 	for (uint i = 2; i < ParamCap - 1; ++i) {
 		if (msg->params[i + 1]) continue;
 		uiFormat(
@@ -444,6 +440,18 @@ static void handleNick(struct Message *msg) {
 		);
 	}
 	completeReplace(None, msg->nick, msg->params[0]);
+}
+
+static void handleSetname(struct Message *msg) {
+	require(msg, true, 1);
+	for (uint id; (id = completeID(msg->nick));) {
+		uiFormat(
+			id, ignoreCheck(Cold, id, msg), tagTime(msg),
+			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s)",
+			hash(msg->user), msg->nick, hash(msg->user), msg->nick,
+			msg->params[0]
+		);
+	}
 }
 
 static void handleQuit(struct Message *msg) {
@@ -1152,17 +1160,6 @@ static void handleReplyNowAway(struct Message *msg) {
 	if (!replies.away) return;
 	uiFormat(Network, Warm, tagTime(msg), "%s", msg->params[1]);
 	replies.away--;
-}
-
-static void handleSetname(struct Message *msg) {
-	require(msg, true, 1);
-	if (!replies.setname) return;
-	if (strcmp(msg->nick, self.nick)) return;
-	uiFormat(
-		Network, Warm, tagTime(msg),
-		"You update your name tag: %s", msg->params[0]
-	);
-	replies.setname--;
 }
 
 static bool isAction(struct Message *msg) {
