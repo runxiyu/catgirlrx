@@ -388,16 +388,19 @@ static void commandCopy(uint id, char *params) {
 
 static void commandIgnore(uint id, char *params) {
 	if (params) {
-		const char *pattern = ignoreAdd(params);
+		struct Ignore ignore = ignoreAdd(params);
 		uiFormat(
-			id, Cold, NULL, "Ignoring \3%02d%s\3",
-			Brown, pattern
+			id, Cold, NULL, "Ignoring \3%02d%s %s %s %s",
+			Brown, ignore.mask,
+			(ignore.cmd ?: ""), (ignore.chan ?: ""), (ignore.mesg ?: "")
 		);
 	} else {
-		for (size_t i = 0; i < ignore.len; ++i) {
+		for (size_t i = 0; i < IgnoreCap && ignores[i].mask; ++i) {
 			uiFormat(
-				Network, Warm, NULL, "Ignoring \3%02d%s\3",
-				Brown, ignore.patterns[i]
+				Network, Warm, NULL, "Ignoring \3%02d%s %s %s %s",
+				Brown, ignores[i].mask,
+				(ignores[i].cmd ?: ""), (ignores[i].chan ?: ""),
+				(ignores[i].mesg ?: "")
 			);
 		}
 	}
@@ -405,14 +408,13 @@ static void commandIgnore(uint id, char *params) {
 
 static void commandUnignore(uint id, char *params) {
 	if (!params) return;
-	if (ignoreRemove(params)) {
-		uiFormat(
-			id, Cold, NULL, "No longer ignoring \3%02d%s\3",
-			Brown, params
-		);
-	} else {
-		uiFormat(id, Cold, NULL, "Not ignoring \3%02d%s\3", Brown, params);
-	}
+	struct Ignore ignore = ignoreParse(params);
+	bool found = ignoreRemove(ignore);
+	uiFormat(
+		id, Cold, NULL, "%s ignoring \3%02d%s %s %s %s",
+		(found ? "No longer" : "Not"), Brown, ignore.mask,
+		(ignore.cmd ?: ""), (ignore.chan ?: ""), (ignore.mesg ?: "")
+	);
 }
 
 static void commandExec(uint id, char *params) {

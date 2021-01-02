@@ -353,13 +353,16 @@ void urlOpenCount(uint id, uint count);
 void urlOpenMatch(uint id, const char *str);
 void urlCopyMatch(uint id, const char *str);
 
-enum { IgnoreCap = 256 };
+enum { IgnoreCap = 64 };
 extern struct Ignore {
-	size_t len;
-	char *patterns[IgnoreCap];
-} ignore;
-const char *ignoreAdd(const char *pattern);
-bool ignoreRemove(const char *pattern);
+	char *mask;
+	char *cmd;
+	char *chan;
+	char *mesg;
+} ignores[IgnoreCap];
+struct Ignore ignoreParse(char *pattern);
+struct Ignore ignoreAdd(const char *pattern);
+bool ignoreRemove(struct Ignore ignore);
 enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg);
 
 extern bool logEnable;

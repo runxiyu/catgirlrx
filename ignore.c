@@ -35,55 +35,70 @@
 
 #include "chat.h"
 
-struct Ignore ignore;
+struct Ignore ignores[IgnoreCap];
+static size_t len;
 
-const char *ignoreAdd(const char *pattern) {
-	if (ignore.len == IgnoreCap) errx(EX_CONFIG, "ignore limit exceeded");
-	uint ex = 0, sp = 0;
-	for (const char *ch = pattern; *ch; ++ch) {
-		if (*ch == '!') ex++;
-		if (*ch == ' ') sp++;
-	}
-	char **dest = &ignore.patterns[ignore.len++];
-	int n = 0;
-	if (!ex && !sp) {
-		n = asprintf(dest, "%s!*@* * * *", pattern);
-	} else if (sp < 1) {
-		n = asprintf(dest, "%s * * *", pattern);
-	} else if (sp < 2) {
-		n = asprintf(dest, "%s * *", pattern);
-	} else if (sp < 3) {
-		n = asprintf(dest, "%s *", pattern);
-	} else {
-		*dest = strdup(pattern);
-	}
-	if (n < 0) err(EX_OSERR, "asprintf");
-	if (!*dest) err(EX_OSERR, "strdup");
-	return *dest;
+struct Ignore ignoreParse(char *pattern) {
+	struct Ignore ignore = {0};
+	ignore.mask = strsep(&pattern, " ");
+	ignore.cmd  = strsep(&pattern, " ");
+	ignore.chan = strsep(&pattern, " ");
+	ignore.mesg = pattern;
+	return ignore;
 }
 
-bool ignoreRemove(const char *pattern) {
+struct Ignore ignoreAdd(const char *pattern) {
+	if (len == IgnoreCap) errx(EX_CONFIG, "ignore limit exceeded");
+	char *own;
+	if (!strchr(pattern, '!') && !strchr(pattern, ' ')) {
+		int n = asprintf(&own, "%s!*@*", pattern);
+		if (n < 0) err(EX_OSERR, "asprintf");
+	} else {
+		own = strdup(pattern);
+		if (!own) err(EX_OSERR, "strdup");
+	}
+	struct Ignore ignore = ignoreParse(own);
+	ignores[len++] = ignore;
+	return ignore;
+}
+
+bool ignoreRemove(struct Ignore ignore) {
 	bool found = false;
-	for (size_t i = 0; i < ignore.len; ++i) {
-		if (strcasecmp(ignore.patterns[i], pattern)) continue;
-		free(ignore.patterns[i]);
-		ignore.patterns[i] = ignore.patterns[--ignore.len];
+	for (size_t i = len - 1; i < len; --i) {
+		if (!ignores[i].cmd != !ignore.cmd) continue;
+		if (!ignores[i].chan != !ignore.chan) continue;
+		if (!ignores[i].mesg != !ignore.mesg) continue;
+		if (strcasecmp(ignores[i].mask, ignore.mask)) continue;
+		if (ignore.cmd && strcasecmp(ignores[i].cmd, ignore.cmd)) continue;
+		if (ignore.chan && strcasecmp(ignores[i].chan, ignore.chan)) continue;
+		if (ignore.mesg && strcasecmp(ignores[i].mesg, ignore.mesg)) continue;
+		free(ignores[i].mask);
+		ignores[i] = ignores[--len];
+		ignores[len] = (struct Ignore) {0};
 		found = true;
 	}
 	return found;
 }
 
+static bool ignoreTest(
+	struct Ignore ignore, const char *mask, uint id, const struct Message *msg
+) {
+	if (fnmatch(ignore.mask, mask, FNM_CASEFOLD)) return false;
+	if (!ignore.cmd) return true;
+	if (fnmatch(ignore.cmd, msg->cmd, FNM_CASEFOLD)) return false;
+	if (!ignore.chan) return true;
+	if (fnmatch(ignore.chan, idNames[id], FNM_CASEFOLD)) return false;
+	if (!ignore.mesg) return true;
+	if (!msg->params[1]) return false;
+	return !fnmatch(ignore.mesg, msg->params[1], FNM_CASEFOLD);
+}
+
 enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg) {
-	if (!ignore.len) return heat;
-	char match[512];
-	snprintf(
-		match, sizeof(match), "%s!%s@%s %s %s %s",
-		msg->nick, msg->user, msg->host,
-		msg->cmd, idNames[id], (msg->params[1] ?: "")
-	);
-	for (size_t i = 0; i < ignore.len; ++i) {
-		if (fnmatch(ignore.patterns[i], match, FNM_CASEFOLD)) continue;
-		return Ice;
+	if (!len) return heat;
+	char mask[512];
+	snprintf(mask, sizeof(mask), "%s!%s@%s", msg->nick, msg->user, msg->host);
+	for (size_t i = 0; i < len; ++i) {
+		if (ignoreTest(ignores[i], mask, id, msg)) return Ice;
 	}
 	return heat;
 }
