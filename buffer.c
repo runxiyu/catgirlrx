@@ -160,11 +160,18 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 			wrapStyle = style;
 		}
 
-		n = mbtowc(&wc, wrap, strlen(wrap));
-		if (n < 0) {
-			n = 1;
-		} else if (!iswspace(wc)) {
-			n = 0;
+		n = 0;
+		len = strlen(wrap);
+		for (int m; wrap[n] && (m = mbtowc(&wc, &wrap[n], len - n)); n += m) {
+			if (m < 0) {
+				m = 1;
+			} else if (!iswspace(wc)) {
+				break;
+			}
+		}
+		if (!wrap[n]) {
+			*wrap = '\0';
+			break;
 		}
 
 		flowed++;
