@@ -429,7 +429,7 @@ static void commandExec(uint id, char *params) {
 	dup2(utilPipe[1], STDERR_FILENO);
 
 	const char *shell = getenv("SHELL") ?: "/bin/sh";
-	execlp(shell, shell, "-c", params, NULL);
+	execl(shell, shell, "-c", params, NULL);
 	warn("%s", shell);
 	_exit(EX_UNAVAILABLE);
 }
