@@ -125,6 +125,11 @@ static void signalHandler(int signal) {
 int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
 
+#ifdef __OpenBSD__
+	int error = pledge("stdio rpath wpath cpath inet dns tty proc exec", NULL);
+	if (error) err(EX_OSERR, "pledge");
+#endif
+
 	bool insecure = false;
 	const char *bind = NULL;
 	const char *host = NULL;
