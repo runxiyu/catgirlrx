@@ -87,8 +87,6 @@ static void exitSave(void) {
 	}
 }
 
-uint32_t hashInit;
-
 uint execID;
 int execPipe[2] = { -1, -1 };
 int utilPipe[2] = { -1, -1 };
@@ -115,6 +113,14 @@ static void utilRead(void) {
 		char *line = strsep(&ptr, "\r\n");
 		if (line[0]) uiFormat(Network, Warm, NULL, "%s", line);
 	}
+}
+
+uint32_t hashInit;
+uint32_t hashBound = 75;
+
+static void parseHash(char *str) {
+	hashInit = strtoul(str, &str, 0);
+	if (*str) hashBound = strtoul(&str[1], NULL, 0);
 }
 
 static volatile sig_atomic_t signals[NSIG];
@@ -179,7 +185,7 @@ int main(int argc, char *argv[]) {
 		switch (opt) {
 			break; case '!': insecure = true;
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
-			break; case 'H': hashInit = strtoul(optarg, NULL, 0);
+			break; case 'H': parseHash(optarg);
 			break; case 'N': utilPush(&uiNotifyUtil, optarg);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
