@@ -123,17 +123,18 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		int n = mbtowc(&wc, str, len);
 		if (n < 0) {
 			n = 1;
-			width++;
+			// ncurses will render these as "~A".
+			width += (*str & '\200' ? 2 : 1);
 		} else if (wc == ZWS || wc == ZWNJ) {
-			// XXX: ncurses likes to render these as spaces when they should be
+			// ncurses likes to render these as spaces when they should be
 			// zero-width, so just remove them entirely.
 			memmove(str, &str[n], strlen(&str[n]) + 1);
 			continue;
 		} else if (wc == L'\t') {
-			// XXX: Assuming TABSIZE = 8.
+			// Assuming TABSIZE = 8.
 			width += 8 - (width % 8);
 		} else if (wc < L' ' || wc == L'\177') {
-			// XXX: ncurses will render these as "^A".
+			// ncurses will render these as "^A".
 			width += 2;
 		} else if (wcwidth(wc) > 0) {
 			width += wcwidth(wc);
