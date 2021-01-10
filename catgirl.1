@@ -30,10 +30,10 @@
 .Op Ar config ...
 .
 .Nm
+.Fl o
 .Op Fl S Ar bind
 .Op Fl h Ar host
 .Op Fl p Ar port
-.Fl o Ar chain
 .Op Ar config ...
 .
 .Nm
@@ -224,10 +224,9 @@ Set nickname to
 .Ar nick .
 The default nickname is the user's name.
 .
-.It Fl o Ar chain
-Write the server certificate chain
-in PEM format to
-.Ar chain
+.It Fl o
+Print the server certificate chain
+to standard output in PEM format
 and exit.
 .
 .It Fl p Ar port , Cm port = Ar port
@@ -318,7 +317,7 @@ sasl-external
 Connect to the server
 and write its certificate to a file:
 .Bd -literal -offset indent
-catgirl -h irc.example.org -o ~/.config/catgirl/example.pem
+catgirl -o -h irc.example.org > ~/.config/catgirl/example.pem
 .Ed
 .It
 Configure

@@ -226,7 +226,7 @@ void ircConfig(
 	bool insecure, const char *trust, const char *cert, const char *priv
 );
 int ircConnect(const char *bind, const char *host, const char *port);
-void ircWriteChain(const char *path);
+void ircPrintCert(void);
 void ircRecv(void);
 void ircSend(const char *ptr, size_t len);
 void ircFormat(const char *format, ...)

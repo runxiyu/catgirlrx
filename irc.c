@@ -160,20 +160,11 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	return sock;
 }
 
-void ircWriteChain(const char *path) {
-	FILE *file = fopen(path, "w");
-	if (!file) err(EX_CANTCREAT, "%s", path);
-
-	int n = fprintf(file, "subject= %s\n", tls_peer_cert_subject(client));
-	if (n < 0) err(EX_IOERR, "%s", path);
-
+void ircPrintCert(void) {
 	size_t len;
 	const byte *pem = tls_peer_cert_chain_pem(client, &len);
-	len = fwrite(pem, len, 1, file);
-	if (!len) err(EX_IOERR, "%s", path);
-
-	int error = fclose(file);
-	if (error) err(EX_IOERR, "%s", path);
+	printf("subject= %s\n", tls_peer_cert_subject(client));
+	fwrite(pem, len, 1, stdout);
 }
 
 enum { MessageCap = 8191 + 512 };

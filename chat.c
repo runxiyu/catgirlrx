@@ -137,10 +137,10 @@ int main(int argc, char *argv[]) {
 #endif
 
 	bool insecure = false;
+	bool printCert = false;
 	const char *bind = NULL;
 	const char *host = NULL;
 	const char *port = "6697";
-	const char *chain = NULL;
 	const char *trust = NULL;
 	const char *cert = NULL;
 	const char *priv = NULL;
@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'k', .name = "priv", required_argument },
 		{ .val = 'l', .name = "log", no_argument },
 		{ .val = 'n', .name = "nick", required_argument },
-		{ .val = 'o', .name = "write-chain", required_argument },
+		{ .val = 'o', .name = "print-chain", no_argument },
 		{ .val = 'p', .name = "port", required_argument },
 		{ .val = 'r', .name = "real", required_argument },
 		{ .val = 's', .name = "save", required_argument },
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
 			break; case 'k': priv = optarg;
 			break; case 'l': logEnable = true;
 			break; case 'n': nick = optarg;
-			break; case 'o': insecure = true; chain = optarg;
+			break; case 'o': insecure = true; printCert = true;
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
 			break; case 's': save = optarg;
@@ -238,9 +238,9 @@ int main(int argc, char *argv[]) {
 	commandCompleteAdd();
 
 	ircConfig(insecure, trust, cert, priv);
-	if (chain) {
+	if (printCert) {
 		ircConnect(bind, host, port);
-		ircWriteChain(chain);
+		ircPrintCert();
 		ircClose();
 		return EX_OK;
 	}
