@@ -238,6 +238,12 @@ int main(int argc, char *argv[]) {
 	commandCompleteAdd();
 
 	ircConfig(insecure, trust, cert, priv);
+	if (chain) {
+		ircConnect(bind, host, port);
+		ircWriteChain(chain);
+		ircClose();
+		return EX_OK;
+	}
 
 	uiInitEarly();
 	if (save) {
@@ -255,7 +261,6 @@ int main(int argc, char *argv[]) {
 	uiDraw();
 	
 	int irc = ircConnect(bind, host, port);
-	if (chain) ircWriteChain(chain);
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
