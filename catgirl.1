@@ -21,9 +21,11 @@
 .Op Fl j Ar join
 .Op Fl k Ar priv
 .Op Fl n Ar nick
+.Op Fl o Ar chain
 .Op Fl p Ar port
 .Op Fl r Ar real
 .Op Fl s Ar save
+.Op Fl t Ar trust
 .Op Fl u Ar user
 .Op Fl w Ar pass
 .Op Ar config ...
@@ -216,6 +218,12 @@ Set nickname to
 .Ar nick .
 The default nickname is the user's name.
 .
+.It Fl o Ar chain
+Write the server certificate chain to
+.Ar chain
+in PEM format.
+This temporarily disables certificate verification!
+.
 .It Fl p Ar port , Cm port = Ar port
 Connect to
 .Ar port .
@@ -237,6 +245,17 @@ starts with
 .Ql /
 or
 .Ql \&. .
+.
+.It Fl t Ar path , Cm trust = Ar path
+Trust the certificate loaded from
+.Ar path .
+Server name verification is disabled.
+The
+.Ar path
+is searched for in the same manner
+as configuration files.
+See
+.Sx Connecting to Servers with Self-signed Certificates .
 .
 .It Fl u Ar user , Cm user = Ar user
 Set username to
@@ -284,6 +303,24 @@ when connecting:
 cert = example.pem
 sasl-external
 # or: catgirl -e -c example.pem
+.Ed
+.El
+.
+.Ss Connecting to Servers with Self-signed Certificates
+.Bl -enum
+.It
+Connect to the server
+and write its certificate to a file:
+.Bd -literal -offset indent
+catgirl -h irc.example.org -o ~/.config/catgirl/example.pem
+.Ed
+.It
+Configure
+.Nm
+to trust the certificate:
+.Bd -literal -offset indent
+trust = example.pem
+# or: catgirl -t example.pem
 .Ed
 .El
 .

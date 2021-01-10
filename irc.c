@@ -43,7 +43,9 @@
 
 struct tls *client;
 
-void ircConfig(bool insecure, const char *cert, const char *priv) {
+void ircConfig(
+	bool insecure, const char *trust, const char *cert, const char *priv
+) {
 	struct tls_config *config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
@@ -58,6 +60,15 @@ void ircConfig(bool insecure, const char *cert, const char *priv) {
 	if (insecure) {
 		tls_config_insecure_noverifycert(config);
 		tls_config_insecure_noverifyname(config);
+	}
+	if (trust) {
+		tls_config_insecure_noverifyname(config);
+		const char *dirs = NULL;
+		for (const char *path; NULL != (path = configPath(&dirs, trust));) {
+			error = tls_config_set_ca_file(config, path);
+			if (!error) break;
+		}
+		if (error) errx(EX_NOINPUT, "%s: %s", trust, tls_config_error(config));
 	}
 
 	if (cert) {
@@ -147,6 +158,22 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	if (error) errx(EX_PROTOCOL, "tls_handshake: %s", tls_error(client));
 
 	return sock;
+}
+
+void ircWriteChain(const char *path) {
+	FILE *file = fopen(path, "w");
+	if (!file) err(EX_CANTCREAT, "%s", path);
+
+	int n = fprintf(file, "subject= %s\n", tls_peer_cert_subject(client));
+	if (n < 0) err(EX_IOERR, "%s", path);
+
+	size_t len;
+	const byte *pem = tls_peer_cert_chain_pem(client, &len);
+	len = fwrite(pem, len, 1, file);
+	if (!len) err(EX_IOERR, "%s", path);
+
+	int error = fclose(file);
+	if (error) err(EX_IOERR, "%s", path);
 }
 
 enum { MessageCap = 8191 + 512 };

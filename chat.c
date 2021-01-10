@@ -140,6 +140,8 @@ int main(int argc, char *argv[]) {
 	const char *bind = NULL;
 	const char *host = NULL;
 	const char *port = "6697";
+	const char *chain = NULL;
+	const char *trust = NULL;
 	const char *cert = NULL;
 	const char *priv = NULL;
 
@@ -167,9 +169,11 @@ int main(int argc, char *argv[]) {
 		{ .val = 'k', .name = "priv", required_argument },
 		{ .val = 'l', .name = "log", no_argument },
 		{ .val = 'n', .name = "nick", required_argument },
+		{ .val = 'o', .name = "write-chain", required_argument },
 		{ .val = 'p', .name = "port", required_argument },
 		{ .val = 'r', .name = "real", required_argument },
 		{ .val = 's', .name = "save", required_argument },
+		{ .val = 't', .name = "trust", required_argument },
 		{ .val = 'u', .name = "user", required_argument },
 		{ .val = 'v', .name = "debug", no_argument },
 		{ .val = 'w', .name = "pass", required_argument },
@@ -200,9 +204,11 @@ int main(int argc, char *argv[]) {
 			break; case 'k': priv = optarg;
 			break; case 'l': logEnable = true;
 			break; case 'n': nick = optarg;
+			break; case 'o': insecure = true; chain = optarg;
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
 			break; case 's': save = optarg;
+			break; case 't': trust = optarg;
 			break; case 'u': user = optarg;
 			break; case 'v': self.debug = true;
 			break; case 'w': pass = optarg;
@@ -231,7 +237,7 @@ int main(int argc, char *argv[]) {
 	editCompleteAdd();
 	commandCompleteAdd();
 
-	ircConfig(insecure, cert, priv);
+	ircConfig(insecure, trust, cert, priv);
 
 	uiInitEarly();
 	if (save) {
@@ -249,6 +255,7 @@ int main(int argc, char *argv[]) {
 	uiDraw();
 	
 	int irc = ircConnect(bind, host, port);
+	if (chain) ircWriteChain(chain);
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
