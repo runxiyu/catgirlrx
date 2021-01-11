@@ -302,7 +302,7 @@ static void handleReplyISupport(struct Message *msg) {
 static void handleReplyMOTD(struct Message *msg) {
 	require(msg, false, 2);
 	char *line = msg->params[1];
-	urlScan(Network, msg->nick, line);
+	urlScan(Network, NULL, line);
 	if (!strncmp(line, "- ", 2)) {
 		uiFormat(Network, Cold, tagTime(msg), "\3%d-\3\t%s", Gray, &line[2]);
 	} else {
@@ -316,7 +316,7 @@ static void handleErrorNoMOTD(struct Message *msg) {
 
 static void handleReplyHelp(struct Message *msg) {
 	require(msg, false, 3);
-	urlScan(Network, msg->nick, msg->params[2]);
+	urlScan(Network, NULL, msg->params[2]);
 	uiWrite(Network, Warm, tagTime(msg), msg->params[2]);
 }
 
