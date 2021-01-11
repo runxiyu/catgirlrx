@@ -109,15 +109,15 @@ void logFormat(uint id, const time_t *src, const char *format, ...) {
 
 	char buf[sizeof("0000-00-00T00:00:00+0000")];
 	strftime(buf, sizeof(buf), "%FT%T%z", tm);
-	fprintf(file, "[%s] ", buf);
-	if (ferror(file)) err(EX_IOERR, "%s", idNames[id]);
+	int n = fprintf(file, "[%s] ", buf);
+	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
 
 	va_list ap;
 	va_start(ap, format);
-	vfprintf(file, format, ap);
+	n = vfprintf(file, format, ap);
 	va_end(ap);
-	if (ferror(file)) err(EX_IOERR, "%s", idNames[id]);
+	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
 
-	fprintf(file, "\n");
-	if (ferror(file)) err(EX_IOERR, "%s", idNames[id]);
+	n = fprintf(file, "\n");
+	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
 }
