@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sysexits.h>
+#include <tls.h>
 #include <unistd.h>
 
 #include "chat.h"
@@ -123,6 +124,54 @@ static void parseHash(char *str) {
 	if (*str) hashBound = strtoul(&str[1], NULL, 0);
 }
 
+#ifdef __OpenBSD__
+
+static void unveilConfig(const char *name) {
+	const char *dirs = NULL;
+	for (const char *path; NULL != (path = configPath(&dirs, name));) {
+		int error = unveil(path, "r");
+		if (error && errno != ENOENT) err(EX_NOINPUT, "%s", path);
+	}
+}
+
+static void unveilData(const char *name) {
+	const char *dirs = NULL;
+	for (const char *path; NULL != (path = dataPath(&dirs, name));) {
+		int error = unveil(path, "rwc");
+		if (error && errno != ENOENT) err(EX_CANTCREAT, "%s", path);
+	}
+}
+
+static void sandbox(const char *trust, const char *cert, const char *priv) {
+	int error = pledge(
+		"stdio rpath wpath cpath inet dns tty proc exec unveil", NULL
+	);
+	if (error) err(EX_OSERR, "pledge");
+	if (!self.restricted) return;
+
+	dataMkdir("");
+	unveilData("");
+	if (trust) unveilConfig(trust);
+	if (cert) unveilConfig(cert);
+	if (priv) unveilConfig(priv);
+	if (save) unveilData(save);
+	struct {
+		const char *path;
+		const char *perm;
+	} paths[] = {
+		{ "/usr/bin/man", "x" },
+		{ "/usr/share/terminfo", "r" },
+		{ tls_default_ca_cert_file(), "r" },
+		{ NULL, NULL },
+	};
+	for (size_t i = 0; i < ARRAY_LEN(paths); ++i) {
+		int error = unveil(paths[i].path, paths[i].perm);
+		if (error) err(EX_OSFILE, "%s", paths[i].path);
+	}
+}
+
+#endif /* __OpenBSD__ */
+
 static volatile sig_atomic_t signals[NSIG];
 static void signalHandler(int signal) {
 	signals[signal] = 1;
@@ -130,11 +179,6 @@ static void signalHandler(int signal) {
 
 int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
-
-#ifdef __OpenBSD__
-	int error = pledge("stdio rpath wpath cpath inet dns tty proc exec", NULL);
-	if (error) err(EX_OSERR, "pledge");
-#endif
 
 	bool insecure = false;
 	bool printCert = false;
@@ -236,6 +280,10 @@ int main(int argc, char *argv[]) {
 
 	editCompleteAdd();
 	commandCompleteAdd();
+
+#ifdef __OpenBSD__
+	sandbox(trust, cert, priv);
+#endif
 
 	ircConfig(insecure, trust, cert, priv);
 	if (printCert) {
