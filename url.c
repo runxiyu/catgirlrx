@@ -230,3 +230,47 @@ void urlCopyMatch(uint id, const char *str) {
 		}
 	}
 }
+
+static int writeString(FILE *file, const char *str) {
+	return (fwrite(str, strlen(str) + 1, 1, file) ? 0 : -1);
+}
+static ssize_t readString(FILE *file, char **buf, size_t *cap) {
+	ssize_t len = getdelim(buf, cap, '\0', file);
+	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	return len;
+}
+
+int urlSave(FILE *file) {
+	for (size_t i = 0; i < Cap; ++i) {
+		const struct URL *url = &ring.urls[(ring.len + i) % Cap];
+		if (!url->url) continue;
+		int error = 0
+			|| writeString(file, idNames[url->id])
+			|| writeString(file, (url->nick ?: ""))
+			|| writeString(file, url->url);
+		if (error) return error;
+	}
+	return writeString(file, "");
+}
+
+void urlLoad(FILE *file, size_t version) {
+	if (version < 5) return;
+	size_t cap = 0;
+	char *buf = NULL;
+	while (0 < readString(file, &buf, &cap) && buf[0]) {
+		struct URL *url = &ring.urls[ring.len++ % Cap];
+		free(url->nick);
+		free(url->url);
+		url->id = idFor(buf);
+		url->nick = NULL;
+		readString(file, &buf, &cap);
+		if (buf[0]) {
+			url->nick = strdup(buf);
+			if (!url->nick) err(EX_OSERR, "strdup");
+		}
+		readString(file, &buf, &cap);
+		url->url = strdup(buf);
+		if (!url->url) err(EX_OSERR, "strdup");
+	}
+	free(buf);
+}

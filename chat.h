@@ -356,6 +356,8 @@ void urlScan(uint id, const char *nick, const char *mesg);
 void urlOpenCount(uint id, uint count);
 void urlOpenMatch(uint id, const char *str);
 void urlCopyMatch(uint id, const char *str);
+int urlSave(FILE *file);
+void urlLoad(FILE *file, size_t version);
 
 enum { IgnoreCap = 64 };
 extern struct Ignore {

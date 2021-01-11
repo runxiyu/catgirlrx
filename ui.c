@@ -946,7 +946,8 @@ static const time_t Signatures[] = {
 	0x6C72696774616302, // no self.pos
 	0x6C72696774616303, // no buffer line heat
 	0x6C72696774616304, // no mute
-	0x6C72696774616305,
+	0x6C72696774616305, // no URLs
+	0x6C72696774616306,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -967,25 +968,35 @@ int uiSave(const char *name) {
 	FILE *file = dataOpen(name, "w");
 	if (!file) return -1;
 
-	if (writeTime(file, Signatures[4])) return -1;
-	if (writeTime(file, self.pos)) return -1;
+	int error = 0
+		|| writeTime(file, Signatures[5])
+		|| writeTime(file, self.pos);
+	if (error) return error;
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
-		if (writeString(file, idNames[window->id])) return -1;
-		if (writeTime(file, window->mute)) return -1;
-		if (writeTime(file, window->heat)) return -1;
-		if (writeTime(file, window->unreadSoft)) return -1;
-		if (writeTime(file, window->unreadWarm)) return -1;
+		error = 0
+			|| writeString(file, idNames[window->id])
+			|| writeTime(file, window->mute)
+			|| writeTime(file, window->heat)
+			|| writeTime(file, window->unreadSoft)
+			|| writeTime(file, window->unreadWarm);
+		if (error) return error;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			const struct Line *line = bufferSoft(window->buffer, i);
 			if (!line) continue;
-			if (writeTime(file, line->time)) return -1;
-			if (writeTime(file, line->heat)) return -1;
-			if (writeString(file, line->str)) return -1;
+			error = 0
+				|| writeTime(file, line->time)
+				|| writeTime(file, line->heat)
+				|| writeString(file, line->str);
+			if (error) return error;
 		}
-		if (writeTime(file, 0)) return -1;
+		error = writeTime(file, 0);
+		if (error) return error;
 	}
-	return fclose(file);
+	return 0
+		|| writeString(file, "")
+		|| urlSave(file)
+		|| fclose(file);
 }
 
 static time_t readTime(FILE *file) {
@@ -1026,7 +1037,7 @@ void uiLoad(const char *name) {
 
 	char *buf = NULL;
 	size_t cap = 0;
-	while (0 < readString(file, &buf, &cap)) {
+	while (0 < readString(file, &buf, &cap) && buf[0]) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
 		if (version > 3) window->mute = readTime(file);
 		if (version > 0) {
@@ -1045,6 +1056,7 @@ void uiLoad(const char *name) {
 			window->buffer, COLS, window->ignore, window->unreadSoft
 		);
 	}
+	urlLoad(file, version);
 
 	free(buf);
 	fclose(file);
