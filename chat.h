@@ -361,17 +361,18 @@ void urlCopyMatch(uint id, const char *str);
 int urlSave(FILE *file);
 void urlLoad(FILE *file, size_t version);
 
-enum { IgnoreCap = 64 };
-extern struct Ignore {
+enum { FilterCap = 64 };
+extern struct Filter {
+	enum Heat heat;
 	char *mask;
 	char *cmd;
 	char *chan;
 	char *mesg;
-} ignores[IgnoreCap];
-struct Ignore ignoreParse(char *pattern);
-struct Ignore ignoreAdd(const char *pattern);
-bool ignoreRemove(struct Ignore ignore);
-enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg);
+} filters[FilterCap];
+struct Filter filterParse(enum Heat heat, char *pattern);
+struct Filter filterAdd(enum Heat heat, const char *pattern);
+bool filterRemove(struct Filter filter);
+enum Heat filterCheck(enum Heat heat, uint id, const struct Message *msg);
 
 extern bool logEnable;
 void logFormat(uint id, const time_t *time, const char *format, ...)

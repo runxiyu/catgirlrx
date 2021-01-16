@@ -35,20 +35,20 @@
 
 #include "chat.h"
 
-struct Ignore ignores[IgnoreCap];
+struct Filter filters[FilterCap];
 static size_t len;
 
-struct Ignore ignoreParse(char *pattern) {
-	struct Ignore ignore = {0};
-	ignore.mask = strsep(&pattern, " ");
-	ignore.cmd  = strsep(&pattern, " ");
-	ignore.chan = strsep(&pattern, " ");
-	ignore.mesg = pattern;
-	return ignore;
+struct Filter filterParse(enum Heat heat, char *pattern) {
+	struct Filter filter = { .heat = heat };
+	filter.mask = strsep(&pattern, " ");
+	filter.cmd  = strsep(&pattern, " ");
+	filter.chan = strsep(&pattern, " ");
+	filter.mesg = pattern;
+	return filter;
 }
 
-struct Ignore ignoreAdd(const char *pattern) {
-	if (len == IgnoreCap) errx(EX_CONFIG, "ignore limit exceeded");
+struct Filter filterAdd(enum Heat heat, const char *pattern) {
+	if (len == FilterCap) errx(EX_CONFIG, "filter limit exceeded");
 	char *own;
 	if (!strchr(pattern, '!') && !strchr(pattern, ' ')) {
 		int n = asprintf(&own, "%s!*@*", pattern);
@@ -57,48 +57,49 @@ struct Ignore ignoreAdd(const char *pattern) {
 		own = strdup(pattern);
 		if (!own) err(EX_OSERR, "strdup");
 	}
-	struct Ignore ignore = ignoreParse(own);
-	ignores[len++] = ignore;
-	return ignore;
+	struct Filter filter = filterParse(heat, own);
+	filters[len++] = filter;
+	return filter;
 }
 
-bool ignoreRemove(struct Ignore ignore) {
+bool filterRemove(struct Filter filter) {
 	bool found = false;
 	for (size_t i = len - 1; i < len; --i) {
-		if (!ignores[i].cmd != !ignore.cmd) continue;
-		if (!ignores[i].chan != !ignore.chan) continue;
-		if (!ignores[i].mesg != !ignore.mesg) continue;
-		if (strcasecmp(ignores[i].mask, ignore.mask)) continue;
-		if (ignore.cmd && strcasecmp(ignores[i].cmd, ignore.cmd)) continue;
-		if (ignore.chan && strcasecmp(ignores[i].chan, ignore.chan)) continue;
-		if (ignore.mesg && strcasecmp(ignores[i].mesg, ignore.mesg)) continue;
-		free(ignores[i].mask);
-		ignores[i] = ignores[--len];
-		ignores[len] = (struct Ignore) {0};
+		if (filters[i].heat != filter.heat) continue;
+		if (!filters[i].cmd != !filter.cmd) continue;
+		if (!filters[i].chan != !filter.chan) continue;
+		if (!filters[i].mesg != !filter.mesg) continue;
+		if (strcasecmp(filters[i].mask, filter.mask)) continue;
+		if (filter.cmd && strcasecmp(filters[i].cmd, filter.cmd)) continue;
+		if (filter.chan && strcasecmp(filters[i].chan, filter.chan)) continue;
+		if (filter.mesg && strcasecmp(filters[i].mesg, filter.mesg)) continue;
+		free(filters[i].mask);
+		filters[i] = filters[--len];
+		filters[len] = (struct Filter) {0};
 		found = true;
 	}
 	return found;
 }
 
-static bool ignoreTest(
-	struct Ignore ignore, const char *mask, uint id, const struct Message *msg
+static bool filterTest(
+	struct Filter filter, const char *mask, uint id, const struct Message *msg
 ) {
-	if (fnmatch(ignore.mask, mask, FNM_CASEFOLD)) return false;
-	if (!ignore.cmd) return true;
-	if (fnmatch(ignore.cmd, msg->cmd, FNM_CASEFOLD)) return false;
-	if (!ignore.chan) return true;
-	if (fnmatch(ignore.chan, idNames[id], FNM_CASEFOLD)) return false;
-	if (!ignore.mesg) return true;
+	if (fnmatch(filter.mask, mask, FNM_CASEFOLD)) return false;
+	if (!filter.cmd) return true;
+	if (fnmatch(filter.cmd, msg->cmd, FNM_CASEFOLD)) return false;
+	if (!filter.chan) return true;
+	if (fnmatch(filter.chan, idNames[id], FNM_CASEFOLD)) return false;
+	if (!filter.mesg) return true;
 	if (!msg->params[1]) return false;
-	return !fnmatch(ignore.mesg, msg->params[1], FNM_CASEFOLD);
+	return !fnmatch(filter.mesg, msg->params[1], FNM_CASEFOLD);
 }
 
-enum Heat ignoreCheck(enum Heat heat, uint id, const struct Message *msg) {
+enum Heat filterCheck(enum Heat heat, uint id, const struct Message *msg) {
 	if (!len) return heat;
 	char mask[512];
 	snprintf(mask, sizeof(mask), "%s!%s@%s", msg->nick, msg->user, msg->host);
 	for (size_t i = 0; i < len; ++i) {
-		if (ignoreTest(ignores[i], mask, id, msg)) return Ice;
+		if (filterTest(filters[i], mask, id, msg)) return filters[i].heat;
 	}
 	return heat;
 }

@@ -388,19 +388,20 @@ static void commandCopy(uint id, char *params) {
 
 static void commandIgnore(uint id, char *params) {
 	if (params) {
-		struct Ignore ignore = ignoreAdd(params);
+		struct Filter filter = filterAdd(Ice, params);
 		uiFormat(
 			id, Cold, NULL, "Ignoring \3%02d%s %s %s %s",
-			Brown, ignore.mask,
-			(ignore.cmd ?: ""), (ignore.chan ?: ""), (ignore.mesg ?: "")
+			Brown, filter.mask,
+			(filter.cmd ?: ""), (filter.chan ?: ""), (filter.mesg ?: "")
 		);
 	} else {
-		for (size_t i = 0; i < IgnoreCap && ignores[i].mask; ++i) {
+		for (size_t i = 0; i < FilterCap && filters[i].mask; ++i) {
+			if (filters[i].heat != Ice) continue;
 			uiFormat(
 				Network, Warm, NULL, "Ignoring \3%02d%s %s %s %s",
-				Brown, ignores[i].mask,
-				(ignores[i].cmd ?: ""), (ignores[i].chan ?: ""),
-				(ignores[i].mesg ?: "")
+				Brown, filters[i].mask,
+				(filters[i].cmd ?: ""), (filters[i].chan ?: ""),
+				(filters[i].mesg ?: "")
 			);
 		}
 	}
@@ -408,12 +409,12 @@ static void commandIgnore(uint id, char *params) {
 
 static void commandUnignore(uint id, char *params) {
 	if (!params) return;
-	struct Ignore ignore = ignoreParse(params);
-	bool found = ignoreRemove(ignore);
+	struct Filter filter = filterParse(Ice, params);
+	bool found = filterRemove(filter);
 	uiFormat(
 		id, Cold, NULL, "%s ignoring \3%02d%s %s %s %s",
-		(found ? "No longer" : "Not"), Brown, ignore.mask,
-		(ignore.cmd ?: ""), (ignore.chan ?: ""), (ignore.mesg ?: "")
+		(found ? "No longer" : "Not"), Brown, filter.mask,
+		(filter.cmd ?: ""), (filter.chan ?: ""), (filter.mesg ?: "")
 	);
 }
 

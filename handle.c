@@ -343,7 +343,7 @@ static void handleJoin(struct Message *msg) {
 		msg->params[2] = NULL;
 	}
 	uiFormat(
-		id, ignoreCheck(Cold, id, msg), tagTime(msg),
+		id, filterCheck(Cold, id, msg), tagTime(msg),
 		"\3%02d%s\3\t%s%s%sarrives in \3%02d%s\3",
 		hash(msg->user), msg->nick,
 		(msg->params[2] ? "(" : ""),
@@ -373,7 +373,7 @@ static void handlePart(struct Message *msg) {
 		completeClear(id);
 	}
 	completeRemove(id, msg->nick);
-	enum Heat heat = ignoreCheck(Cold, id, msg);
+	enum Heat heat = filterCheck(Cold, id, msg);
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
 		id, heat, tagTime(msg),
@@ -423,7 +423,7 @@ static void handleNick(struct Message *msg) {
 			set(&idNames[id], msg->params[0]);
 		}
 		uiFormat(
-			id, ignoreCheck(Cold, id, msg), tagTime(msg),
+			id, filterCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
 		);
@@ -440,7 +440,7 @@ static void handleSetname(struct Message *msg) {
 	require(msg, true, 1);
 	for (uint id; (id = completeID(msg->nick));) {
 		uiFormat(
-			id, ignoreCheck(Cold, id, msg), tagTime(msg),
+			id, filterCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s)",
 			hash(msg->user), msg->nick, hash(msg->user), msg->nick,
 			msg->params[0]
@@ -451,7 +451,7 @@ static void handleSetname(struct Message *msg) {
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	for (uint id; (id = completeID(msg->nick));) {
-		enum Heat heat = ignoreCheck(Cold, id, msg);
+		enum Heat heat = filterCheck(Cold, id, msg);
 		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
 			id, heat, tagTime(msg),
@@ -473,7 +473,7 @@ static void handleInvite(struct Message *msg) {
 	require(msg, true, 2);
 	if (!strcmp(msg->params[0], self.nick)) {
 		uiFormat(
-			Network, ignoreCheck(Hot, Network, msg), tagTime(msg),
+			Network, filterCheck(Hot, Network, msg), tagTime(msg),
 			"\3%02d%s\3\tinvites you to \3%02d%s\3",
 			hash(msg->user), msg->nick, hash(msg->params[1]), msg->params[1]
 		);
@@ -1199,7 +1199,7 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
 	bool mention = !mine && isMention(msg);
-	enum Heat heat = ignoreCheck((mention || query ? Hot : Warm), id, msg);
+	enum Heat heat = filterCheck((mention || query ? Hot : Warm), id, msg);
 	if (!notice && !mine && heat > Ice) {
 		completeTouch(id, msg->nick, hash(msg->user));
 	}
@@ -1212,7 +1212,7 @@ static void handlePrivmsg(struct Message *msg) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
 		}
 		uiFormat(
-			id, ignoreCheck(Warm, id, msg), tagTime(msg),
+			id, filterCheck(Warm, id, msg), tagTime(msg),
 			"\3%d-%s-\3%d\t%s",
 			hash(msg->user), msg->nick, LightGray, msg->params[1]
 		);

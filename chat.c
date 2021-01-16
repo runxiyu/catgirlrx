@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
 			break; case 'e': sasl = true;
 			break; case 'g': genCert(optarg);
 			break; case 'h': host = optarg;
-			break; case 'i': ignoreAdd(optarg);
+			break; case 'i': filterAdd(Ice, optarg);
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;
 			break; case 'l': logEnable = true;
