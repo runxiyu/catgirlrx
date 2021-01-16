@@ -309,10 +309,12 @@ void bufferFree(struct Buffer *buffer);
 const struct Line *bufferSoft(const struct Buffer *buffer, size_t i);
 const struct Line *bufferHard(const struct Buffer *buffer, size_t i);
 int bufferPush(
-	struct Buffer *buffer, int cols, bool ignore,
+	struct Buffer *buffer, int cols, enum Heat thresh,
 	enum Heat heat, time_t time, const char *str
 );
-int bufferReflow(struct Buffer *buffer, int cols, bool ignore, size_t tail);
+int bufferReflow(
+	struct Buffer *buffer, int cols, enum Heat thresh, size_t tail
+);
 
 enum Edit {
 	EditHead,

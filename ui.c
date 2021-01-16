@@ -78,7 +78,7 @@ struct Window {
 	int scroll;
 	bool mark;
 	bool mute;
-	bool ignore;
+	enum Heat thresh;
 	enum Heat heat;
 	uint unreadSoft;
 	uint unreadHard;
@@ -135,7 +135,7 @@ static uint windowFor(uint id) {
 
 	window->id = id;
 	window->mark = true;
-	window->ignore = true;
+	window->thresh = Cold;
 	window->buffer = bufferAlloc();
 
 	return windowPush(window);
@@ -204,8 +204,9 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaEnter, "\33\r", "\33\n") \
 	X(KeyMetaGt, "\33>", "\33.") \
 	X(KeyMetaLt, "\33<", "\33,") \
-	X(KeyMetaEqual, "\33=", "\33+") \
+	X(KeyMetaEqual, "\33=", NULL) \
 	X(KeyMetaMinus, "\33-", "\33_") \
+	X(KeyMetaPlus, "\33+", NULL) \
 	X(KeyMetaSlash, "\33/", "\33?") \
 	X(KeyFocusIn, "\33[I", NULL) \
 	X(KeyFocusOut, "\33[O", NULL) \
@@ -388,8 +389,9 @@ static void statusUpdate(void) {
 			&cat, "\3%d%s %u ",
 			idColors[window->id], (num == windows.show ? "\26" : ""), num
 		);
-		if (!window->ignore || window->mute) {
-			catf(&cat, "%s%s ", &"-"[window->ignore], &"="[!window->mute]);
+		if (window->thresh != Cold || window->mute) {
+			const char *thresh[] = { "-", "", "+", "++" };
+			catf(&cat, "%s%s ", thresh[window->thresh], &"="[!window->mute]);
 		}
 		catf(&cat, "%s ", idNames[window->id]);
 		if (window->mark && window->unreadWarm) {
@@ -560,7 +562,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	struct Window *window = windows.ptrs[windowFor(id)];
 	time_t ts = (src ? *src : time(NULL));
 
-	if (heat > Ice || !window->ignore) {
+	if (heat >= window->thresh) {
 		if (!window->unreadSoft++) window->unreadHard = 0;
 	}
 	if (window->mark && heat > Cold) {
@@ -575,7 +577,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
-	int lines = bufferPush(window->buffer, COLS, window->ignore, heat, ts, str);
+	int lines = bufferPush(window->buffer, COLS, window->thresh, heat, ts, str);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (window == windows.ptrs[windows.show]) windowUpdate();
@@ -605,7 +607,7 @@ static void resize(void) {
 	for (uint num = 0; num < windows.len; ++num) {
 		struct Window *window = windows.ptrs[num];
 		window->unreadHard = bufferReflow(
-			window->buffer, COLS, window->ignore, window->unreadSoft
+			window->buffer, COLS, window->thresh, window->unreadSoft
 		);
 	}
 	windowUpdate();
@@ -781,10 +783,12 @@ void uiCloseNum(uint num) {
 	if (num < windows.len) windowClose(num);
 }
 
-static void toggleIgnore(struct Window *window) {
-	window->ignore ^= true;
+static void incThresh(struct Window *window, int n) {
+	if (n < 0 && window->thresh == Ice) return;
+	if (n > 0 && window->thresh == Hot) return;
+	window->thresh += n;
 	window->unreadHard = bufferReflow(
-		window->buffer, COLS, window->ignore, window->unreadSoft
+		window->buffer, COLS, window->thresh, window->unreadSoft
 	);
 	windowUpdate();
 	statusUpdate();
@@ -828,7 +832,8 @@ static void keyCode(int code) {
 
 		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
 		break; case KeyMetaEqual: window->mute ^= true; statusUpdate();
-		break; case KeyMetaMinus: toggleIgnore(window);
+		break; case KeyMetaMinus: incThresh(window, -1);
+		break; case KeyMetaPlus:  incThresh(window, +1);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaGt: windowScroll(window, -BufferCap);
@@ -1050,10 +1055,10 @@ void uiLoad(const char *name) {
 			if (!time) break;
 			enum Heat heat = (version > 2 ? readTime(file) : Cold);
 			readString(file, &buf, &cap);
-			bufferPush(window->buffer, COLS, window->ignore, heat, time, buf);
+			bufferPush(window->buffer, COLS, window->thresh, heat, time, buf);
 		}
 		window->unreadHard = bufferReflow(
-			window->buffer, COLS, window->ignore, window->unreadSoft
+			window->buffer, COLS, window->thresh, window->unreadSoft
 		);
 	}
 	urlLoad(file, version);

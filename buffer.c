@@ -199,7 +199,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 }
 
 int bufferPush(
-	struct Buffer *buffer, int cols, bool ignore,
+	struct Buffer *buffer, int cols, enum Heat thresh,
 	enum Heat heat, time_t time, const char *str
 ) {
 	struct Line *soft = linesNext(&buffer->soft);
@@ -207,11 +207,12 @@ int bufferPush(
 	soft->time = time;
 	soft->str = strdup(str);
 	if (!soft->str) err(EX_OSERR, "strdup");
-	if (heat < Cold && ignore) return 0;
+	if (heat < thresh) return 0;
 	return flow(&buffer->hard, cols, soft);
 }
 
-int bufferReflow(struct Buffer *buffer, int cols, bool ignore, size_t tail) {
+int
+bufferReflow(struct Buffer *buffer, int cols, enum Heat thresh, size_t tail) {
 	buffer->hard.len = 0;
 	for (size_t i = 0; i < BufferCap; ++i) {
 		free(buffer->hard.lines[i].str);
@@ -221,7 +222,7 @@ int bufferReflow(struct Buffer *buffer, int cols, bool ignore, size_t tail) {
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const struct Line *soft = bufferSoft(buffer, i);
 		if (!soft) continue;
-		if (soft->heat < Cold && ignore) continue;
+		if (soft->heat < thresh) continue;
 		int n = flow(&buffer->hard, cols, soft);
 		if (i >= BufferCap - tail) flowed += n;
 	}

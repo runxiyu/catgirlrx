@@ -1,4 +1,4 @@
-.Dd January 10, 2021
+.Dd January 16, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -545,8 +545,14 @@ Scroll to previous line matching input.
 Scroll to next line matching input.
 .It Ic C-v
 Scroll down a page.
+.It Ic M-+
+Raise message visibility threshold,
+hiding ignored messages,
+general events,
+or non-highlighted messages.
 .It Ic M--
-Toggle visibility of filtered messages.
+Lower message visibility threshold,
+showing ignored messages.
 .It Ic M-=
 Toggle mute.
 Muted windows do not appear in the status line
