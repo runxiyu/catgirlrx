@@ -784,9 +784,12 @@ void uiCloseNum(uint num) {
 }
 
 static void incThresh(struct Window *window, int n) {
-	if (n < 0 && window->thresh == Ice) return;
 	if (n > 0 && window->thresh == Hot) return;
-	window->thresh += n;
+	if (n < 0 && window->thresh == Ice) {
+		window->thresh = Cold;
+	} else {
+		window->thresh += n;
+	}
 	window->unreadHard = bufferReflow(
 		window->buffer, COLS, window->thresh, window->unreadSoft
 	);
