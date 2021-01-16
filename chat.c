@@ -199,6 +199,7 @@ int main(int argc, char *argv[]) {
 		{ .val = '!', .name = "insecure", no_argument },
 		{ .val = 'C', .name = "copy", required_argument },
 		{ .val = 'H', .name = "hash", required_argument },
+		{ .val = 'I', .name = "highlight", required_argument },
 		{ .val = 'N', .name = "notify", required_argument },
 		{ .val = 'O', .name = "open", required_argument },
 		{ .val = 'R', .name = "restrict", no_argument },
@@ -234,6 +235,7 @@ int main(int argc, char *argv[]) {
 			break; case '!': insecure = true;
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
 			break; case 'H': parseHash(optarg);
+			break; case 'I': filterAdd(Hot, optarg);
 			break; case 'N': utilPush(&uiNotifyUtil, optarg);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;

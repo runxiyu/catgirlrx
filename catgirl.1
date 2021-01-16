@@ -11,6 +11,7 @@
 .Op Fl Relv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
+.Op Fl I Ar highlight
 .Op Fl N Ar notify
 .Op Fl O Ar open
 .Op Fl S Ar bind
@@ -94,6 +95,34 @@ To use only colors from
 the 16-color terminal set,
 use 0,15.
 .
+.It Fl I Ar pattern , Cm highlight = Ar pattern
+Add a case-insensitive message highlight pattern,
+which may contain
+.Ql * ,
+.Ql \&?
+and
+.Ql []
+wildcards as in
+.Xr sh 1 .
+The format of the pattern is as follows:
+.Bd -ragged -offset indent
+.Ar nick Ns Oo Ar !user@host
+.Oo Ar command
+.Oo Ar channel
+.Oo Ar message
+.Oc Oc Oc Oc
+.Ed
+.Pp
+The commands which can be filtered are:
+.Sy INVITE ,
+.Sy JOIN ,
+.Sy NICK ,
+.Sy NOTICE ,
+.Sy PART ,
+.Sy PRIVMSG ,
+.Sy QUIT ,
+.Sy SETNAME .
+.
 .It Fl N Ar util , Cm notify = Ar util
 Send notifications using a utility.
 Use more than once to add arguments to
@@ -176,7 +205,7 @@ Connect to
 .Ar host .
 .
 .It Fl i Ar pattern , Cm ignore = Ar pattern
-Add a case-insensitive message filtering pattern,
+Add a case-insensitive message ignore pattern,
 which may contain
 .Ql * ,
 .Ql \&?
@@ -422,8 +451,13 @@ List the server help for a topic.
 Try
 .Ic /help index
 for a list of topics.
+.It Ic /highlight Op Ar pattern
+List message highlight patterns
+or temporarily add a pattern.
+To permanently add a pattern, use
+.Fl I .
 .It Ic /ignore Op Ar pattern
-List message filtering patterns
+List message ignore patterns
 or temporarily add a pattern.
 To permanently add a pattern, use
 .Fl i .
@@ -438,8 +472,10 @@ Open the most recent URL from
 .Ar nick
 or matching
 .Ar substring .
+.It Ic /unhighlight Ar pattern
+Temporarily remove a message highlight pattern.
 .It Ic /unignore Ar pattern
-Temporarily remove a message filtering pattern.
+Temporarily remove a message ignore pattern.
 .It Ic /window Ar name
 Switch to window by name.
 .It Ic /window Ar num , Ic / Ns Ar num

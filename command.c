@@ -386,20 +386,20 @@ static void commandCopy(uint id, char *params) {
 	urlCopyMatch(id, params);
 }
 
-static void commandIgnore(uint id, char *params) {
+static void commandFilter(enum Heat heat, uint id, char *params) {
 	if (params) {
-		struct Filter filter = filterAdd(Ice, params);
+		struct Filter filter = filterAdd(heat, params);
 		uiFormat(
-			id, Cold, NULL, "Ignoring \3%02d%s %s %s %s",
-			Brown, filter.mask,
+			id, Cold, NULL, "%sing \3%02d%s %s %s %s",
+			(heat == Hot ? "Highlight" : "Ignor"), Brown, filter.mask,
 			(filter.cmd ?: ""), (filter.chan ?: ""), (filter.mesg ?: "")
 		);
 	} else {
 		for (size_t i = 0; i < FilterCap && filters[i].mask; ++i) {
-			if (filters[i].heat != Ice) continue;
+			if (filters[i].heat != heat) continue;
 			uiFormat(
-				Network, Warm, NULL, "Ignoring \3%02d%s %s %s %s",
-				Brown, filters[i].mask,
+				Network, Warm, NULL, "%sing \3%02d%s %s %s %s",
+				(heat == Hot ? "Highlight" : "Ignor"), Brown, filters[i].mask,
 				(filters[i].cmd ?: ""), (filters[i].chan ?: ""),
 				(filters[i].mesg ?: "")
 			);
@@ -407,15 +407,29 @@ static void commandIgnore(uint id, char *params) {
 	}
 }
 
-static void commandUnignore(uint id, char *params) {
+static void commandUnfilter(enum Heat heat, uint id, char *params) {
 	if (!params) return;
-	struct Filter filter = filterParse(Ice, params);
+	struct Filter filter = filterParse(heat, params);
 	bool found = filterRemove(filter);
 	uiFormat(
-		id, Cold, NULL, "%s ignoring \3%02d%s %s %s %s",
-		(found ? "No longer" : "Not"), Brown, filter.mask,
-		(filter.cmd ?: ""), (filter.chan ?: ""), (filter.mesg ?: "")
+		id, Cold, NULL, "%s %sing \3%02d%s %s %s %s",
+		(found ? "No longer" : "Not"), (heat == Hot ? "highlight" : "ignor"),
+		Brown, filter.mask, (filter.cmd ?: ""), (filter.chan ?: ""),
+		(filter.mesg ?: "")
 	);
+}
+
+static void commandHighlight(uint id, char *params) {
+	commandFilter(Hot, id, params);
+}
+static void commandIgnore(uint id, char *params) {
+	commandFilter(Ice, id, params);
+}
+static void commandUnhighlight(uint id, char *params) {
+	commandUnfilter(Hot, id, params);
+}
+static void commandUnignore(uint id, char *params) {
+	commandUnfilter(Hot, id, params);
 }
 
 static void commandExec(uint id, char *params) {
@@ -479,6 +493,7 @@ static const struct Handler {
 	{ "/except", commandExcept, 0 },
 	{ "/exec", commandExec, Multiline | Restricted },
 	{ "/help", commandHelp, 0 },
+	{ "/highlight", commandHighlight, 0 },
 	{ "/ignore", commandIgnore, 0 },
 	{ "/invex", commandInvex, 0 },
 	{ "/invite", commandInvite, 0 },
@@ -506,6 +521,7 @@ static const struct Handler {
 	{ "/topic", commandTopic, 0 },
 	{ "/unban", commandUnban, 0 },
 	{ "/unexcept", commandUnexcept, 0 },
+	{ "/unhighlight", commandUnhighlight, 0 },
 	{ "/unignore", commandUnignore, 0 },
 	{ "/uninvex", commandUninvex, 0 },
 	{ "/voice", commandVoice, 0 },

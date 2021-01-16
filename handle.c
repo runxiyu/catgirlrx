@@ -1198,8 +1198,9 @@ static void handlePrivmsg(struct Message *msg) {
 
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = isAction(msg);
-	bool mention = !mine && isMention(msg);
-	enum Heat heat = filterCheck((mention || query ? Hot : Warm), id, msg);
+	bool highlight = !mine && isMention(msg);
+	enum Heat heat = filterCheck((highlight || query ? Hot : Warm), id, msg);
+	if (heat > Warm && !mine && !query) highlight = true;
 	if (!notice && !mine && heat > Ice) {
 		completeTouch(id, msg->nick, hash(msg->user));
 	}
@@ -1222,7 +1223,7 @@ static void handlePrivmsg(struct Message *msg) {
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\35\3%d* %s\17\35\t%s%s",
-			(mention ? "\26" : ""), hash(msg->user), msg->nick,
+			(highlight ? "\26" : ""), hash(msg->user), msg->nick,
 			buf, msg->params[1]
 		);
 	} else {
@@ -1231,7 +1232,7 @@ static void handlePrivmsg(struct Message *msg) {
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\3%d<%s>\17\t%s%s",
-			(mention ? "\26" : ""), hash(msg->user), msg->nick,
+			(highlight ? "\26" : ""), hash(msg->user), msg->nick,
 			buf, msg->params[1]
 		);
 	}
