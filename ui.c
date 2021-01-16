@@ -955,7 +955,8 @@ static const time_t Signatures[] = {
 	0x6C72696774616303, // no buffer line heat
 	0x6C72696774616304, // no mute
 	0x6C72696774616305, // no URLs
-	0x6C72696774616306,
+	0x6C72696774616306, // no thresh
+	0x6C72696774616307,
 };
 
 static size_t signatureVersion(time_t signature) {
@@ -977,7 +978,7 @@ int uiSave(const char *name) {
 	if (!file) return -1;
 
 	int error = 0
-		|| writeTime(file, Signatures[5])
+		|| writeTime(file, Signatures[6])
 		|| writeTime(file, self.pos);
 	if (error) return error;
 	for (uint num = 0; num < windows.len; ++num) {
@@ -985,6 +986,7 @@ int uiSave(const char *name) {
 		error = 0
 			|| writeString(file, idNames[window->id])
 			|| writeTime(file, window->mute)
+			|| writeTime(file, window->thresh)
 			|| writeTime(file, window->heat)
 			|| writeTime(file, window->unreadSoft)
 			|| writeTime(file, window->unreadWarm);
@@ -1048,6 +1050,7 @@ void uiLoad(const char *name) {
 	while (0 < readString(file, &buf, &cap) && buf[0]) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
 		if (version > 3) window->mute = readTime(file);
+		if (version > 5) window->thresh = readTime(file);
 		if (version > 0) {
 			window->heat = readTime(file);
 			window->unreadSoft = readTime(file);
