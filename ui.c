@@ -733,9 +733,10 @@ static void inputUpdate(void) {
 }
 
 static void windowShow(uint num) {
+	windows.user = num;
+	if (windows.show == num) return;
 	windows.swap = windows.show;
 	windows.show = num;
-	windows.user = num;
 	mark(windows.ptrs[windows.swap]);
 	unmark(windows.ptrs[windows.show]);
 	windowUpdate();
