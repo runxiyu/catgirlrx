@@ -848,7 +848,7 @@ static void keyCode(int code) {
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(window->buffer);
-		break; case KeyMetaM: uiWrite(id, Cold, NULL, "");
+		break; case KeyMetaM: uiWrite(id, Warm, NULL, "");
 		break; case KeyMetaN: windowScrollHot(window, +1);
 		break; case KeyMetaP: windowScrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
