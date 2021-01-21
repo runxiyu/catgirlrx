@@ -463,33 +463,31 @@ static void mainAdd(int y, const char *str) {
 	(void)nx;
 }
 
+static size_t windowTop(const struct Window *window) {
+	size_t top = BufferCap - MAIN_LINES - window->scroll;
+	if (window->scroll) top += MarkerLines;
+	return top;
+}
+
 static void windowUpdate(void) {
 	struct Window *window = windows.ptrs[windows.show];
 
-	int y = MAIN_LINES - 1;
-	size_t bottom = BufferCap - 1 - window->scroll + !!window->scroll;
-	for (size_t i = bottom; i < BufferCap; --i) {
+	int y = 0;
+	int marker = MAIN_LINES - SplitLines - MarkerLines;
+	for (size_t i = windowTop(window); i < BufferCap; ++i) {
 		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line) break;
-		mainAdd(y, line->str);
-		if (!y--) break;
-	}
-
-	while (y >= 0) {
-		wmove(main, y--, 0);
-		wclrtoeol(main);
+		mainAdd(y++, (line ? line->str : ""));
+		if (window->scroll && y == marker) break;
 	}
 	if (!window->scroll) return;
 
-	y = MAIN_LINES - 1;
-	for (size_t i = BufferCap - 1; i < BufferCap; --i) {
+	y = MAIN_LINES - SplitLines;
+	for (size_t i = BufferCap - SplitLines; i < BufferCap; ++i) {
 		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line) break;
-		mainAdd(y, line->str);
-		if (--y < MAIN_LINES - SplitLines) break;
+		mainAdd(y++, (line ? line->str : ""));
 	}
 	wattr_set(main, A_NORMAL, 0, NULL);
-	mvwhline(main, y, 0, ACS_BULLET, COLS);
+	mvwhline(main, marker, 0, ACS_BULLET, COLS);
 }
 
 static void windowScroll(struct Window *window, int n) {
@@ -513,8 +511,7 @@ static void windowScrollTo(struct Window *window, int top) {
 }
 
 static void windowScrollHot(struct Window *window, int dir) {
-	size_t from = BufferCap - window->scroll - MAIN_LINES + MarkerLines + dir;
-	for (size_t i = from; i < BufferCap; i += dir) {
+	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
 		const struct Line *line = bufferHard(window->buffer, i);
 		const struct Line *prev = bufferHard(window->buffer, i - 1);
 		if (!line || line->heat < Hot) continue;
@@ -526,8 +523,7 @@ static void windowScrollHot(struct Window *window, int dir) {
 
 static void
 windowScrollSearch(struct Window *window, const char *str, int dir) {
-	size_t from = BufferCap - window->scroll - MAIN_LINES + MarkerLines + dir;
-	for (size_t i = from; i < BufferCap; i += dir) {
+	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
 		const struct Line *line = bufferHard(window->buffer, i);
 		if (!line || !strcasestr(line->str, str)) continue;
 		windowScrollTo(window, BufferCap - i);
