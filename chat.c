@@ -307,6 +307,11 @@ int main(int argc, char *argv[]) {
 	uiDraw();
 	
 	int irc = ircConnect(bind, host, port);
+#ifdef __OpenBSD__
+	error = pledge("stdio rpath wpath cpath tty proc exec", NULL);
+	if (error) err(EX_OSERR, "pledge");
+#endif
+
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
