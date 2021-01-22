@@ -142,13 +142,7 @@ static void unveilData(const char *name) {
 	}
 }
 
-static void sandbox(const char *trust, const char *cert, const char *priv) {
-	int error = pledge(
-		"stdio rpath wpath cpath inet dns tty proc exec unveil", NULL
-	);
-	if (error) err(EX_OSERR, "pledge");
-	if (!self.restricted) return;
-
+static void unveilAll(const char *trust, const char *cert, const char *priv) {
 	dataMkdir("");
 	unveilData("");
 	if (trust) unveilConfig(trust);
@@ -161,7 +155,6 @@ static void sandbox(const char *trust, const char *cert, const char *priv) {
 	} paths[] = {
 		{ "/usr/share/terminfo", "r" },
 		{ tls_default_ca_cert_file(), "r" },
-		{ NULL, NULL },
 	};
 	for (size_t i = 0; i < ARRAY_LEN(paths); ++i) {
 		int error = unveil(paths[i].path, paths[i].perm);
@@ -285,7 +278,9 @@ int main(int argc, char *argv[]) {
 	commandCompleteAdd();
 
 #ifdef __OpenBSD__
-	sandbox(trust, cert, priv);
+	if (self.restricted) unveilAll(trust, cert, priv);
+	int error = pledge("stdio rpath wpath cpath inet dns tty proc exec", NULL);
+	if (error) err(EX_OSERR, "pledge");
 #endif
 
 	ircConfig(insecure, trust, cert, priv);
