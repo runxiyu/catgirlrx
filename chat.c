@@ -341,10 +341,12 @@ int main(int argc, char *argv[]) {
 	}
 
 #ifdef __OpenBSD__
-	if (self.restricted) {
-		error = pledge("stdio rpath wpath cpath tty", NULL);
-		if (error) err(EX_OSERR, "pledge");
-	}
+	char promises[64] = "stdio tty";
+	struct Cat cat = { promises, sizeof(promises), strlen(promises) };
+	if (save || logEnable) catf(&cat, " rpath wpath cpath");
+	if (!self.restricted) catf(&cat, " proc exec");
+	error = pledge(promises, NULL);
+	if (error) err(EX_OSERR, "pledge");
 #endif
 
 	struct pollfd fds[] = {
