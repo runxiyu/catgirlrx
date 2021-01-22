@@ -340,6 +340,13 @@ int main(int argc, char *argv[]) {
 		fcntl(execPipe[1], F_SETFD, FD_CLOEXEC);
 	}
 
+#ifdef __OpenBSD__
+	if (self.restricted) {
+		error = pledge("stdio rpath wpath cpath tty", NULL);
+		if (error) err(EX_OSERR, "pledge");
+	}
+#endif
+
 	struct pollfd fds[] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
