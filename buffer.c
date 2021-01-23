@@ -185,7 +185,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		if (!line->str) err(EX_OSERR, "malloc");
 
 		struct Cat cat = { line->str, cap, 0 };
-		catf(&cat, "%*s%n", align, "", &width);
+		catf(&cat, "%*s", (width = align), "");
 		styleCat(&cat, wrapStyle);
 		str = &line->str[cat.len];
 		style = wrapStyle;
