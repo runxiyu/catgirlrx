@@ -74,7 +74,7 @@ bool filterRemove(struct Filter filter) {
 		if (filter.chan && strcasecmp(filters[i].chan, filter.chan)) continue;
 		if (filter.mesg && strcasecmp(filters[i].mesg, filter.mesg)) continue;
 		free(filters[i].mask);
-		filters[i] = filters[--len];
+		memmove(&filters[i], &filters[i + 1], sizeof(*filters) * --len);
 		filters[len] = (struct Filter) {0};
 		found = true;
 	}
