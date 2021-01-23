@@ -429,7 +429,7 @@ static void commandUnhighlight(uint id, char *params) {
 	commandUnfilter(Hot, id, params);
 }
 static void commandUnignore(uint id, char *params) {
-	commandUnfilter(Hot, id, params);
+	commandUnfilter(Ice, id, params);
 }
 
 static void commandExec(uint id, char *params) {
