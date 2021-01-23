@@ -1,4 +1,4 @@
-.Dd January 16, 2021
+.Dd January 22, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl Relv
+.Op Fl KRelv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl I Ar highlight
@@ -123,6 +123,20 @@ The commands which can be filtered are:
 .Sy QUIT ,
 .Sy SETNAME .
 .
+.It Fl K , Cm kiosk
+Disable the
+.Ic /copy ,
+.Ic /debug ,
+.Ic /exec ,
+.Ic /join ,
+.Ic /list ,
+.Ic /msg ,
+.Ic /open ,
+.Ic /part ,
+.Ic /query ,
+.Ic /quote
+commands.
+.
 .It Fl N Ar util , Cm notify = Ar util
 Send notifications using a utility.
 Use more than once to add arguments to
@@ -145,14 +159,19 @@ The default is the first available of
 .It Fl R , Cm restrict
 Disable the
 .Ic /copy ,
-.Ic /debug ,
-.Ic /exec ,
-.Ic /join ,
-.Ic /msg ,
-.Ic /open ,
-.Ic /query ,
-.Ic /quote
-commands.
+.Ic /exec
+and
+.Ic /open
+commands,
+as well as viewing this manual with
+.Ic /help .
+On
+.Ox ,
+restrict system operations
+and filesystem access with
+.Xr pledge 2
+and
+.Xr unveil 2 .
 .
 .It Fl S Ar host , Cm bind = Ar host
 Bind to source address

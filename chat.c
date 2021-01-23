@@ -159,7 +159,6 @@ static void sandbox(const char *trust, const char *cert, const char *priv) {
 		const char *path;
 		const char *perm;
 	} paths[] = {
-		{ "/usr/bin/man", "x" },
 		{ "/usr/share/terminfo", "r" },
 		{ tls_default_ca_cert_file(), "r" },
 		{ NULL, NULL },
@@ -200,6 +199,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'C', .name = "copy", required_argument },
 		{ .val = 'H', .name = "hash", required_argument },
 		{ .val = 'I', .name = "highlight", required_argument },
+		{ .val = 'K', .name = "kiosk", no_argument },
 		{ .val = 'N', .name = "notify", required_argument },
 		{ .val = 'O', .name = "open", required_argument },
 		{ .val = 'R', .name = "restrict", no_argument },
@@ -236,6 +236,7 @@ int main(int argc, char *argv[]) {
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
 			break; case 'H': parseHash(optarg);
 			break; case 'I': filterAdd(Hot, optarg);
+			break; case 'K': self.kiosk = true;
 			break; case 'N': utilPush(&uiNotifyUtil, optarg);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
@@ -325,7 +326,8 @@ int main(int argc, char *argv[]) {
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
 	fcntl(irc, F_SETFD, FD_CLOEXEC);
-	if (!self.restricted) {
+	bool pipes = !self.kiosk && !self.restricted;
+	if (pipes) {
 		int error = pipe(utilPipe);
 		if (error) err(EX_OSERR, "pipe");
 
@@ -345,7 +347,7 @@ int main(int argc, char *argv[]) {
 		{ .events = POLLIN, .fd = execPipe[0] },
 	};
 	while (!self.quit) {
-		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), -1);
+		int nfds = poll(fds, (pipes ? ARRAY_LEN(fds) : 2), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 		if (nfds > 0) {
 			if (fds[0].revents) uiRead();

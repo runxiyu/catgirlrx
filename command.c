@@ -457,6 +457,10 @@ static void commandHelp(uint id, char *params) {
 		replies[ReplyHelp]++;
 		return;
 	}
+	if (self.restricted) {
+		uiFormat(id, Warm, NULL, "See catgirl(1) or /help index");
+		return;
+	}
 
 	uiHide();
 	pid_t pid = fork();
@@ -474,7 +478,8 @@ static void commandHelp(uint id, char *params) {
 
 enum Flag {
 	BIT(Multiline),
-	BIT(Restricted),
+	BIT(Restrict),
+	BIT(Kiosk),
 };
 
 static const struct Handler {
@@ -485,37 +490,37 @@ static const struct Handler {
 	{ "/away", commandAway, 0 },
 	{ "/ban", commandBan, 0 },
 	{ "/close", commandClose, 0 },
-	{ "/copy", commandCopy, Restricted },
+	{ "/copy", commandCopy, Restrict | Kiosk },
 	{ "/cs", commandCS, 0 },
-	{ "/debug", commandDebug, Restricted },
+	{ "/debug", commandDebug, Kiosk },
 	{ "/deop", commandDeop, 0 },
 	{ "/devoice", commandDevoice, 0 },
 	{ "/except", commandExcept, 0 },
-	{ "/exec", commandExec, Multiline | Restricted },
-	{ "/help", commandHelp, 0 },
+	{ "/exec", commandExec, Multiline | Restrict },
+	{ "/help", commandHelp, 0 }, // Restrict special case.
 	{ "/highlight", commandHighlight, 0 },
 	{ "/ignore", commandIgnore, 0 },
 	{ "/invex", commandInvex, 0 },
 	{ "/invite", commandInvite, 0 },
-	{ "/join", commandJoin, Restricted },
+	{ "/join", commandJoin, Kiosk },
 	{ "/kick", commandKick, 0 },
-	{ "/list", commandList, 0 },
+	{ "/list", commandList, Kiosk },
 	{ "/me", commandMe, 0 },
 	{ "/mode", commandMode, 0 },
 	{ "/move", commandMove, 0 },
-	{ "/msg", commandMsg, Multiline | Restricted },
+	{ "/msg", commandMsg, Multiline | Kiosk },
 	{ "/names", commandNames, 0 },
 	{ "/nick", commandNick, 0 },
 	{ "/notice", commandNotice, Multiline },
 	{ "/ns", commandNS, 0 },
-	{ "/o", commandOpen, Restricted },
+	{ "/o", commandOpen, Restrict | Kiosk },
 	{ "/op", commandOp, 0 },
-	{ "/open", commandOpen, Restricted },
+	{ "/open", commandOpen, Restrict | Kiosk },
 	{ "/ops", commandOps, 0 },
-	{ "/part", commandPart, 0 },
-	{ "/query", commandQuery, Restricted },
+	{ "/part", commandPart, Kiosk },
+	{ "/query", commandQuery, Kiosk },
 	{ "/quit", commandQuit, 0 },
-	{ "/quote", commandQuote, Multiline | Restricted },
+	{ "/quote", commandQuote, Multiline | Kiosk },
 	{ "/say", commandPrivmsg, Multiline },
 	{ "/setname", commandSetname, 0 },
 	{ "/topic", commandTopic, 0 },
@@ -584,8 +589,11 @@ void command(uint id, char *input) {
 		uiFormat(id, Warm, NULL, "No such command %s", cmd);
 		return;
 	}
-	if (self.restricted && handler->flags & Restricted) {
-		uiFormat(id, Warm, NULL, "Command %s is restricted", cmd);
+	if (
+		(self.restricted && handler->flags & Restrict) ||
+		(self.kiosk && handler->flags & Kiosk)
+	) {
+		uiFormat(id, Warm, NULL, "Command %s is unavailable", cmd);
 		return;
 	}
 
