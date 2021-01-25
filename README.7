@@ -1,4 +1,4 @@
-.Dd January 18, 2021
+.Dd January 25, 2021
 .Dt README 7
 .Os "Causal Agency"
 .\" To view this file, run: man ./README.7
@@ -93,6 +93,8 @@ provided by either
 .Lk https://git.causal.agency/libretls/about LibreTLS
 (for OpenSSL)
 or by LibreSSL.
+.
+.Pp
 It targets
 .Fx ,
 .Ox ,
@@ -100,8 +102,16 @@ macOS
 and Linux.
 On
 .Ox ,
+.Xr pledge 2
+is used to limit system operations,
+and with
+.Nm Fl R ,
+.Xr unveil 2
+is used to limit filesystem access.
+On BSD systems,
 configure with
 .Fl \-mandir=/usr/local/man .
+.
 .Bd -literal -offset indent
 \&./configure
 make all
