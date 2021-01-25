@@ -178,7 +178,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		flowed++;
 		line = linesNext(hard);
 		line->heat = soft->heat;
-		line->time = soft->time;
+		line->time = 0;
 
 		size_t cap = StyleCap + align + strlen(&wrap[n]) + 1;
 		line->str = malloc(cap);
