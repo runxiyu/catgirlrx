@@ -616,6 +616,10 @@ static void bufferList(const struct Buffer *buffer) {
 	for (size_t i = 0; i < BufferCap; ++i) {
 		const struct Line *line = bufferSoft(buffer, i);
 		if (!line) continue;
+		if (!line->str[0]) {
+			printf("\n");
+			continue;
+		}
 
 		struct tm *tm = localtime(&line->time);
 		if (!tm) err(EX_OSERR, "localtime");
