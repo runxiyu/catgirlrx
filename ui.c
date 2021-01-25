@@ -533,6 +533,7 @@ windowScrollSearch(struct Window *window, const char *str, int dir) {
 
 struct Util uiNotifyUtil;
 static void notify(uint id, const char *str) {
+	if (self.restricted) return;
 	if (!uiNotifyUtil.argc) return;
 
 	char buf[1024] = "";
