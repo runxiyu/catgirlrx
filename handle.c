@@ -510,7 +510,7 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
 	uiFormat(
-		id, Cold, tagTime(msg),
+		id, Warm, tagTime(msg),
 		"\3%02d%s\3 is already in \3%02d%s\3",
 		completeColor(id, msg->params[1]), msg->params[1],
 		hash(msg->params[2]), msg->params[2]
@@ -534,7 +534,7 @@ static void handleReplyNames(struct Message *msg) {
 	}
 	if (!cat.len) return;
 	uiFormat(
-		id, Cold, tagTime(msg),
+		id, Warm, tagTime(msg),
 		"In \3%02d%s\3 are %s",
 		hash(msg->params[2]), msg->params[2], buf
 	);
@@ -565,14 +565,14 @@ static void handleReplyWho(struct Message *msg) {
 
 static void handleReplyEndOfWho(struct Message *msg) {
 	require(msg, false, 2);
-	uiWrite(idFor(msg->params[1]), Cold, tagTime(msg), whoBuf);
+	uiWrite(idFor(msg->params[1]), Warm, tagTime(msg), whoBuf);
 	whoCat.len = 0;
 }
 
 static void handleReplyNoTopic(struct Message *msg) {
 	require(msg, false, 2);
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
+		idFor(msg->params[1]), Warm, tagTime(msg),
 		"There is no sign in \3%02d%s\3",
 		hash(msg->params[1]), msg->params[1]
 	);
@@ -599,7 +599,7 @@ static void handleReplyTopic(struct Message *msg) {
 	replies[ReplyTopic]--;
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
-		id, Cold, tagTime(msg),
+		id, Warm, tagTime(msg),
 		"The sign in \3%02d%s\3 reads: %s",
 		hash(msg->params[1]), msg->params[1], msg->params[2]
 	);
@@ -748,7 +748,7 @@ static void handleReplyChannelModeIs(struct Message *msg) {
 		}
 	}
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
+		idFor(msg->params[1]), Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s",
 		hash(msg->params[1]), msg->params[1],
 		(buf[0] ? &buf[2] : "modeless")
@@ -909,7 +909,7 @@ static void handleMode(struct Message *msg) {
 static void handleErrorChanopPrivsNeeded(struct Message *msg) {
 	require(msg, false, 3);
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
+		idFor(msg->params[1]), Warm, tagTime(msg),
 		"%s", msg->params[2]
 	);
 }
@@ -917,7 +917,7 @@ static void handleErrorChanopPrivsNeeded(struct Message *msg) {
 static void handleErrorUserNotInChannel(struct Message *msg) {
 	require(msg, false, 4);
 	uiFormat(
-		idFor(msg->params[2]), Cold, tagTime(msg),
+		idFor(msg->params[2]), Warm, tagTime(msg),
 		"%s\tis not in \3%02d%s\3",
 		msg->params[1], hash(msg->params[2]), msg->params[2]
 	);
@@ -926,7 +926,7 @@ static void handleErrorUserNotInChannel(struct Message *msg) {
 static void handleErrorBanListFull(struct Message *msg) {
 	require(msg, false, 4);
 	uiFormat(
-		idFor(msg->params[1]), Cold, tagTime(msg),
+		idFor(msg->params[1]), Warm, tagTime(msg),
 		"%s", (msg->params[4] ?: msg->params[3])
 	);
 }
@@ -939,7 +939,7 @@ static void handleReplyBanList(struct Message *msg) {
 		time_t time = strtol(msg->params[4], NULL, 10);
 		strftime(since, sizeof(since), "%F %T", localtime(&time));
 		uiFormat(
-			id, Cold, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"Banned from \3%02d%s\3 since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1],
 			since, completeColor(id, msg->params[3]), msg->params[3],
@@ -947,7 +947,7 @@ static void handleReplyBanList(struct Message *msg) {
 		);
 	} else {
 		uiFormat(
-			id, Cold, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"Banned from \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1], msg->params[2]
 		);
@@ -962,7 +962,7 @@ static void onList(const char *list, struct Message *msg) {
 		time_t time = strtol(msg->params[4], NULL, 10);
 		strftime(since, sizeof(since), "%F %T", localtime(&time));
 		uiFormat(
-			id, Cold, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"On the \3%02d%s\3 %s list since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1], list,
 			since, completeColor(id, msg->params[3]), msg->params[3],
@@ -970,7 +970,7 @@ static void onList(const char *list, struct Message *msg) {
 		);
 	} else {
 		uiFormat(
-			id, Cold, tagTime(msg),
+			id, Warm, tagTime(msg),
 			"On the \3%02d%s\3 %s list: %s",
 			hash(msg->params[1]), msg->params[1], list, msg->params[2]
 		);
