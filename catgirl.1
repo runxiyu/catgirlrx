@@ -68,9 +68,10 @@ listed on the command line.
 Files are searched for in
 .Pa $XDG_CONFIG_DIRS/catgirl
 unless the path starts with
-.Ql /
+.Ql / ,
+.Ql \&./
 or
-.Ql \&. .
+.Ql \&../ .
 Each option is placed on a line,
 and lines beginning with
 .Ql #
@@ -290,16 +291,17 @@ Set realname to
 The default realname is the same as the nickname.
 .
 .It Fl s Ar name , Cm save = Ar name
-Load and save the contents of windows from
+Save and load the contents of windows from
 .Ar name
 in
 .Pa $XDG_DATA_DIRS/catgirl ,
 or an absolute or relative path if
 .Ar name
 starts with
-.Ql /
+.Ql / ,
+.Ql \&./ ,
 or
-.Ql \&. .
+.Ql \&../ .
 .
 .It Fl t Ar path , Cm trust = Ar path
 Trust the certificate loaded from
