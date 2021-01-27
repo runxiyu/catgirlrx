@@ -301,6 +301,7 @@ int uiSave(const char *name);
 enum { BufferCap = 1024 };
 struct Buffer;
 struct Line {
+	uint num;
 	enum Heat heat;
 	time_t time;
 	char *str;

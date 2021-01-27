@@ -102,6 +102,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 	int flowed = 1;
 
 	struct Line *line = linesNext(hard);
+	line->num = soft->num;
 	line->heat = soft->heat;
 	line->time = soft->time;
 	line->str = strdup(soft->str);
@@ -177,6 +178,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 
 		flowed++;
 		line = linesNext(hard);
+		line->num = soft->num;
 		line->heat = soft->heat;
 		line->time = 0;
 
@@ -203,6 +205,7 @@ int bufferPush(
 	enum Heat heat, time_t time, const char *str
 ) {
 	struct Line *soft = linesNext(&buffer->soft);
+	soft->num = buffer->soft.len;
 	soft->heat = heat;
 	soft->time = time;
 	soft->str = strdup(str);
