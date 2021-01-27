@@ -567,10 +567,25 @@ void uiFormat(
 	uiWrite(id, heat, time, buf);
 }
 
+static void scrollTo(struct Window *window, int top) {
+	window->scroll = 0;
+	windowScroll(window, top - MAIN_LINES + MarkerLines);
+}
+
 static void windowReflow(struct Window *window) {
+	uint num = 0;
+	const struct Line *line = bufferHard(window->buffer, windowTop(window));
+	if (line) num = line->num;
 	window->unreadHard = bufferReflow(
 		window->buffer, COLS, window->thresh, window->unreadSoft
 	);
+	if (!window->scroll || !num) return;
+	for (size_t i = 0; i < BufferCap; ++i) {
+		line = bufferHard(window->buffer, i);
+		if (!line || line->num != num) continue;
+		scrollTo(window, BufferCap - i);
+		break;
+	}
 }
 
 static void resize(void) {
@@ -760,11 +775,6 @@ void uiCloseNum(uint num) {
 
 static void scrollPage(struct Window *window, int n) {
 	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
-}
-
-static void scrollTo(struct Window *window, int top) {
-	window->scroll = 0;
-	windowScroll(window, top - MAIN_LINES + MarkerLines);
 }
 
 static void scrollHot(struct Window *window, int dir) {
