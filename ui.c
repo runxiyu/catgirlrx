@@ -454,6 +454,12 @@ void uiHide(void) {
 	endwin();
 }
 
+static size_t windowTop(const struct Window *window) {
+	size_t top = BufferCap - MAIN_LINES - window->scroll;
+	if (window->scroll) top += MarkerLines;
+	return top;
+}
+
 static void mainAdd(int y, const char *str) {
 	int ny, nx;
 	wmove(main, y, 0);
@@ -463,13 +469,7 @@ static void mainAdd(int y, const char *str) {
 	(void)nx;
 }
 
-static size_t windowTop(const struct Window *window) {
-	size_t top = BufferCap - MAIN_LINES - window->scroll;
-	if (window->scroll) top += MarkerLines;
-	return top;
-}
-
-static void windowUpdate(void) {
+static void mainUpdate(void) {
 	struct Window *window = windows.ptrs[windows.show];
 
 	int y = 0;
@@ -498,37 +498,7 @@ static void windowScroll(struct Window *window, int n) {
 	}
 	if (window->scroll < 0) window->scroll = 0;
 	unmark(window);
-	if (window == windows.ptrs[windows.show]) windowUpdate();
-}
-
-static void windowScrollPage(struct Window *window, int n) {
-	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
-}
-
-static void windowScrollTo(struct Window *window, int top) {
-	window->scroll = 0;
-	windowScroll(window, top - MAIN_LINES + MarkerLines);
-}
-
-static void windowScrollHot(struct Window *window, int dir) {
-	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		const struct Line *prev = bufferHard(window->buffer, i - 1);
-		if (!line || line->heat < Hot) continue;
-		if (prev && prev->heat > Warm) continue;
-		windowScrollTo(window, BufferCap - i);
-		break;
-	}
-}
-
-static void
-windowScrollSearch(struct Window *window, const char *str, int dir) {
-	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line || !strcasestr(line->str, str)) continue;
-		windowScrollTo(window, BufferCap - i);
-		break;
-	}
+	if (window == windows.ptrs[windows.show]) mainUpdate();
 }
 
 struct Util uiNotifyUtil;
@@ -577,7 +547,7 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	int lines = bufferPush(window->buffer, COLS, window->thresh, heat, ts, str);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
-	if (window == windows.ptrs[windows.show]) windowUpdate();
+	if (window == windows.ptrs[windows.show]) mainUpdate();
 
 	if (window->mark && heat > Warm) {
 		beep();
@@ -610,7 +580,7 @@ static void resize(void) {
 	for (uint num = 0; num < windows.len; ++num) {
 		windowReflow(windows.ptrs[num]);
 	}
-	windowUpdate();
+	mainUpdate();
 }
 
 static void bufferList(const struct Buffer *buffer) {
@@ -743,7 +713,7 @@ static void windowShow(uint num) {
 	windows.show = num;
 	mark(windows.ptrs[windows.swap]);
 	unmark(windows.ptrs[windows.show]);
-	windowUpdate();
+	mainUpdate();
 	inputUpdate();
 }
 
@@ -775,7 +745,7 @@ static void windowClose(uint num) {
 		windows.swap = windows.show;
 	} else if (windows.show > num) {
 		windows.show--;
-		windowUpdate();
+		mainUpdate();
 	}
 	statusUpdate();
 }
@@ -788,6 +758,35 @@ void uiCloseNum(uint num) {
 	if (num < windows.len) windowClose(num);
 }
 
+static void scrollPage(struct Window *window, int n) {
+	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
+}
+
+static void scrollTo(struct Window *window, int top) {
+	window->scroll = 0;
+	windowScroll(window, top - MAIN_LINES + MarkerLines);
+}
+
+static void scrollHot(struct Window *window, int dir) {
+	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
+		const struct Line *line = bufferHard(window->buffer, i);
+		const struct Line *prev = bufferHard(window->buffer, i - 1);
+		if (!line || line->heat < Hot) continue;
+		if (prev && prev->heat > Warm) continue;
+		scrollTo(window, BufferCap - i);
+		break;
+	}
+}
+
+static void scrollSearch(struct Window *window, const char *str, int dir) {
+	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
+		const struct Line *line = bufferHard(window->buffer, i);
+		if (!line || !strcasestr(line->str, str)) continue;
+		scrollTo(window, BufferCap - i);
+		break;
+	}
+}
+
 static void incThresh(struct Window *window, int n) {
 	if (n > 0 && window->thresh == Hot) return;
 	if (n < 0 && window->thresh == Ice) {
@@ -796,7 +795,7 @@ static void incThresh(struct Window *window, int n) {
 		window->thresh += n;
 	}
 	windowReflow(window);
-	windowUpdate();
+	mainUpdate();
 	statusUpdate();
 }
 
@@ -842,8 +841,8 @@ static void keyCode(int code) {
 		break; case KeyMetaPlus:  incThresh(window, +1);
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
-		break; case KeyMetaGt: windowScroll(window, -BufferCap);
-		break; case KeyMetaLt: windowScroll(window, +BufferCap);
+		break; case KeyMetaGt: scrollTo(window, 0);
+		break; case KeyMetaLt: scrollTo(window, BufferCap);
 
 		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
 		break; case KeyMetaA: showAuto();
@@ -852,11 +851,11 @@ static void keyCode(int code) {
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
 		break; case KeyMetaL: bufferList(window->buffer);
 		break; case KeyMetaM: uiWrite(id, Warm, NULL, "");
-		break; case KeyMetaN: windowScrollHot(window, +1);
-		break; case KeyMetaP: windowScrollHot(window, -1);
+		break; case KeyMetaN: scrollHot(window, +1);
+		break; case KeyMetaP: scrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
-		break; case KeyMetaU: windowScrollTo(window, window->unreadHard);
-		break; case KeyMetaV: windowScrollPage(window, +1);
+		break; case KeyMetaU: scrollTo(window, window->unreadHard);
+		break; case KeyMetaV: scrollPage(window, +1);
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
@@ -865,11 +864,11 @@ static void keyCode(int code) {
 		break; case KEY_ENTER: edit(id, EditEnter, 0);
 		break; case KEY_HOME: edit(id, EditHead, 0);
 		break; case KEY_LEFT: edit(id, EditPrev, 0);
-		break; case KEY_NPAGE: windowScrollPage(window, -1);
-		break; case KEY_PPAGE: windowScrollPage(window, +1);
+		break; case KEY_NPAGE: scrollPage(window, -1);
+		break; case KEY_PPAGE: scrollPage(window, +1);
 		break; case KEY_RIGHT: edit(id, EditNext, 0);
-		break; case KEY_SEND: windowScroll(window, -BufferCap);
-		break; case KEY_SHOME: windowScroll(window, +BufferCap);
+		break; case KEY_SEND: scrollTo(window, 0);
+		break; case KEY_SHOME: scrollTo(window, BufferCap);
 		break; case KEY_UP: windowScroll(window, +1);
 	}
 }
@@ -892,11 +891,11 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': uiShowNum(windows.show + 1);
 		break; case L'P': uiShowNum(windows.show - 1);
-		break; case L'R': windowScrollSearch(window, editBuffer(NULL), -1);
-		break; case L'S': windowScrollSearch(window, editBuffer(NULL), +1);
+		break; case L'R': scrollSearch(window, editBuffer(NULL), -1);
+		break; case L'S': scrollSearch(window, editBuffer(NULL), +1);
 		break; case L'T': edit(id, EditTranspose, 0);
 		break; case L'U': edit(id, EditDeleteHead, 0);
-		break; case L'V': windowScrollPage(window, -1);
+		break; case L'V': scrollPage(window, -1);
 		break; case L'W': edit(id, EditDeletePrevWord, 0);
 		break; case L'X': edit(id, EditExpand, 0);
 		break; case L'Y': edit(id, EditPaste, 0);
