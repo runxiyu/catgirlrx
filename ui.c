@@ -236,13 +236,6 @@ static void errExit(void) {
 }
 
 void uiInitEarly(void) {
-	char buf[TimeCap];
-	struct tm *time = localtime(&(time_t) { -22100400 });
-	uiTime.width = strftime(buf, sizeof(buf), uiTime.format, time);
-	if (!uiTime.width) {
-		errx(EX_CONFIG, "invalid timestamp format: %s", uiTime.format);
-	}
-
 	initscr();
 	cbreak();
 	noecho();
@@ -263,6 +256,16 @@ void uiInitEarly(void) {
 
 	main = newwin(MAIN_LINES, COLS, StatusLines, 0);
 	if (!main) err(EX_OSERR, "newwin");
+
+	int y;
+	char buf[TimeCap];
+	struct tm *time = localtime(&(time_t) { -22100400 });
+	size_t len = strftime(buf, sizeof(buf), uiTime.format, time);
+	if (!len) errx(EX_CONFIG, "invalid timestamp format: %s", uiTime.format);
+	waddstr(main, buf);
+	waddch(main, ' ');
+	getyx(main, y, uiTime.width);
+	(void)y;
 
 	input = newpad(InputLines, InputCols);
 	if (!input) err(EX_OSERR, "newpad");
@@ -476,8 +479,7 @@ static size_t windowBottom(const struct Window *window) {
 }
 
 static int windowCols(const struct Window *window) {
-	if (!window->time) return COLS;
-	return COLS - (uiTime.width + 1);
+	return COLS - (window->time ? uiTime.width : 0);
 }
 
 static void mainAdd(int y, bool time, const struct Line *line) {
@@ -498,8 +500,8 @@ static void mainAdd(int y, bool time, const struct Line *line) {
 		waddstr(main, buf);
 		waddch(main, ' ');
 	} else if (time) {
-		whline(main, ' ', uiTime.width + 1);
-		wmove(main, y, uiTime.width + 1);
+		whline(main, ' ', uiTime.width);
+		wmove(main, y, uiTime.width);
 	}
 	styleAdd(main, line->str);
 	getyx(main, ny, nx);
@@ -752,8 +754,8 @@ static void inputUpdate(void) {
 	int y, x;
 	wmove(input, 0, 0);
 	if (window->time && window->id != Network) {
-		whline(input, ' ', uiTime.width + 1);
-		wmove(input, 0, uiTime.width + 1);
+		whline(input, ' ', uiTime.width);
+		wmove(input, 0, uiTime.width);
 	}
 	wattr_set(input, styleAttr(stylePrompt), stylePair(stylePrompt), NULL);
 	waddstr(input, prefix);

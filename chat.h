@@ -283,7 +283,7 @@ enum { TimeCap = 64 };
 extern struct Time {
 	bool enable;
 	const char *format;
-	size_t width;
+	int width;
 } uiTime;
 extern struct Util uiNotifyUtil;
 void uiInitEarly(void);
