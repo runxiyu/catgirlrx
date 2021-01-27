@@ -69,6 +69,11 @@ enum {
 #define RIGHT (COLS - 1)
 #define MAIN_LINES (LINES - StatusLines - InputLines)
 
+struct Time uiTime = {
+	.format = "%T",
+	.width = 8,
+};
+
 static WINDOW *status;
 static WINDOW *main;
 static WINDOW *input;
@@ -78,6 +83,7 @@ struct Window {
 	int scroll;
 	bool mark;
 	bool mute;
+	bool time;
 	enum Heat thresh;
 	enum Heat heat;
 	uint unreadSoft;
@@ -129,15 +135,13 @@ static uint windowFor(uint id) {
 	for (uint num = 0; num < windows.len; ++num) {
 		if (windows.ptrs[num]->id == id) return num;
 	}
-
 	struct Window *window = calloc(1, sizeof(*window));
 	if (!window) err(EX_OSERR, "malloc");
-
 	window->id = id;
 	window->mark = true;
+	window->time = uiTime.enable;
 	window->thresh = Cold;
 	window->buffer = bufferAlloc();
-
 	return windowPush(window);
 }
 
@@ -199,6 +203,7 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaN, "\33n", NULL) \
 	X(KeyMetaP, "\33p", NULL) \
 	X(KeyMetaQ, "\33q", NULL) \
+	X(KeyMetaT, "\33t", NULL) \
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
 	X(KeyMetaEnter, "\33\r", "\33\n") \
@@ -466,12 +471,36 @@ static size_t windowBottom(const struct Window *window) {
 	return bottom;
 }
 
-static void mainAdd(int y, const char *str) {
+static int windowCols(const struct Window *window) {
+	if (!window->time) return COLS;
+	return COLS - (uiTime.width + 1);
+}
+
+static void mainAdd(int y, bool time, const struct Line *line) {
 	int ny, nx;
 	wmove(main, y, 0);
-	styleAdd(main, str);
+	if (!line || !line->str[0]) {
+		wclrtoeol(main);
+		return;
+	}
+	if (time && line->time) {
+		char buf[TimeCap];
+		strftime(buf, sizeof(buf), uiTime.format, localtime(&line->time));
+		wattr_set(
+			main,
+			colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1),
+			NULL
+		);
+		waddstr(main, buf);
+		waddch(main, ' ');
+	} else if (time) {
+		whline(main, ' ', uiTime.width + 1);
+		wmove(main, y, uiTime.width + 1);
+	}
+	styleAdd(main, line->str);
 	getyx(main, ny, nx);
-	if (ny == y) wclrtoeol(main);
+	if (ny != y) return;
+	wclrtoeol(main);
 	(void)nx;
 }
 
@@ -481,16 +510,14 @@ static void mainUpdate(void) {
 	int y = 0;
 	int marker = MAIN_LINES - SplitLines - MarkerLines;
 	for (size_t i = windowTop(window); i < BufferCap; ++i) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		mainAdd(y++, (line ? line->str : ""));
+		mainAdd(y++, window->time, bufferHard(window->buffer, i));
 		if (window->scroll && y == marker) break;
 	}
 	if (!window->scroll) return;
 
 	y = MAIN_LINES - SplitLines;
 	for (size_t i = BufferCap - SplitLines; i < BufferCap; ++i) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		mainAdd(y++, (line ? line->str : ""));
+		mainAdd(y++, window->time, bufferHard(window->buffer, i));
 	}
 	wattr_set(main, A_NORMAL, 0, NULL);
 	mvwhline(main, marker, 0, ACS_BULLET, COLS);
@@ -540,7 +567,10 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 	}
 	if (window->mark && heat > Cold) {
 		if (!window->unreadWarm++) {
-			int lines = bufferPush(window->buffer, COLS, false, Warm, ts, "");
+			int lines = bufferPush(
+				window->buffer, windowCols(window),
+				window->thresh, Warm, ts, ""
+			);
 			if (window->scroll) windowScroll(window, lines);
 			if (window->unreadSoft > 1) {
 				window->unreadSoft++;
@@ -550,7 +580,10 @@ void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
 		if (heat > window->heat) window->heat = heat;
 		statusUpdate();
 	}
-	int lines = bufferPush(window->buffer, COLS, window->thresh, heat, ts, str);
+	int lines = bufferPush(
+		window->buffer, windowCols(window),
+		window->thresh, heat, ts, str
+	);
 	window->unreadHard += lines;
 	if (window->scroll) windowScroll(window, lines);
 	if (window == windows.ptrs[windows.show]) mainUpdate();
@@ -583,7 +616,8 @@ static void windowReflow(struct Window *window) {
 	const struct Line *line = bufferHard(window->buffer, windowTop(window));
 	if (line) num = line->num;
 	window->unreadHard = bufferReflow(
-		window->buffer, COLS, window->thresh, window->unreadSoft
+		window->buffer, windowCols(window),
+		window->thresh, window->unreadSoft
 	);
 	if (!window->scroll || !num) return;
 	for (size_t i = 0; i < BufferCap; ++i) {
@@ -595,12 +629,12 @@ static void windowReflow(struct Window *window) {
 }
 
 static void resize(void) {
-	statusUpdate();
 	wclear(main);
 	wresize(main, MAIN_LINES, COLS);
 	for (uint num = 0; num < windows.len; ++num) {
 		windowReflow(windows.ptrs[num]);
 	}
+	statusUpdate();
 	mainUpdate();
 }
 
@@ -620,13 +654,10 @@ static void windowList(const struct Window *window) {
 			continue;
 		}
 
-		struct tm *tm = localtime(&line->time);
-		if (!tm) err(EX_OSERR, "localtime");
-
-		char buf[sizeof("00:00:00")];
-		strftime(buf, sizeof(buf), "%T", tm);
+		char buf[TimeCap];
+		strftime(buf, sizeof(buf), uiTime.format, localtime(&line->time));
 		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
-		printf("[%s] ", buf);
+		printf("%s ", buf);
 
 		bool align = false;
 		struct Style style = StyleDefault;
@@ -679,7 +710,7 @@ static void inputAdd(struct Style *style, const char *str) {
 static void inputUpdate(void) {
 	size_t pos;
 	char *buf = editBuffer(&pos);
-	uint id = windows.ptrs[windows.show]->id;
+	struct Window *window = windows.ptrs[windows.show];
 
 	const char *prefix = "";
 	const char *prompt = self.nick;
@@ -688,9 +719,9 @@ static void inputUpdate(void) {
 	struct Style stylePrompt = { .fg = self.color, .bg = Default };
 	struct Style styleInput = StyleDefault;
 
-	const char *privmsg = commandIsPrivmsg(id, buf);
-	const char *notice = commandIsNotice(id, buf);
-	const char *action = commandIsAction(id, buf);
+	const char *privmsg = commandIsPrivmsg(window->id, buf);
+	const char *notice = commandIsNotice(window->id, buf);
+	const char *action = commandIsAction(window->id, buf);
 	if (privmsg) {
 		prefix = "<"; suffix = "> ";
 		skip = privmsg;
@@ -703,7 +734,7 @@ static void inputUpdate(void) {
 		stylePrompt.attr |= Italic;
 		styleInput.attr |= Italic;
 		skip = action;
-	} else if (id == Debug && buf[0] != '/') {
+	} else if (window->id == Debug && buf[0] != '/') {
 		prompt = "<< ";
 		stylePrompt.fg = Gray;
 	} else {
@@ -716,6 +747,10 @@ static void inputUpdate(void) {
 
 	int y, x;
 	wmove(input, 0, 0);
+	if (window->time && window->id != Network) {
+		whline(input, ' ', uiTime.width + 1);
+		wmove(input, 0, uiTime.width + 1);
+	}
 	wattr_set(input, styleAttr(stylePrompt), stylePair(stylePrompt), NULL);
 	waddstr(input, prefix);
 	waddstr(input, prompt);
@@ -807,6 +842,14 @@ static void scrollSearch(struct Window *window, const char *str, int dir) {
 	}
 }
 
+static void toggleTime(struct Window *window) {
+	window->time ^= true;
+	windowReflow(window);
+	statusUpdate();
+	mainUpdate();
+	inputUpdate();
+}
+
 static void incThresh(struct Window *window, int n) {
 	if (n > 0 && window->thresh == Hot) return;
 	if (n < 0 && window->thresh == Ice) {
@@ -815,6 +858,7 @@ static void incThresh(struct Window *window, int n) {
 		window->thresh += n;
 	}
 	windowReflow(window);
+	statusUpdate();
 	mainUpdate();
 	statusUpdate();
 }
@@ -874,6 +918,7 @@ static void keyCode(int code) {
 		break; case KeyMetaN: scrollHot(window, +1);
 		break; case KeyMetaP: scrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
+		break; case KeyMetaT: toggleTime(window);
 		break; case KeyMetaU: scrollTo(window, window->unreadHard);
 		break; case KeyMetaV: scrollPage(window, +1);
 

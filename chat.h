@@ -279,6 +279,12 @@ const char *commandIsAction(uint id, const char *input);
 void commandCompleteAdd(void);
 
 enum Heat { Ice, Cold, Warm, Hot };
+enum { TimeCap = 64 };
+extern struct Time {
+	bool enable;
+	const char *format;
+	size_t width;
+} uiTime;
 extern struct Util uiNotifyUtil;
 void uiInitEarly(void);
 void uiInitLate(void);

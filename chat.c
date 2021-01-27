@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sysexits.h>
+#include <time.h>
 #include <tls.h>
 #include <unistd.h>
 
@@ -124,6 +125,16 @@ static void parseHash(char *str) {
 	if (*str) hashBound = strtoul(&str[1], NULL, 0);
 }
 
+static void parseTimestamp(const char *format) {
+	uiTime.enable = true;
+	if (!format) return;
+	char buf[TimeCap];
+	uiTime.format = format;
+	struct tm *time = localtime(&(time_t) { -22100400 });
+	uiTime.width = strftime(buf, sizeof(buf), format, time);
+	if (!uiTime.width) errx(EX_USAGE, "invalid timestamp format: %s", format);
+}
+
 #ifdef __OpenBSD__
 
 static void unveilConfig(const char *name) {
@@ -197,6 +208,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'O', .name = "open", required_argument },
 		{ .val = 'R', .name = "restrict", no_argument },
 		{ .val = 'S', .name = "bind", required_argument },
+		{ .val = 'T', .name = "timestamp", optional_argument },
 		{ .val = 'a', .name = "sasl-plain", required_argument },
 		{ .val = 'c', .name = "cert", required_argument },
 		{ .val = 'e', .name = "sasl-external", no_argument },
@@ -234,6 +246,7 @@ int main(int argc, char *argv[]) {
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
 			break; case 'S': bind = optarg;
+			break; case 'T': parseTimestamp(optarg);
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
