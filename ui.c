@@ -69,11 +69,6 @@ enum {
 #define RIGHT (COLS - 1)
 #define MAIN_LINES (LINES - StatusLines - InputLines)
 
-struct Time uiTime = {
-	.format = "%T",
-	.width = 8,
-};
-
 static WINDOW *status;
 static WINDOW *main;
 static WINDOW *input;
@@ -232,6 +227,8 @@ static const char *ExitFocusMode  = "\33[?1004l";
 static const char *EnterPasteMode = "\33[?2004h";
 static const char *ExitPasteMode  = "\33[?2004l";
 
+struct Time uiTime = { .format = "%X" };
+
 static void errExit(void) {
 	putp(ExitFocusMode);
 	putp(ExitPasteMode);
@@ -239,6 +236,13 @@ static void errExit(void) {
 }
 
 void uiInitEarly(void) {
+	char buf[TimeCap];
+	struct tm *time = localtime(&(time_t) { -22100400 });
+	uiTime.width = strftime(buf, sizeof(buf), uiTime.format, time);
+	if (!uiTime.width) {
+		errx(EX_CONFIG, "invalid timestamp format: %s", uiTime.format);
+	}
+
 	initscr();
 	cbreak();
 	noecho();

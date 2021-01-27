@@ -125,16 +125,6 @@ static void parseHash(char *str) {
 	if (*str) hashBound = strtoul(&str[1], NULL, 0);
 }
 
-static void parseTimestamp(const char *format) {
-	uiTime.enable = true;
-	if (!format) return;
-	char buf[TimeCap];
-	uiTime.format = format;
-	struct tm *time = localtime(&(time_t) { -22100400 });
-	uiTime.width = strftime(buf, sizeof(buf), format, time);
-	if (!uiTime.width) errx(EX_USAGE, "invalid timestamp format: %s", format);
-}
-
 #ifdef __OpenBSD__
 
 static void unveilConfig(const char *name) {
@@ -246,7 +236,10 @@ int main(int argc, char *argv[]) {
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
 			break; case 'S': bind = optarg;
-			break; case 'T': parseTimestamp(optarg);
+			break; case 'T': {
+				uiTime.enable = true;
+				if (optarg) uiTime.format = optarg;
+			}
 			break; case 'a': sasl = true; self.plain = optarg;
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
