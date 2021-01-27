@@ -597,15 +597,18 @@ void uiFormat(
 	uiWrite(id, heat, time, buf);
 }
 
+static void windowReflow(struct Window *window) {
+	window->unreadHard = bufferReflow(
+		window->buffer, COLS, window->thresh, window->unreadSoft
+	);
+}
+
 static void resize(void) {
 	statusUpdate();
 	wclear(main);
 	wresize(main, MAIN_LINES, COLS);
 	for (uint num = 0; num < windows.len; ++num) {
-		struct Window *window = windows.ptrs[num];
-		window->unreadHard = bufferReflow(
-			window->buffer, COLS, window->thresh, window->unreadSoft
-		);
+		windowReflow(windows.ptrs[num]);
 	}
 	windowUpdate();
 }
@@ -792,9 +795,7 @@ static void incThresh(struct Window *window, int n) {
 	} else {
 		window->thresh += n;
 	}
-	window->unreadHard = bufferReflow(
-		window->buffer, COLS, window->thresh, window->unreadSoft
-	);
+	windowReflow(window);
 	windowUpdate();
 	statusUpdate();
 }
@@ -1065,9 +1066,7 @@ void uiLoad(const char *name) {
 			readString(file, &buf, &cap);
 			bufferPush(window->buffer, COLS, window->thresh, heat, time, buf);
 		}
-		window->unreadHard = bufferReflow(
-			window->buffer, COLS, window->thresh, window->unreadSoft
-		);
+		windowReflow(window);
 	}
 	urlLoad(file, version);
 
