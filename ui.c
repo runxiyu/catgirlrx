@@ -460,6 +460,12 @@ static size_t windowTop(const struct Window *window) {
 	return top;
 }
 
+static size_t windowBottom(const struct Window *window) {
+	size_t bottom = BufferCap - (window->scroll ?: 1);
+	if (window->scroll) bottom -= SplitLines + MarkerLines;
+	return bottom;
+}
+
 static void mainAdd(int y, const char *str) {
 	int ny, nx;
 	wmove(main, y, 0);
@@ -598,13 +604,17 @@ static void resize(void) {
 	mainUpdate();
 }
 
-static void bufferList(const struct Buffer *buffer) {
+static void windowList(const struct Window *window) {
 	uiHide();
 	waiting = true;
 
+	uint num = 0;
+	const struct Line *line = bufferHard(window->buffer, windowBottom(window));
+	if (line) num = line->num;
 	for (size_t i = 0; i < BufferCap; ++i) {
-		const struct Line *line = bufferSoft(buffer, i);
+		line = bufferSoft(window->buffer, i);
 		if (!line) continue;
+		if (line->num > num) break;
 		if (!line->str[0]) {
 			printf("\n");
 			continue;
@@ -859,7 +869,7 @@ static void keyCode(int code) {
 		break; case KeyMetaB: edit(id, EditPrevWord, 0);
 		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
 		break; case KeyMetaF: edit(id, EditNextWord, 0);
-		break; case KeyMetaL: bufferList(window->buffer);
+		break; case KeyMetaL: windowList(window);
 		break; case KeyMetaM: uiWrite(id, Warm, NULL, "");
 		break; case KeyMetaN: scrollHot(window, +1);
 		break; case KeyMetaP: scrollHot(window, -1);
