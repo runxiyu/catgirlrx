@@ -398,14 +398,11 @@ static void statusUpdate(void) {
 		char buf[256] = "";
 		struct Cat cat = { buf, sizeof(buf), 0 };
 		catf(
-			&cat, "\3%d%s %u ",
-			idColors[window->id], (num == windows.show ? "\26" : ""), num
+			&cat, "\3%d%s %u%s%s %s ",
+			idColors[window->id], (num == windows.show ? "\26" : ""),
+			num, window->thresh[(const char *[]) { "-", "", "+", "++" }],
+			&"="[!window->mute], idNames[window->id]
 		);
-		if (window->thresh != Cold || window->mute) {
-			const char *thresh[] = { "-", "", "+", "++" };
-			catf(&cat, "%s%s ", thresh[window->thresh], &"="[!window->mute]);
-		}
-		catf(&cat, "%s ", idNames[window->id]);
 		if (window->mark && window->unreadWarm) {
 			catf(
 				&cat, "\3%d+%d\3%d%s",
