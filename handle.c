@@ -1275,6 +1275,7 @@ static const struct Handler {
 	{ "330", +ReplyWhois, handleReplyWhoisGeneric },
 	{ "331", -ReplyTopic, handleReplyNoTopic },
 	{ "332", 0, handleReplyTopic },
+	{ "335", +ReplyWhois, handleReplyWhoisGeneric },
 	{ "341", 0, handleReplyInviting },
 	{ "346", +ReplyInvex, handleReplyInviteList },
 	{ "347", -ReplyInvex, NULL },
