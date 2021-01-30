@@ -826,6 +826,14 @@ static void scrollPage(struct Window *window, int n) {
 	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
 }
 
+static void scrollTop(struct Window *window) {
+	for (size_t i = 0; i < BufferCap; ++i) {
+		if (!bufferHard(window->buffer, i)) continue;
+		scrollTo(window, BufferCap - i);
+		break;
+	}
+}
+
 static void scrollHot(struct Window *window, int dir) {
 	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
 		const struct Line *line = bufferHard(window->buffer, i);
@@ -910,7 +918,7 @@ static void keyCode(int code) {
 		break; case KeyMetaSlash: windowShow(windows.swap);
 
 		break; case KeyMetaGt: scrollTo(window, 0);
-		break; case KeyMetaLt: scrollTo(window, BufferCap);
+		break; case KeyMetaLt: scrollTop(window);
 
 		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
 		break; case KeyMetaA: showAuto();
