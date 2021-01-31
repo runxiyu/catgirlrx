@@ -772,10 +772,10 @@ static void inputUpdate(void) {
 static void windowShow(uint num) {
 	if (num != windows.show) {
 		windows.swap = windows.show;
+		mark(windows.ptrs[windows.swap]);
 	}
 	windows.show = num;
 	windows.user = num;
-	mark(windows.ptrs[windows.swap]);
 	unmark(windows.ptrs[windows.show]);
 	mainUpdate();
 	inputUpdate();
