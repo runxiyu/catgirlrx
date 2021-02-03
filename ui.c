@@ -1003,18 +1003,21 @@ void uiRead(void) {
 	}
 
 	wint_t ch;
-	static bool paste, style;
+	static bool paste, style, literal;
 	for (int ret; ERR != (ret = wget_wch(input, &ch));) {
 		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
 			paste = true;
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
 			paste = false;
-		} else if (paste) {
+		} else if (paste || literal) {
 			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
 		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
 			style = true;
+			continue;
+		} else if (style && ch == (L'V' ^ L'@')) {
+			literal = true;
 			continue;
 		} else if (style) {
 			keyStyle(ch);
@@ -1024,6 +1027,7 @@ void uiRead(void) {
 			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
 		}
 		style = false;
+		literal = false;
 	}
 	inputUpdate();
 }
