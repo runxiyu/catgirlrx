@@ -239,14 +239,12 @@ static void handleReplyWelcome(struct Message *msg) {
 	set(&self.nick, msg->params[0]);
 	completeTouch(Network, self.nick, Default);
 	if (self.join) {
-		uint count = 1;
-		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
-			if (*ch == ',') count++;
-		}
 		ircFormat("JOIN %s\r\n", self.join);
-		replies[ReplyJoin] += count;
-		replies[ReplyTopic] += count;
-		replies[ReplyNames] += count;
+		if (!strchr(self.join, ',')) {
+			replies[ReplyJoin]++;
+			replies[ReplyTopic]++;
+			replies[ReplyNames]++;
+		}
 	}
 }
 
