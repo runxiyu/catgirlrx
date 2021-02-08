@@ -468,7 +468,7 @@ static void commandHelp(uint id, char *params) {
 	if (pid) return;
 
 	char buf[256];
-	snprintf(buf, sizeof(buf), "%spCOMMANDS$", (getenv("LESS") ?: ""));
+	snprintf(buf, sizeof(buf), "%sp^COMMANDS$", (getenv("LESS") ?: ""));
 	setenv("LESS", buf, 1);
 	execlp("man", "man", "1", "catgirl", NULL);
 	dup2(utilPipe[1], STDERR_FILENO);
