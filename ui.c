@@ -222,16 +222,14 @@ enum {
 
 // XXX: Assuming terminals will be fine with these even if they're unsupported,
 // since they're "private" modes.
-static const char *EnterFocusMode = "\33[?1004h";
-static const char *ExitFocusMode  = "\33[?1004l";
-static const char *EnterPasteMode = "\33[?2004h";
-static const char *ExitPasteMode  = "\33[?2004l";
+static const char *FocusMode[2] = { "\33[?1004l", "\33[?1004h" };
+static const char *PasteMode[2] = { "\33[?2004l", "\33[?2004h" };
 
 struct Time uiTime = { .format = "%X" };
 
 static void errExit(void) {
-	putp(ExitFocusMode);
-	putp(ExitPasteMode);
+	putp(FocusMode[false]);
+	putp(PasteMode[false]);
 	reset_shell_mode();
 }
 
@@ -447,8 +445,8 @@ static void unmark(struct Window *window) {
 void uiShow(void) {
 	if (!hidden) return;
 	prevTitle[0] = '\0';
-	putp(EnterFocusMode);
-	putp(EnterPasteMode);
+	putp(FocusMode[true]);
+	putp(PasteMode[true]);
 	fflush(stdout);
 	hidden = false;
 	unmark(windows.ptrs[windows.show]);
@@ -458,8 +456,8 @@ void uiHide(void) {
 	if (hidden) return;
 	mark(windows.ptrs[windows.show]);
 	hidden = true;
-	putp(ExitFocusMode);
-	putp(ExitPasteMode);
+	putp(FocusMode[false]);
+	putp(PasteMode[false]);
 	endwin();
 }
 
