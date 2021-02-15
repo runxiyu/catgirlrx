@@ -114,6 +114,7 @@ static void macroExpand(void) {
 	if (macro == pos) return;
 	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
 		if (wcsncmp(Macros[i].name, &buf[macro], pos - macro)) continue;
+		if (wcstombs(NULL, Macros[i].string, 0) == (size_t)-1) continue;
 		delete(false, macro, pos - macro);
 		pos = macro;
 		size_t expand = wcslen(Macros[i].string);
