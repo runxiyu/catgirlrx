@@ -260,6 +260,8 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 		}
 
 		break; case EditInsert: {
+			char mb[MB_LEN_MAX];
+			if (wctomb(mb, ch) < 0) return;
 			if (reserve(pos, 1)) {
 				buf[pos++] = ch;
 			}
