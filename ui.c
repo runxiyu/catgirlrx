@@ -211,7 +211,8 @@ static short colorPair(short fg, short bg) {
 	X(KeyFocusIn, "\33[I", NULL) \
 	X(KeyFocusOut, "\33[O", NULL) \
 	X(KeyPasteOn, "\33[200~", NULL) \
-	X(KeyPasteOff, "\33[201~", NULL)
+	X(KeyPasteOff, "\33[201~", NULL) \
+	X(KeyPasteManual, "\32p", "\32\20")
 
 enum {
 	KeyMax = KEY_MAX,
@@ -1007,6 +1008,8 @@ void uiRead(void) {
 			paste = true;
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
 			paste = false;
+		} else if (ret == KEY_CODE_YES && ch == KeyPasteManual) {
+			paste ^= true;
 		} else if (paste || literal) {
 			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
 		} else if (ret == KEY_CODE_YES) {
