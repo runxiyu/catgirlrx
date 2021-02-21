@@ -239,12 +239,14 @@ static void handleReplyWelcome(struct Message *msg) {
 	set(&self.nick, msg->params[0]);
 	completeTouch(Network, self.nick, Default);
 	if (self.join) {
-		ircFormat("JOIN %s\r\n", self.join);
-		if (!strchr(self.join, ',')) {
-			replies[ReplyJoin]++;
-			replies[ReplyTopic]++;
-			replies[ReplyNames]++;
+		uint count = 1;
+		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
+			if (*ch == ',') count++;
 		}
+		ircFormat("JOIN %s\r\n", self.join);
+		if (count == 1) replies[ReplyJoin]++;
+		replies[ReplyTopicAuto] += count;
+		replies[ReplyNamesAuto] += count;
 	}
 }
 
@@ -527,15 +529,24 @@ static void handleReplyNames(struct Message *msg) {
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
-		if (!replies[ReplyNames]) continue;
+		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), color, prefixes);
 	}
 	if (!cat.len) return;
 	uiFormat(
-		id, Warm, tagTime(msg),
+		id, (replies[ReplyNamesAuto] ? Cold : Warm), tagTime(msg),
 		"In \3%02d%s\3 are %s",
 		hash(msg->params[2]), msg->params[2], buf
 	);
+}
+
+static void handleReplyEndOfNames(struct Message *msg) {
+	(void)msg;
+	if (replies[ReplyNamesAuto]) {
+		replies[ReplyNamesAuto]--;
+	} else if (replies[ReplyNames]) {
+		replies[ReplyNames]--;
+	}
 }
 
 static char whoBuf[1024];
@@ -593,11 +604,10 @@ static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
 	uint id = idFor(msg->params[1]);
 	topicComplete(id, msg->params[2]);
-	if (!replies[ReplyTopic]) return;
-	replies[ReplyTopic]--;
+	if (!replies[ReplyTopic] && !replies[ReplyTopicAuto]) return;
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
-		id, Warm, tagTime(msg),
+		id, (replies[ReplyTopicAuto] ? Cold : Warm), tagTime(msg),
 		"The sign in \3%02d%s\3 reads: %s",
 		hash(msg->params[1]), msg->params[1], msg->params[2]
 	);
@@ -605,6 +615,11 @@ static void handleReplyTopic(struct Message *msg) {
 		id, tagTime(msg), "The sign in %s reads: %s",
 		msg->params[1], msg->params[2]
 	);
+	if (replies[ReplyTopicAuto]) {
+		replies[ReplyTopicAuto]--;
+	} else {
+		replies[ReplyTopic]--;
+	}
 }
 
 static void swap(wchar_t *a, wchar_t *b) {
@@ -1281,7 +1296,7 @@ static const struct Handler {
 	{ "349", -ReplyExcepts, NULL },
 	{ "352", +ReplyWho, handleReplyWho },
 	{ "353", 0, handleReplyNames },
-	{ "366", -ReplyNames, NULL },
+	{ "366", 0, handleReplyEndOfNames },
 	{ "367", +ReplyBan, handleReplyBanList },
 	{ "368", -ReplyBan, NULL },
 	{ "369", -ReplyWhowas, handleReplyEndOfWhowas },
