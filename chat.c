@@ -123,6 +123,7 @@ uint32_t hashBound = 75;
 static void parseHash(char *str) {
 	hashInit = strtoul(str, &str, 0);
 	if (*str) hashBound = strtoul(&str[1], NULL, 0);
+	if (hashBound < 2) errx(EX_USAGE, "hash bound must be >= 2");
 }
 
 #ifdef __OpenBSD__
