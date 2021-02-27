@@ -53,10 +53,6 @@
 #undef lines
 #undef tab
 
-#ifndef A_ITALIC
-#define A_ITALIC A_NORMAL
-#endif
-
 enum {
 	StatusLines = 1,
 	MarkerLines = 1,
@@ -240,6 +236,13 @@ void uiInitEarly(void) {
 	noecho();
 	colorInit();
 	atexit(errExit);
+
+#ifndef A_ITALIC
+#define A_ITALIC A_BLINK
+	// Force ncurses to use individual enter_attr_mode strings:
+	set_attributes = NULL;
+	enter_blink_mode = enter_italics_mode;
+#endif
 
 	if (!to_status_line && !strncmp(termname(), "xterm", 5)) {
 		to_status_line = "\33]2;";
