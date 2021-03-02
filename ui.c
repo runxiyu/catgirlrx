@@ -133,10 +133,12 @@ static uint windowFor(uint id) {
 	window->time = uiTime.enable;
 	window->thresh = Cold;
 	window->buffer = bufferAlloc();
+	completeAdd(None, idNames[id], idColors[id]);
 	return windowPush(window);
 }
 
 static void windowFree(struct Window *window) {
+	completeRemove(None, idNames[window->id]);
 	bufferFree(window->buffer);
 	free(window);
 }
