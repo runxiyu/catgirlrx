@@ -177,6 +177,8 @@ static short colorPair(short fg, short bg) {
 }
 
 #define ENUM_KEY \
+	X(KeyCtrlLeft, "\33[1;5D", NULL) \
+	X(KeyCtrlRight, "\33[1;5C", NULL) \
 	X(KeyMeta0, "\0330", "\33)") \
 	X(KeyMeta1, "\0331", "\33!") \
 	X(KeyMeta2, "\0332", "\33@") \
@@ -937,6 +939,9 @@ static void keyCode(int code) {
 		break; case KeyMetaT: toggleTime(window);
 		break; case KeyMetaU: scrollTo(window, window->unreadHard);
 		break; case KeyMetaV: scrollPage(window, +1);
+
+		break; case KeyCtrlLeft: edit(id, EditPrevWord, 0);
+		break; case KeyCtrlRight: edit(id, EditNextWord, 0);
 
 		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
 		break; case KEY_DC: edit(id, EditDeleteNext, 0);
