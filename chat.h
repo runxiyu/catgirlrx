@@ -139,6 +139,7 @@ static inline uint idFor(const char *name) {
 extern uint32_t hashInit;
 extern uint32_t hashBound;
 static inline enum Color hash(const char *str) {
+	if (hashBound < Blue) return Default;
 	if (*str == '~') str++;
 	uint32_t hash = hashInit;
 	for (; *str; ++str) {

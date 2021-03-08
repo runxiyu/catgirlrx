@@ -1,4 +1,4 @@
-.Dd February 15, 2021
+.Dd March  8, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -96,12 +96,15 @@ The default is the first available of
 .
 .It Fl H Ar init,bound , Cm hash = Ar init,bound
 Set the initial value of
-the nick color hash function
+the nick and channel
+color hash function
 and the maximum IRC color value used.
 The default is 0,75.
 To use only colors from
 the 16-color terminal set,
 use 0,15.
+To disable nick and channel colors,
+use 0,0.
 .
 .It Fl I Ar pattern , Cm highlight = Ar pattern
 Add a case-insensitive message highlight pattern,
