@@ -64,8 +64,7 @@ static void echoMessage(char *cmd, uint id, char *params) {
 	handle(&msg);
 }
 
-static void splitMessage(char *cmd, uint id, char *params) {
-	if (!params) return;
+static int splitChunk(const char *cmd, uint id) {
 	int overhead = snprintf(
 		NULL, 0, ":%s!%*s@%*s %s %s :\r\n",
 		self.nick,
@@ -74,22 +73,32 @@ static void splitMessage(char *cmd, uint id, char *params) {
 		cmd, idNames[id]
 	);
 	assert(overhead > 0 && overhead < 512);
-	int chunk = 512 - overhead;
+	return 512 - overhead;
+}
+
+static int splitLen(int chunk, const char *params) {
+	int len = 0;
+	size_t cap = 1 + strlen(params);
+	for (int n = 0; params[len] != '\n' && len + n <= chunk; len += n) {
+		n = mblen(&params[len], cap - len);
+		if (n < 0) {
+			n = 1;
+			mblen(NULL, 0);
+		}
+		if (!n) break;
+	}
+	return len;
+}
+
+static void splitMessage(char *cmd, uint id, char *params) {
+	if (!params) return;
+	int chunk = splitChunk(cmd, id);
 	if (strlen(params) <= (size_t)chunk && !strchr(params, '\n')) {
 		echoMessage(cmd, id, params);
 		return;
 	}
-
 	while (*params) {
-		int len = 0;
-		for (int n = 0; params[len] != '\n' && len + n <= chunk; len += n) {
-			n = mblen(&params[len], 1 + strlen(&params[len]));
-			if (n < 0) {
-				n = 1;
-				mblen(NULL, 0);
-			}
-			if (!n) break;
-		}
+		int len = splitLen(chunk, params);
 		char ch = params[len];
 		params[len] = '\0';
 		echoMessage(cmd, id, params);
@@ -109,8 +118,20 @@ static void commandNotice(uint id, char *params) {
 
 static void commandMe(uint id, char *params) {
 	char buf[512];
-	snprintf(buf, sizeof(buf), "\1ACTION %s\1", (params ?: ""));
-	echoMessage("PRIVMSG", id, buf);
+	if (!params) params = "";
+	int chunk = splitChunk("PRIVMSG \1ACTION\1", id);
+	if (strlen(params) <= (size_t)chunk && !strchr(params, '\n')) {
+		snprintf(buf, sizeof(buf), "\1ACTION %s\1", params);
+		echoMessage("PRIVMSG", id, buf);
+		return;
+	}
+	while (*params) {
+		int len = splitLen(chunk, params);
+		snprintf(buf, sizeof(buf), "\1ACTION %.*s\1", len, params);
+		echoMessage("PRIVMSG", id, buf);
+		params += len;
+		if (*params == '\n') params++;
+	}
 }
 
 static void commandMsg(uint id, char *params) {
@@ -505,7 +526,7 @@ static const struct Handler {
 	{ "/join", commandJoin, Kiosk },
 	{ "/kick", commandKick, 0 },
 	{ "/list", commandList, Kiosk },
-	{ "/me", commandMe, 0 },
+	{ "/me", commandMe, Multiline },
 	{ "/mode", commandMode, 0 },
 	{ "/move", commandMove, 0 },
 	{ "/msg", commandMsg, Multiline | Kiosk },
