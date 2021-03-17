@@ -582,6 +582,33 @@ const char *commandIsAction(uint id, const char *input) {
 	return &input[4];
 }
 
+size_t commandWillSplit(uint id, const char *input) {
+	int chunk;
+	const char *params;
+	if (NULL != (params = commandIsPrivmsg(id, input))) {
+		chunk = splitChunk("PRIVMSG", id);
+	} else if (NULL != (params = commandIsNotice(id, input))) {
+		chunk = splitChunk("NOTICE", id);
+	} else if (NULL != (params = commandIsAction(id, input))) {
+		chunk = splitChunk("PRIVMSG \1ACTION\1", id);
+	} else if (id != Network && id != Debug && !strncmp(input, "/say ", 5)) {
+		params = &input[5];
+		chunk = splitChunk("PRIVMSG", id);
+	} else {
+		return 0;
+	}
+	if (strlen(params) <= (size_t)chunk) return 0;
+	for (
+		int split;
+		params[(split = splitLen(chunk, params))];
+		params = &params[split + 1]
+	) {
+		if (params[split] == '\n') continue;
+		return (params - input) + split;
+	}
+	return 0;
+}
+
 void command(uint id, char *input) {
 	if (id == Debug && input[0] != '/' && !self.restricted) {
 		commandQuote(id, input);

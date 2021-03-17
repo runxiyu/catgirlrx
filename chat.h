@@ -279,6 +279,7 @@ void command(uint id, char *input);
 const char *commandIsPrivmsg(uint id, const char *input);
 const char *commandIsNotice(uint id, const char *input);
 const char *commandIsAction(uint id, const char *input);
+size_t commandWillSplit(uint id, const char *input);
 void commandCompleteAdd(void);
 
 enum Heat { Ice, Cold, Warm, Hot };

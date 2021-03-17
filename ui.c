@@ -716,6 +716,14 @@ static void inputAdd(struct Style *style, const char *str) {
 	}
 }
 
+static char *inputStop(struct Style *style, const char *str, char *stop) {
+	char ch = *stop;
+	*stop = '\0';
+	inputAdd(style, str);
+	*stop = ch;
+	return stop;
+}
+
 static void inputUpdate(void) {
 	size_t pos;
 	char *buf = editBuffer(&pos);
@@ -728,6 +736,7 @@ static void inputUpdate(void) {
 	struct Style stylePrompt = { .fg = self.color, .bg = Default };
 	struct Style styleInput = StyleDefault;
 
+	size_t split = commandWillSplit(window->id, buf);
 	const char *privmsg = commandIsPrivmsg(window->id, buf);
 	const char *notice = commandIsNotice(window->id, buf);
 	const char *action = commandIsAction(window->id, buf);
@@ -754,7 +763,6 @@ static void inputUpdate(void) {
 		skip = buf;
 	}
 
-	int y, x;
 	wmove(input, 0, 0);
 	if (window->time && window->id != Network) {
 		whline(input, ' ', uiTime.width);
@@ -764,13 +772,23 @@ static void inputUpdate(void) {
 	waddstr(input, prefix);
 	waddstr(input, prompt);
 	waddstr(input, suffix);
+
+	int y, x;
+	const char *ptr = skip;
 	struct Style style = styleInput;
-	char p = buf[pos];
-	buf[pos] = '\0';
-	inputAdd(&style, skip);
+	if (split && split < pos) {
+		ptr = inputStop(&style, ptr, &buf[split]);
+		style = styleInput;
+		style.bg = Red;
+	}
+	ptr = inputStop(&style, ptr, &buf[pos]);
 	getyx(input, y, x);
-	buf[pos] = p;
-	inputAdd(&style, &buf[pos]);
+	if (split && split >= pos) {
+		ptr = inputStop(&style, ptr, &buf[split]);
+		style = styleInput;
+		style.bg = Red;
+	}
+	inputAdd(&style, ptr);
 	wclrtoeol(input);
 	wmove(input, y, x);
 }
