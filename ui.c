@@ -689,7 +689,7 @@ static void windowList(const struct Window *window) {
 	}
 }
 
-static void inputAdd(struct Style *style, const char *str) {
+static void inputAdd(struct Style reset, struct Style *style, const char *str) {
 	while (*str) {
 		const char *code = str;
 		size_t len = styleParse(style, &str);
@@ -705,6 +705,7 @@ static void inputAdd(struct Style *style, const char *str) {
 		}
 		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
 		if (str[0] == '\n') {
+			*style = reset;
 			str++;
 			len--;
 		}
@@ -716,10 +717,13 @@ static void inputAdd(struct Style *style, const char *str) {
 	}
 }
 
-static char *inputStop(struct Style *style, const char *str, char *stop) {
+static char *inputStop(
+	struct Style reset, struct Style *style,
+	const char *str, char *stop
+) {
 	char ch = *stop;
 	*stop = '\0';
-	inputAdd(style, str);
+	inputAdd(reset, style, str);
 	*stop = ch;
 	return stop;
 }
@@ -777,18 +781,18 @@ static void inputUpdate(void) {
 	const char *ptr = skip;
 	struct Style style = styleInput;
 	if (split && split < pos) {
-		ptr = inputStop(&style, ptr, &buf[split]);
+		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
 		style = styleInput;
 		style.bg = Red;
 	}
-	ptr = inputStop(&style, ptr, &buf[pos]);
+	ptr = inputStop(styleInput, &style, ptr, &buf[pos]);
 	getyx(input, y, x);
 	if (split && split >= pos) {
-		ptr = inputStop(&style, ptr, &buf[split]);
+		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
 		style = styleInput;
 		style.bg = Red;
 	}
-	inputAdd(&style, ptr);
+	inputAdd(styleInput, &style, ptr);
 	wclrtoeol(input);
 	wmove(input, y, x);
 }
