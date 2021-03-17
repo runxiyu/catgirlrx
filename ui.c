@@ -1012,13 +1012,34 @@ static void keyCtrl(wchar_t ch) {
 
 static void keyStyle(wchar_t ch) {
 	uint id = windows.ptrs[windows.show]->id;
-	switch (iswcntrl(ch) ? ch ^ L'@' : (wchar_t)towupper(ch)) {
-		break; case L'B': edit(id, EditInsert, B);
-		break; case L'C': edit(id, EditInsert, C);
-		break; case L'I': edit(id, EditInsert, I);
-		break; case L'O': edit(id, EditInsert, O);
-		break; case L'R': edit(id, EditInsert, R);
-		break; case L'U': edit(id, EditInsert, U);
+	if (iswcntrl(ch)) ch = towlower(ch ^ L'@');
+	enum Color color = Default;
+	switch (ch) {
+		break; case L'A': color = Gray;
+		break; case L'B': color = Blue;
+		break; case L'C': color = Cyan;
+		break; case L'G': color = Green;
+		break; case L'K': color = Black;
+		break; case L'M': color = Magenta;
+		break; case L'N': color = Brown;
+		break; case L'O': color = Orange;
+		break; case L'P': color = Pink;
+		break; case L'R': color = Red;
+		break; case L'W': color = White;
+		break; case L'Y': color = Yellow;
+		break; case L'b': edit(id, EditInsert, B);
+		break; case L'c': edit(id, EditInsert, C);
+		break; case L'i': edit(id, EditInsert, I);
+		break; case L'o': edit(id, EditInsert, O);
+		break; case L'r': edit(id, EditInsert, R);
+		break; case L'u': edit(id, EditInsert, U);
+	}
+	if (color != Default) {
+		char buf[4];
+		snprintf(buf, sizeof(buf), "%c%02d", C, color);
+		for (char *ch = buf; *ch; ++ch) {
+			edit(id, EditInsert, *ch);
+		}
 	}
 }
 

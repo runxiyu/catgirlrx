@@ -1,4 +1,4 @@
-.Dd March  8, 2021
+.Dd March 17, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -685,7 +685,19 @@ Toggle underline.
 .El
 .
 .Pp
-To set colors, follow
+Some color codes can be inserted
+with the following:
+.Bl -column "C-z A" "magenta" "C-z N" "orange (dark yellow)"
+.It Ic C-z A Ta gray Ta Ic C-z N Ta brown (dark red)
+.It Ic C-z B Ta blue Ta Ic C-z O Ta orange (dark yellow)
+.It Ic C-z C Ta cyan Ta Ic C-z P Ta pink (light magenta)
+.It Ic C-z G Ta green Ta Ic C-z R Ta red
+.It Ic C-z K Ta black Ta Ic C-z W Ta white
+.It Ic C-z M Ta magenta Ta Ic C-z Y Ta yellow
+.El
+.
+.Pp
+To set other colors, follow
 .Ic C-z c
 by one or two digits for the foreground color,
 optionally followed by a comma
