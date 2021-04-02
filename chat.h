@@ -155,6 +155,7 @@ extern struct Network {
 	uint userLen;
 	uint hostLen;
 	char *chanTypes;
+	char *statusmsg;
 	char *prefixes;
 	char *prefixModes;
 	char *listModes;

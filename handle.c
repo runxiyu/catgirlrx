@@ -270,6 +270,9 @@ static void handleReplyISupport(struct Message *msg) {
 		} else if (!strcmp(key, "CHANTYPES")) {
 			if (!msg->params[i]) continue;
 			set(&network.chanTypes, msg->params[i]);
+		} else if (!strcmp(key, "STATUSMSG")) {
+			if (!msg->params[i]) continue;
+			set(&network.statusmsg, msg->params[i]);
 		} else if (!strcmp(key, "PREFIX")) {
 			strsep(&msg->params[i], "(");
 			char *modes = strsep(&msg->params[i], ")");
@@ -1196,6 +1199,9 @@ static void colorMentions(struct Cat *cat, uint id, struct Message *msg) {
 
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
+	if (network.statusmsg) {
+		msg->params[0] += strspn(msg->params[0], network.statusmsg);
+	}
 	bool query = !strchr(network.chanTypes, msg->params[0][0]);
 	bool server = strchr(msg->nick, '.');
 	bool mine = !strcmp(msg->nick, self.nick);
