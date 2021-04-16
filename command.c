@@ -135,8 +135,12 @@ static void commandMe(uint id, char *params) {
 }
 
 static void commandMsg(uint id, char *params) {
-	id = idFor(strsep(&params, " "));
-	splitMessage("PRIVMSG", id, params);
+	char *nick = strsep(&params, " ");
+	uint msg = idFor(nick);
+	if (idColors[msg] == Default) {
+		idColors[msg] = completeColor(id, nick);
+	}
+	splitMessage("PRIVMSG", msg, params);
 }
 
 static void commandJoin(uint id, char *params) {
@@ -357,7 +361,9 @@ static void commandCS(uint id, char *params) {
 static void commandQuery(uint id, char *params) {
 	if (!params) return;
 	uint query = idFor(params);
-	idColors[query] = completeColor(id, params);
+	if (idColors[query] == Default) {
+		idColors[query] = completeColor(id, params);
+	}
 	uiShowID(query);
 }
 
