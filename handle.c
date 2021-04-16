@@ -498,7 +498,6 @@ static void handleInvite(struct Message *msg) {
 
 static void handleReplyInviting(struct Message *msg) {
 	require(msg, false, 3);
-	if (self.caps & CapInviteNotify) return;
 	struct Message invite = {
 		.nick = self.nick,
 		.user = self.user,
