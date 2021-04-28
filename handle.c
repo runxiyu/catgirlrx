@@ -351,7 +351,7 @@ static void handleJoin(struct Message *msg) {
 		hash(msg->user), msg->nick,
 		(msg->params[2] ? "(" : ""),
 		(msg->params[2] ?: ""),
-		(msg->params[2] ? ") " : ""),
+		(msg->params[2] ? "\17) " : ""),
 		hash(msg->params[0]), msg->params[0]
 	);
 	logFormat(id, tagTime(msg), "%s arrives in %s", msg->nick, msg->params[0]);
@@ -1016,7 +1016,7 @@ static void handleReplyWhoisUser(struct Message *msg) {
 	completeTouch(Network, msg->params[1], hash(msg->params[2]));
 	uiFormat(
 		Network, Warm, tagTime(msg),
-		"\3%02d%s\3\tis %s!%s@%s (%s)",
+		"\3%02d%s\3\tis %s!%s@%s (%s\17)",
 		hash(msg->params[2]), msg->params[1],
 		msg->params[1], msg->params[2], msg->params[3], msg->params[5]
 	);
