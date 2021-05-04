@@ -94,12 +94,39 @@ static bool filterTest(
 	return !fnmatch(filter.mesg, msg->params[1], FNM_CASEFOLD);
 }
 
+enum { IcedCap = 8 };
+static struct {
+	size_t len;
+	char *msgIDs[IcedCap];
+} iced;
+
+static void icedPush(const char *msgID) {
+	if (!msgID) return;
+	size_t i = iced.len % IcedCap;
+	free(iced.msgIDs[i]);
+	iced.msgIDs[i] = strdup(msgID);
+	if (!iced.msgIDs[i]) err(EX_OSERR, "strdup");
+	iced.len++;
+}
+
 enum Heat filterCheck(enum Heat heat, uint id, const struct Message *msg) {
 	if (!len) return heat;
+
+	if (msg->tags[TagReply]) {
+		for (size_t i = 0; i < IcedCap; ++i) {
+			if (!iced.msgIDs[i]) continue;
+			if (strcmp(msg->tags[TagReply], iced.msgIDs[i])) continue;
+			icedPush(msg->tags[TagMsgID]);
+			return Ice;
+		}
+	}
+
 	char mask[512];
 	snprintf(mask, sizeof(mask), "%s!%s@%s", msg->nick, msg->user, msg->host);
 	for (size_t i = 0; i < len; ++i) {
-		if (filterTest(filters[i], mask, id, msg)) return filters[i].heat;
+		if (!filterTest(filters[i], mask, id, msg)) continue;
+		if (filters[i].heat == Ice) icedPush(msg->tags[TagMsgID]);
+		return filters[i].heat;
 	}
 	return heat;
 }

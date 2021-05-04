@@ -171,6 +171,7 @@ extern struct Network {
 	X("chghost", CapChghost) \
 	X("extended-join", CapExtendedJoin) \
 	X("invite-notify", CapInviteNotify) \
+	X("message-tags", CapMessageTags) \
 	X("multi-prefix", CapMultiPrefix) \
 	X("sasl", CapSASL) \
 	X("server-time", CapServerTime) \
@@ -205,7 +206,9 @@ static inline void set(char **field, const char *value) {
 }
 
 #define ENUM_TAG \
+	X("+draft/reply", TagReply) \
 	X("causal.agency/pos", TagPos) \
+	X("msgid", TagMsgID) \
 	X("time", TagTime)
 
 enum Tag {
