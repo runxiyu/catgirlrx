@@ -1,11 +1,15 @@
 PREFIX ?= /usr/local
-MANDIR ?= ${PREFIX}/share/man
+BINDIR ?= ${PREFIX}/bin
+MANDIR ?= ${PREFIX}/man
 
 CEXTS = gnu-case-range gnu-conditional-omitted-operand
 CFLAGS += -std=c11 -Wall -Wextra -Wpedantic ${CEXTS:%=-Wno-%}
-LDLIBS = -lncursesw -ltls
+LDADD.libtls = -ltls
+LDADD.ncursesw = -lncursesw
 
 -include config.mk
+
+LDLIBS = ${LDADD.libtls} ${LDADD.ncursesw}
 
 OBJS += buffer.o
 OBJS += chat.o
@@ -30,30 +34,30 @@ catgirl: ${OBJS}
 
 ${OBJS}: chat.h
 
-tags: *.h *.c
-	ctags -w *.h *.c
+tags: *.[ch]
+	ctags -w *.[ch]
 
 clean:
-	rm -f tags catgirl ${OBJS}
+	rm -f catgirl ${OBJS} tags
 
 install: catgirl catgirl.1
-	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANDIR}/man1
-	install catgirl ${DESTDIR}${PREFIX}/bin
+	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
+	install catgirl ${DESTDIR}${BINDIR}
 	install -m 644 catgirl.1 ${DESTDIR}${MANDIR}/man1
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/catgirl ${DESTDIR}${MANDIR}/man1/catgirl.1
+	rm -f ${DESTDIR}${BINDIR}/catgirl ${DESTDIR}${MANDIR}/man1/catgirl.1
 
 scripts/sandman: scripts/sandman.o
 	${CC} ${LDFLAGS} scripts/sandman.o -framework Cocoa -o $@
 
 install-sandman: scripts/sandman scripts/sandman.1
-	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANDIR}/man1
-	install scripts/sandman ${DESTDIR}${PREFIX}/bin
+	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
+	install scripts/sandman ${DESTDIR}${BINDIR}
 	install -m 644 scripts/sandman.1 ${DESTDIR}${MANDIR}/man1
 
 uninstall-sandman:
-	rm -f ${DESTDIR}${PREFIX}/bin/sandman ${DESTDIR}${MANDIR}/man1/sandman.1
+	rm -f ${DESTDIR}${BINDIR}/sandman ${DESTDIR}${MANDIR}/man1/sandman.1
 
 CHROOT_USER = chat
 CHROOT_GROUP = ${CHROOT_USER}
