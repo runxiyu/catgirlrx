@@ -509,7 +509,7 @@ static void handleReplyInviting(struct Message *msg) {
 }
 
 static void handleErrorUserOnChannel(struct Message *msg) {
-	require(msg, false, 4);
+	require(msg, false, 3);
 	uint id = idFor(msg->params[2]);
 	uiFormat(
 		id, Warm, tagTime(msg),
