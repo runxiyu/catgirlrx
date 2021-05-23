@@ -676,12 +676,12 @@ static void handleTopic(struct Message *msg) {
 	catf(&cat, "%ls", new);
 	swap(&new[pre], &nul);
 	swap(osuf, &nul);
-	catf(&cat, "\399,%02d%ls", Brown, &old[pre]);
+	catf(&cat, "\3%02d,%02d%ls", Default, Brown, &old[pre]);
 	swap(osuf, &nul);
 	swap(nsuf, &nul);
-	catf(&cat, "\399,%02d%ls", Green, &new[pre]);
+	catf(&cat, "\3%02d,%02d%ls", Default, Green, &new[pre]);
 	swap(nsuf, &nul);
-	catf(&cat, "\399,99%ls", nsuf);
+	catf(&cat, "\3%02d,%02d%ls", Default, Default, nsuf);
 
 plain:
 	topicComplete(id, msg->params[1]);
