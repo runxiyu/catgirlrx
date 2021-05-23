@@ -662,6 +662,11 @@ static void handleTopic(struct Message *msg) {
 	if (swprintf(old, ARRAY_LEN(old), L"%s", prev) < 0) goto plain;
 	if (swprintf(new, ARRAY_LEN(new), L"%s", msg->params[1]) < 0) goto plain;
 
+	if (!hashBound) {
+		catf(&cat, "%c%ls%c -> %c%ls%c", R, old, O, R, new, O);
+		goto plain;
+	}
+
 	size_t pre;
 	for (pre = 0; old[pre] && new[pre] && old[pre] == new[pre]; ++pre);
 	wchar_t *osuf = &old[wcslen(old)];
