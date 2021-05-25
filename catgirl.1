@@ -94,11 +94,12 @@ The default is the first available of
 .Xr xclip 1 ,
 .Xr xsel 1 .
 .
-.It Fl H Ar init,bound , Cm hash = Ar init,bound
-Set the initial value of
-the nick and channel
+.It Fl H Ar seed,bound , Cm hash = Ar seed,bound
+Set the initial seed
+of the nick and channel
 color hash function
-and the maximum IRC color value used.
+and the maximum IRC color value
+produced by the function.
 The default is 0,75.
 To use only colors from
 the 16-color terminal set,
