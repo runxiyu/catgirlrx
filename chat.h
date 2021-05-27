@@ -138,8 +138,7 @@ static inline uint idFor(const char *name) {
 
 extern uint32_t hashInit;
 extern uint32_t hashBound;
-static inline enum Color hash(const char *str) {
-	if (hashBound < Blue) return Default;
+static inline uint32_t _hash(const char *str) {
 	if (*str == '~') str++;
 	uint32_t hash = hashInit;
 	for (; *str; ++str) {
@@ -147,7 +146,11 @@ static inline enum Color hash(const char *str) {
 		hash ^= *str;
 		hash *= 0x27220A95;
 	}
-	return Blue + hash % (hashBound + 1 - Blue);
+	return hash;
+}
+static inline enum Color hash(const char *str) {
+	if (hashBound < Blue) return Default;
+	return Blue + _hash(str) % (hashBound + 1 - Blue);
 }
 
 extern struct Network {

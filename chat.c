@@ -28,6 +28,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <locale.h>
 #include <poll.h>
@@ -267,6 +268,13 @@ int main(int argc, char *argv[]) {
 	if (!nick) errx(EX_CONFIG, "USER unset");
 	if (!user) user = nick;
 	if (!real) real = nick;
+
+	if (self.kiosk) {
+		char *hash;
+		int n = asprintf(&hash, "%8" PRIx32, _hash(user));
+		if (n < 0) err(EX_OSERR, "asprintf");
+		user = hash;
+	}
 
 	// Modes defined in RFC 1459:
 	set(&network.chanTypes, "#&");
