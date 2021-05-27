@@ -269,9 +269,11 @@ The commands which can be filtered are:
 .Sy QUIT ,
 .Sy SETNAME .
 .
-.It Fl j Ar join , Cm join = Ar join
-Join the comma-separated list of channels
-.Ar join .
+.It Fl j Ar channels Oo Ar keys Oc , Cm join = Ar channels Oo Ar keys Oc
+Join the comma-separated list of
+.Ar channels
+with the optional comma-separated list of channel
+.Ar keys .
 .
 .It Fl k Ar path , Cm priv = Ar priv
 Load the TLS client private key from
@@ -412,7 +414,7 @@ Set or clear your away status.
 Send a command to ChanServ.
 .It Ic /invite Ar nick
 Invite a user to the channel.
-.It Ic /join Ar channel
+.It Ic /join Ar channel Op Ar key
 Join a channel.
 .It Ic /list Op Ar channel
 List channels.
