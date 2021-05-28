@@ -83,7 +83,7 @@ following their corresponding flags.
 .Pp
 The arguments are as follows:
 .Bl -tag -width Ds
-.It Fl C Ar util | Cm copy = Ar util
+.It Fl C Ar util | Cm copy No = Ar util
 Set the utility used by
 .Ic /copy .
 Use more than once to add arguments to
@@ -94,7 +94,7 @@ The default is the first available of
 .Xr xclip 1 ,
 .Xr xsel 1 .
 .
-.It Fl H Ar seed,bound | Cm hash = Ar seed,bound
+.It Fl H Ar seed,bound | Cm hash No = Ar seed,bound
 Set the initial seed
 of the nick and channel
 color hash function
@@ -107,7 +107,7 @@ use 0,15.
 To disable nick and channel colors,
 use 0,0.
 .
-.It Fl I Ar pattern | Cm highlight = Ar pattern
+.It Fl I Ar pattern | Cm highlight No = Ar pattern
 Add a case-insensitive message highlight pattern,
 which may contain
 .Ql * ,
@@ -151,7 +151,7 @@ commands.
 Replace the username
 with a hash of its original value.
 .
-.It Fl N Ar util | Cm notify = Ar util
+.It Fl N Ar util | Cm notify No = Ar util
 Send notifications using a utility.
 Use more than once to add arguments to
 .Ar util .
@@ -161,7 +161,7 @@ a title and a description,
 appropriate for
 .Xr notify-send 1 .
 .
-.It Fl O Ar util | Cm open = Ar util
+.It Fl O Ar util | Cm open No = Ar util
 Set the utility used by
 .Ic /open .
 Use more than once to add arguments to
@@ -183,7 +183,7 @@ option,
 and viewing this manual with
 .Ic /help .
 .
-.It Fl S Ar host | Cm bind = Ar host
+.It Fl S Ar host | Cm bind No = Ar host
 Bind to source address
 .Ar host
 when connecting to the server.
@@ -196,7 +196,7 @@ in the specified
 The default format is
 .Qq \&%X .
 .
-.It Fl a Ar user : Ns Ar pass | Cm sasl-plain = Ar user : Ns Ar pass
+.It Fl a Ar user : Ns Ar pass | Cm sasl-plain No = Ar user : Ns Ar pass
 Authenticate as
 .Ar user
 with
@@ -207,7 +207,7 @@ in plain text,
 it is recommended to use SASL EXTERNAL instead with
 .Fl e .
 .
-.It Fl c Ar path | Cm cert = Ar path
+.It Fl c Ar path | Cm cert No = Ar path
 Load the TLS client certificate from
 .Ar path .
 The
@@ -237,11 +237,11 @@ Generate a TLS client certificate using
 and write it to
 .Ar path .
 .
-.It Fl h Ar host | Cm host = Ar host
+.It Fl h Ar host | Cm host No = Ar host
 Connect to
 .Ar host .
 .
-.It Fl i Ar pattern | Cm ignore = Ar pattern
+.It Fl i Ar pattern | Cm ignore No = Ar pattern
 Add a case-insensitive message ignore pattern,
 which may contain
 .Ql * ,
@@ -269,13 +269,13 @@ The commands which can be filtered are:
 .Sy QUIT ,
 .Sy SETNAME .
 .
-.It Fl j Ar channels Oo Ar keys Oc | Cm join = Ar channels Oo Ar keys Oc
+.It Fl j Ar channels Oo Ar keys Oc | Cm join No = Ar channels Oo Ar keys Oc
 Join the comma-separated list of
 .Ar channels
 with the optional comma-separated list of channel
 .Ar keys .
 .
-.It Fl k Ar path | Cm priv = Ar priv
+.It Fl k Ar path | Cm priv No = Ar priv
 Load the TLS client private key from
 .Ar path .
 The
@@ -287,7 +287,7 @@ as configuration files.
 Log chat events to files in paths
 .Pa $XDG_DATA_HOME/catgirl/log/network/channel/YYYY-MM-DD.log .
 .
-.It Fl n Ar nick | Cm nick = Ar nick
+.It Fl n Ar nick | Cm nick No = Ar nick
 Set nickname to
 .Ar nick .
 The default nickname is the user's name.
@@ -297,17 +297,17 @@ Print the server certificate chain
 to standard output in PEM format
 and exit.
 .
-.It Fl p Ar port | Cm port = Ar port
+.It Fl p Ar port | Cm port No = Ar port
 Connect to
 .Ar port .
 The default port is 6697.
 .
-.It Fl r Ar real | Cm real = Ar real
+.It Fl r Ar real | Cm real No = Ar real
 Set realname to
 .Ar real .
 The default realname is the same as the nickname.
 .
-.It Fl s Ar name | Cm save = Ar name
+.It Fl s Ar name | Cm save No = Ar name
 Save and load the contents of windows from
 .Ar name
 in
@@ -320,7 +320,7 @@ starts with
 or
 .Ql \&../ .
 .
-.It Fl t Ar path | Cm trust = Ar path
+.It Fl t Ar path | Cm trust No = Ar path
 Trust the self-signed certificate
 loaded from
 .Ar path
@@ -332,7 +332,7 @@ as configuration files.
 See
 .Sx Connecting to Servers with Self-signed Certificates .
 .
-.It Fl u Ar user | Cm user = Ar user
+.It Fl u Ar user | Cm user No = Ar user
 Set username to
 .Ar user .
 The default username is the same as the nickname.
@@ -344,7 +344,7 @@ window
 as well as standard error
 if it is not a terminal.
 .
-.It Fl w Ar pass | Cm pass = Ar pass
+.It Fl w Ar pass | Cm pass No = Ar pass
 Log in with the server password
 .Ar pass .
 .El
