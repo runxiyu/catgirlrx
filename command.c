@@ -135,12 +135,17 @@ static void commandMe(uint id, char *params) {
 }
 
 static void commandMsg(uint id, char *params) {
+	if (!params) return;
 	char *nick = strsep(&params, " ");
 	uint msg = idFor(nick);
 	if (idColors[msg] == Default) {
 		idColors[msg] = completeColor(id, nick);
 	}
-	splitMessage("PRIVMSG", msg, params);
+	if (params) {
+		splitMessage("PRIVMSG", msg, params);
+	} else {
+		uiShowID(msg);
+	}
 }
 
 static void commandJoin(uint id, char *params) {
@@ -332,7 +337,7 @@ static void commandList(uint id, char *params) {
 
 static void commandWhois(uint id, char *params) {
 	(void)id;
-	if (!params) return;
+	if (!params) params = self.nick;
 	uint count = 1;
 	for (char *ch = params; *ch; ++ch) {
 		if (*ch == ',') count++;
@@ -350,12 +355,12 @@ static void commandWhowas(uint id, char *params) {
 
 static void commandNS(uint id, char *params) {
 	(void)id;
-	if (params) ircFormat("PRIVMSG NickServ :%s\r\n", params);
+	ircFormat("PRIVMSG NickServ :%s\r\n", (params ?: "HELP"));
 }
 
 static void commandCS(uint id, char *params) {
 	(void)id;
-	if (params) ircFormat("PRIVMSG ChanServ :%s\r\n", params);
+	ircFormat("PRIVMSG ChanServ :%s\r\n", (params ?: "HELP"));
 }
 
 static void commandQuery(uint id, char *params) {
