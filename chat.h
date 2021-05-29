@@ -302,6 +302,7 @@ void uiInitLate(void);
 void uiShow(void);
 void uiHide(void);
 void uiDraw(void);
+void uiWindows(void);
 void uiShowID(uint id);
 void uiShowNum(uint num);
 void uiMoveID(uint id, uint num);

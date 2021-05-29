@@ -797,6 +797,16 @@ static void inputUpdate(void) {
 	wmove(input, y, x);
 }
 
+void uiWindows(void) {
+	for (uint num = 0; num < windows.len; ++num) {
+		const struct Window *window = windows.ptrs[num];
+		uiFormat(
+			Network, Warm, NULL, "\3%02d%u %s",
+			idColors[window->id], num, idNames[window->id]
+		);
+	}
+}
+
 static void windowShow(uint num) {
 	if (num != windows.show) {
 		windows.swap = windows.show;

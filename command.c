@@ -373,8 +373,9 @@ static void commandQuery(uint id, char *params) {
 }
 
 static void commandWindow(uint id, char *params) {
-	if (!params) return;
-	if (isdigit(params[0])) {
+	if (!params) {
+		uiWindows();
+	} else if (isdigit(params[0])) {
 		uiShowNum(strtoul(params, NULL, 10));
 	} else {
 		id = idFind(params);
