@@ -374,14 +374,16 @@ static short stylePair(struct Style style) {
 	return colorPair(Colors[style.fg], Colors[style.bg]);
 }
 
-static void styleAdd(WINDOW *win, const char *str) {
+static int styleAdd(WINDOW *win, const char *str) {
 	struct Style style = StyleDefault;
 	while (*str) {
 		size_t len = styleParse(&style, &str);
 		wattr_set(win, styleAttr(style), stylePair(style), NULL);
-		waddnstr(win, str, len);
+		if (waddnstr(win, str, len) == ERR)
+			return -1;
 		str += len;
 	}
+	return 0;
 }
 
 static void statusUpdate(void) {
@@ -420,7 +422,7 @@ static void statusUpdate(void) {
 		if (window->scroll) {
 			catf(&cat, "~%d ", window->scroll);
 		}
-		styleAdd(status, buf);
+		if (styleAdd(status, buf) < 0) break;
 	}
 	wclrtoeol(status);
 
