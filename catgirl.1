@@ -290,7 +290,9 @@ Log chat events to files in paths
 .It Fl n Ar nick | Cm nick No = Ar nick
 Set nickname to
 .Ar nick .
-The default nickname is the user's name.
+The default nickname is
+the value of the environment variable
+.Ev USER .
 .
 .It Fl o
 Print the server certificate chain
