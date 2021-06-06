@@ -311,7 +311,17 @@ int main(int argc, char *argv[]) {
 
 #ifdef __OpenBSD__
 	if (self.restricted) unveilAll(trust, cert, priv);
-	int error = pledge("stdio rpath wpath cpath inet dns tty proc exec", NULL);
+
+	char promises[64] = "stdio tty";
+	struct Cat cat = { promises, sizeof(promises), strlen(promises) };
+	if (save || logEnable) catf(&cat, " rpath wpath cpath");
+	if (!self.restricted) catf(&cat, " proc exec");
+
+	char *promisesFinal = strdup(promises);
+	if (!promisesFinal) err(EX_OSERR, "strdup");
+
+	catf(&cat, " rpath inet dns");
+	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif
 
@@ -330,10 +340,6 @@ int main(int argc, char *argv[]) {
 	uiDraw();
 	
 	int irc = ircConnect(bind, host, port);
-#ifdef __OpenBSD__
-	error = pledge("stdio rpath wpath cpath tty proc exec", NULL);
-	if (error) err(EX_OSERR, "pledge");
-#endif
 
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
@@ -364,12 +370,9 @@ int main(int argc, char *argv[]) {
 	}
 
 #ifdef __OpenBSD__
-	char promises[64] = "stdio tty";
-	struct Cat cat = { promises, sizeof(promises), strlen(promises) };
-	if (save || logEnable) catf(&cat, " rpath wpath cpath");
-	if (!self.restricted) catf(&cat, " proc exec");
-	error = pledge(promises, NULL);
+	error = pledge(promisesFinal, NULL);
 	if (error) err(EX_OSERR, "pledge");
+	free(promisesFinal);
 #endif
 
 	struct pollfd fds[] = {
