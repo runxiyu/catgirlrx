@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 
 	if (self.kiosk) {
 		char *hash;
-		int n = asprintf(&hash, "%8" PRIx32, _hash(user));
+		int n = asprintf(&hash, "%08" PRIx32, _hash(user));
 		if (n < 0) err(EX_OSERR, "asprintf");
 		user = hash;
 	}
