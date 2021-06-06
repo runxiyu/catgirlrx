@@ -145,8 +145,10 @@ static void unveilData(const char *name) {
 }
 
 static void unveilAll(const char *trust, const char *cert, const char *priv) {
-	dataMkdir("");
-	unveilData("");
+	if (save || logEnable) {
+		dataMkdir("");
+		unveilData("");
+	}
 	if (trust) unveilConfig(trust);
 	if (cert) unveilConfig(cert);
 	if (priv) unveilConfig(priv);
