@@ -403,37 +403,42 @@ static void statusUpdate(void) {
 			others.unread += window->unreadWarm;
 			if (window->heat > others.heat) others.heat = window->heat;
 		}
-		char buf[256] = "";
-		struct Cat cat = { buf, sizeof(buf), 0 };
-		catf(
-			&cat, "\3%d%s %u%s%s %s ",
+		char buf[256], *end = &buf[sizeof(buf)];
+		char *ptr = seprintf(
+			buf, end, "\3%d%s %u%s%s %s ",
 			idColors[window->id], (num == windows.show ? "\26" : ""),
 			num, window->thresh[(const char *[]) { "-", "", "+", "++" }],
 			&"="[!window->mute], idNames[window->id]
 		);
 		if (window->mark && window->unreadWarm) {
-			catf(
-				&cat, "\3%d+%d\3%d%s",
+			ptr = seprintf(
+				ptr, end, "\3%d+%d\3%d%s",
 				(window->heat > Warm ? White : idColors[window->id]),
 				window->unreadWarm, idColors[window->id],
 				(window->scroll ? "" : " ")
 			);
 		}
 		if (window->scroll) {
-			catf(&cat, "~%d ", window->scroll);
+			ptr = seprintf(ptr, end, "~%d ", window->scroll);
 		}
 		if (styleAdd(status, buf) < 0) break;
 	}
 	wclrtoeol(status);
 
-	struct Cat cat = { title, sizeof(title), 0 };
 	const struct Window *window = windows.ptrs[windows.show];
-	catf(&cat, "%s %s", network.name, idNames[window->id]);
+	char *end = &title[sizeof(title)];
+	char *ptr = seprintf(
+		title, end, "%s %s", network.name, idNames[window->id]
+	);
 	if (window->mark && window->unreadWarm) {
-		catf(&cat, " +%d%s", window->unreadWarm, &"!"[window->heat < Hot]);
+		ptr = seprintf(
+			ptr, end, " +%d%s", window->unreadWarm, &"!"[window->heat < Hot]
+		);
 	}
 	if (others.unread) {
-		catf(&cat, " (+%d%s)", others.unread, &"!"[others.heat < Hot]);
+		ptr = seprintf(
+			ptr, end, " (+%d%s)", others.unread, &"!"[others.heat < Hot]
+		);
 	}
 }
 
@@ -550,8 +555,8 @@ static void notify(uint id, const char *str) {
 	if (self.restricted) return;
 	if (!uiNotifyUtil.argc) return;
 
-	char buf[1024] = "";
-	styleStrip(&(struct Cat) { buf, sizeof(buf), 0 }, str);
+	char buf[1024];
+	styleStrip(buf, sizeof(buf), str);
 
 	struct Util util = uiNotifyUtil;
 	utilPush(&util, idNames[id]);

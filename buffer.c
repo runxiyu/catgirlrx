@@ -82,17 +82,18 @@ const struct Line *bufferHard(const struct Buffer *buffer, size_t i) {
 }
 
 enum { StyleCap = 10 };
-static void styleCat(struct Cat *cat, struct Style style) {
-	catf(
-		cat, "%s%s%s%s",
+static char *styleCopy(char *ptr, char *end, struct Style style) {
+	ptr = seprintf(
+		ptr, end, "%s%s%s%s",
 		(style.attr & Bold ? (const char []) { B, '\0' } : ""),
 		(style.attr & Reverse ? (const char []) { R, '\0' } : ""),
 		(style.attr & Italic ? (const char []) { I, '\0' } : ""),
 		(style.attr & Underline ? (const char []) { U, '\0' } : "")
 	);
 	if (style.fg != Default || style.bg != Default) {
-		catf(cat, "\3%02d,%02d", style.fg, style.bg);
+		ptr = seprintf(ptr, end, "\3%02d,%02d", style.fg, style.bg);
 	}
+	return ptr;
 }
 
 static const wchar_t ZWS = L'\u200B';
@@ -186,12 +187,11 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 		line->str = malloc(cap);
 		if (!line->str) err(EX_OSERR, "malloc");
 
-		struct Cat cat = { line->str, cap, 0 };
-		catf(&cat, "%*s", (width = align), "");
-		styleCat(&cat, wrapStyle);
-		str = &line->str[cat.len];
+		char *end = &line->str[cap];
+		str = seprintf(line->str, end, "%*s", (width = align), "");
+		str = styleCopy(str, end, wrapStyle);
 		style = wrapStyle;
-		catf(&cat, "%s", &wrap[n]);
+		seprintf(str, end, "%s", &wrap[n]);
 
 		*wrap = '\0';
 		wrap = NULL;

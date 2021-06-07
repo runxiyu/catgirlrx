@@ -117,11 +117,13 @@ static inline size_t styleParse(struct Style *style, const char **str) {
 	return strcspn(*str, (const char[]) { B, C, O, R, I, U, '\0' });
 }
 
-static inline void styleStrip(struct Cat *cat, const char *str) {
+static inline void styleStrip(char *buf, size_t cap, const char *str) {
+	*buf = '\0';
+	char *ptr = buf, *end = &buf[cap];
 	struct Style style = StyleDefault;
 	while (*str) {
 		size_t len = styleParse(&style, &str);
-		catf(cat, "%.*s", (int)len, str);
+		ptr = seprintf(ptr, end, "%.*s", (int)len, str);
 		str += len;
 	}
 }

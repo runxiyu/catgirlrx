@@ -313,14 +313,14 @@ int main(int argc, char *argv[]) {
 	if (self.restricted) unveilAll(trust, cert, priv);
 
 	char promises[64] = "stdio tty";
-	struct Cat cat = { promises, sizeof(promises), strlen(promises) };
-	if (save || logEnable) catf(&cat, " rpath wpath cpath");
-	if (!self.restricted) catf(&cat, " proc exec");
+	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
+	if (save || logEnable) ptr = seprintf(ptr, end, " rpath wpath cpath");
+	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
 
 	char *promisesFinal = strdup(promises);
 	if (!promisesFinal) err(EX_OSERR, "strdup");
 
-	catf(&cat, " rpath inet dns");
+	seprintf(ptr, end, " rpath inet dns");
 	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif

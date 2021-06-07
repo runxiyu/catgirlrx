@@ -63,13 +63,16 @@ static enum Cap capParse(const char *list) {
 	return caps;
 }
 
-static const char *capList(struct Cat *cat, enum Cap caps) {
+static void capList(char *buf, size_t cap, enum Cap caps) {
+	*buf = '\0';
+	char *ptr = buf, *end = &buf[cap];
 	for (size_t i = 0; i < ARRAY_LEN(CapNames); ++i) {
 		if (caps & (1 << i)) {
-			catf(cat, "%s%s", (cat->len ? " " : ""), CapNames[i]);
+			ptr = seprintf(
+				ptr, end, "%s%s", (ptr > buf ? " " : ""), CapNames[i]
+			);
 		}
 	}
-	return cat->buf;
 }
 
 static void require(struct Message *msg, bool origin, uint len) {
@@ -152,9 +155,9 @@ static void handleCap(struct Message *msg) {
 			caps &= ~CapConsumer;
 		}
 		if (caps) {
-			char buf[512] = "";
-			struct Cat cat = { buf, sizeof(buf), 0 };
-			ircFormat("CAP REQ :%s\r\n", capList(&cat, caps));
+			char buf[512];
+			capList(buf, sizeof(buf), caps);
+			ircFormat("CAP REQ :%s\r\n", buf);
 		} else {
 			if (!(self.caps & CapSASL)) ircFormat("CAP END\r\n");
 		}
@@ -522,8 +525,8 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	while (msg->params[3]) {
 		char *name = strsep(&msg->params[3], " ");
 		char *prefixes = strsep(&name, "!");
@@ -532,9 +535,11 @@ static void handleReplyNames(struct Message *msg) {
 		enum Color color = (user ? hash(user) : Default);
 		completeAdd(id, nick, color);
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
-		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), color, prefixes);
+		ptr = seprintf(
+			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
+		);
 	}
-	if (!cat.len) return;
+	if (ptr == buf) return;
 	uiFormat(
 		id, (replies[ReplyNamesAuto] ? Cold : Warm), tagTime(msg),
 		"In \3%02d%s\3 are %s",
@@ -551,14 +556,20 @@ static void handleReplyEndOfNames(struct Message *msg) {
 	}
 }
 
-static char whoBuf[1024];
-static struct Cat whoCat = { whoBuf, sizeof(whoBuf), 0 };
+static struct {
+	char buf[1024];
+	char *ptr;
+	char *end;
+} who = {
+	.ptr = who.buf,
+	.end = &who.buf[sizeof(who.buf)],
+};
 
 static void handleReplyWho(struct Message *msg) {
 	require(msg, false, 7);
-	if (!whoCat.len) {
-		catf(
-			&whoCat, "The operators of \3%02d%s\3 are ",
+	if (who.ptr == who.buf) {
+		who.ptr = seprintf(
+			who.ptr, who.end, "The operators of \3%02d%s\3 are ",
 			hash(msg->params[1]), msg->params[1]
 		);
 	}
@@ -566,9 +577,9 @@ static void handleReplyWho(struct Message *msg) {
 	if (prefixes[0] == '*') prefixes++;
 	prefixes[strspn(prefixes, network.prefixes)] = '\0';
 	if (!prefixes[0] || prefixes[0] == '+') return;
-	catf(
-		&whoCat, "%s\3%02d%s%s\3%s",
-		(whoCat.buf[whoCat.len - 1] == ' ' ? "" : ", "),
+	who.ptr = seprintf(
+		who.ptr, who.end, "%s\3%02d%s%s\3%s",
+		(who.ptr[-1] == ' ' ? "" : ", "),
 		hash(msg->params[2]), prefixes, msg->params[5],
 		(msg->params[6][0] == 'H' ? "" : " (away)")
 	);
@@ -576,8 +587,8 @@ static void handleReplyWho(struct Message *msg) {
 
 static void handleReplyEndOfWho(struct Message *msg) {
 	require(msg, false, 2);
-	uiWrite(idFor(msg->params[1]), Warm, tagTime(msg), whoBuf);
-	whoCat.len = 0;
+	uiWrite(idFor(msg->params[1]), Warm, tagTime(msg), who.buf);
+	who.ptr = who.buf;
 }
 
 static void handleReplyNoTopic(struct Message *msg) {
@@ -648,7 +659,7 @@ static void handleTopic(struct Message *msg) {
 	}
 
 	char buf[1024];
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	const char *prev = complete(id, "/topic ");
 	completeReject();
 	if (prev) {
@@ -663,7 +674,7 @@ static void handleTopic(struct Message *msg) {
 	if (swprintf(new, ARRAY_LEN(new), L"%s", msg->params[1]) < 0) goto plain;
 
 	if (!hashBound) {
-		catf(&cat, "%c%ls%c -> %c%ls%c", R, old, O, R, new, O);
+		ptr = seprintf(ptr, end, "%c%ls%c -> %c%ls%c", R, old, O, R, new, O);
 		goto plain;
 	}
 
@@ -678,15 +689,15 @@ static void handleTopic(struct Message *msg) {
 
 	wchar_t nul = L'\0';
 	swap(&new[pre], &nul);
-	catf(&cat, "%ls", new);
+	ptr = seprintf(ptr, end, "%ls", new);
 	swap(&new[pre], &nul);
 	swap(osuf, &nul);
-	catf(&cat, "\3%02d,%02d%ls", Default, Brown, &old[pre]);
+	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Brown, &old[pre]);
 	swap(osuf, &nul);
 	swap(nsuf, &nul);
-	catf(&cat, "\3%02d,%02d%ls", Default, Green, &new[pre]);
+	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Green, &new[pre]);
 	swap(nsuf, &nul);
-	catf(&cat, "\3%02d,%02d%ls", Default, Default, nsuf);
+	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Default, nsuf);
 
 plain:
 	topicComplete(id, msg->params[1]);
@@ -695,7 +706,7 @@ plain:
 		id, Warm, tagTime(msg),
 		"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
-		(cat.len ? cat.buf : msg->params[1])
+		(ptr > buf ? buf : msg->params[1])
 	);
 	logFormat(
 		id, tagTime(msg), "%s places a new sign in %s: %s",
@@ -713,17 +724,19 @@ static const char *UserModes[256] = {
 
 static void handleReplyUserModeIs(struct Message *msg) {
 	require(msg, false, 2);
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	for (char *ch = msg->params[1]; *ch; ++ch) {
 		if (*ch == '+') continue;
 		const char *name = UserModes[(byte)*ch];
-		catf(&cat, ", +%c%s%s", *ch, (name ? " " : ""), (name ?: ""));
+		ptr = seprintf(
+			ptr, end, ", +%c%s%s", *ch, (name ? " " : ""), (name ?: "")
+		);
 	}
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s",
-		self.color, self.nick, (buf[0] ? &buf[2] : "modeless")
+		self.color, self.nick, (ptr > buf ? &buf[2] : "modeless")
 	);
 }
 
@@ -745,8 +758,8 @@ static const char *ChanModes[256] = {
 static void handleReplyChannelModeIs(struct Message *msg) {
 	require(msg, false, 3);
 	uint param = 3;
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	for (char *ch = msg->params[2]; *ch; ++ch) {
 		if (*ch == '+') continue;
 		const char *name = ChanModes[(byte)*ch];
@@ -755,14 +768,14 @@ static void handleReplyChannelModeIs(struct Message *msg) {
 			strchr(network.setParamModes, *ch)
 		) {
 			assert(param < ParamCap);
-			catf(
-				&cat, ", +%c%s%s %s",
+			ptr = seprintf(
+				ptr, end, ", +%c%s%s %s",
 				*ch, (name ? " " : ""), (name ?: ""),
 				msg->params[param++]
 			);
 		} else {
-			catf(
-				&cat, ", +%c%s%s",
+			ptr = seprintf(
+				ptr, end, ", +%c%s%s",
 				*ch, (name ? " " : ""), (name ?: "")
 			);
 		}
@@ -771,7 +784,7 @@ static void handleReplyChannelModeIs(struct Message *msg) {
 		idFor(msg->params[1]), Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s",
 		hash(msg->params[1]), msg->params[1],
-		(buf[0] ? &buf[2] : "modeless")
+		(ptr > buf ? &buf[2] : "modeless")
 	);
 }
 
@@ -1065,12 +1078,15 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 
 static void handleReplyWhoisChannels(struct Message *msg) {
 	require(msg, false, 3);
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	while (msg->params[2]) {
 		char *channel = strsep(&msg->params[2], " ");
 		char *name = &channel[strspn(channel, network.prefixes)];
-		catf(&cat, "%s\3%02d%s\3", (buf[0] ? ", " : ""), hash(name), channel);
+		ptr = seprintf(
+			ptr, end, "%s\3%02d%s\3",
+			(ptr > buf ? ", " : ""), hash(name), channel
+		);
 	}
 	uiFormat(
 		Network, Warm, tagTime(msg),
@@ -1166,7 +1182,9 @@ static bool isMention(const struct Message *msg) {
 	return false;
 }
 
-static void colorMentions(struct Cat *cat, uint id, struct Message *msg) {
+static void colorMentions(char *buf, size_t cap, uint id, struct Message *msg) {
+	*buf = '\0';
+
 	char *split = strstr(msg->params[1], ": ");
 	if (!split) {
 		split = strchr(msg->params[1], ' ');
@@ -1181,9 +1199,10 @@ static void colorMentions(struct Cat *cat, uint id, struct Message *msg) {
 	msg->params[1] = (delimit ? &split[1] : split);
 	*split = '\0';
 
+	char *ptr = buf, *end = &buf[cap];
 	while (*mention) {
 		size_t skip = strspn(mention, ",<> ");
-		catf(cat, "%.*s", (int)skip, mention);
+		ptr = seprintf(ptr, end, "%.*s", (int)skip, mention);
 		mention += skip;
 
 		size_t len = strcspn(mention, ",<> ");
@@ -1191,14 +1210,14 @@ static void colorMentions(struct Cat *cat, uint id, struct Message *msg) {
 		mention[len] = '\0';
 		enum Color color = completeColor(id, mention);
 		if (color != Default) {
-			catf(cat, "\3%02d%s\3", color, mention);
+			ptr = seprintf(ptr, end, "\3%02d%s\3", color, mention);
 		} else {
-			catf(cat, "%s", mention);
+			ptr = seprintf(ptr, end, "%s", mention);
 		}
 		mention[len] = punct;
 		mention += len;
 	}
-	catf(cat, "%c", delimit);
+	seprintf(ptr, end, "%c", delimit);
 }
 
 static void handlePrivmsg(struct Message *msg) {
@@ -1229,8 +1248,7 @@ static void handlePrivmsg(struct Message *msg) {
 	}
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 
-	char buf[1024] = "";
-	struct Cat cat = { buf, sizeof(buf), 0 };
+	char buf[1024];
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
@@ -1242,7 +1260,7 @@ static void handlePrivmsg(struct Message *msg) {
 		);
 	} else if (action) {
 		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
-		colorMentions(&cat, id, msg);
+		colorMentions(buf, sizeof(buf), id, msg);
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\35\3%d* %s\17\35\t%s%s",
@@ -1251,7 +1269,7 @@ static void handlePrivmsg(struct Message *msg) {
 		);
 	} else {
 		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
-		colorMentions(&cat, id, msg);
+		colorMentions(buf, sizeof(buf), id, msg);
 		uiFormat(
 			id, heat, tagTime(msg),
 			"%s\3%d<%s>\17\t%s%s",

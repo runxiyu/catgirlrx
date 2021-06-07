@@ -98,7 +98,7 @@ static void push(uint id, const char *nick, const char *str, size_t len) {
 
 	char buf[1024];
 	snprintf(buf, sizeof(buf), "%.*s", (int)len, str);
-	styleStrip(&(struct Cat) { url->url, len + 1, 0 }, buf);
+	styleStrip(url->url, len + 1, buf);
 }
 
 void urlScan(uint id, const char *nick, const char *mesg) {
