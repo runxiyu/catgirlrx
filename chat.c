@@ -266,6 +266,19 @@ int main(int argc, char *argv[]) {
 	}
 	if (!host) errx(EX_USAGE, "host required");
 
+	if (printCert) {
+#ifdef __OpenBSD__
+		unveilAll(trust, cert, priv);
+		int error = pledge("stdio rpath inet dns", NULL);
+		if (error) err(EX_OSERR, "pledge");
+#endif
+		ircConfig(insecure, trust, cert, priv);
+		ircConnect(bind, host, port);
+		ircPrintCert();
+		ircClose();
+		return EX_OK;
+	}
+
 	if (!nick) nick = getenv("USER");
 	if (!nick) errx(EX_CONFIG, "USER unset");
 	if (!user) user = nick;
@@ -300,12 +313,6 @@ int main(int argc, char *argv[]) {
 #endif
 
 	ircConfig(insecure, trust, cert, priv);
-	if (printCert) {
-		ircConnect(bind, host, port);
-		ircPrintCert();
-		ircClose();
-		return EX_OK;
-	}
 
 	uiInitEarly();
 	if (save) {
