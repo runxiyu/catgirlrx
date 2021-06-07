@@ -157,7 +157,6 @@ static void unveilAll(const char *trust, const char *cert, const char *priv) {
 		const char *path;
 		const char *perm;
 	} paths[] = {
-		{ "/usr/share/terminfo", "r" },
 		{ tls_default_ca_cert_file(), "r" },
 	};
 	for (size_t i = 0; i < ARRAY_LEN(paths); ++i) {
@@ -306,15 +305,16 @@ int main(int argc, char *argv[]) {
 	editCompleteAdd();
 	commandCompleteAdd();
 
+	ircConfig(insecure, trust, cert, priv);
+
+	uiInitEarly();
+
 #ifdef __OpenBSD__
 	if (self.restricted) unveilAll(trust, cert, priv);
 	int error = pledge("stdio rpath wpath cpath inet dns tty proc exec", NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif
 
-	ircConfig(insecure, trust, cert, priv);
-
-	uiInitEarly();
 	if (save) {
 		uiLoad(save);
 		atexit(exitSave);
