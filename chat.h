@@ -44,6 +44,18 @@
 typedef unsigned uint;
 typedef unsigned char byte;
 
+static inline char *seprintf(char *ptr, char *end, const char *fmt, ...)
+	__attribute__((format(printf, 3, 4)));
+static inline char *seprintf(char *ptr, char *end, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	int n = vsnprintf(ptr, end - ptr, fmt, ap);
+	va_end(ap);
+	if (n < 0) return NULL;
+	ptr += n;
+	return (ptr > end ? end : ptr);
+}
+
 struct Cat {
 	char *buf;
 	size_t cap;
