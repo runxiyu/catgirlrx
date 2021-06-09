@@ -52,8 +52,8 @@ static inline char *seprintf(char *ptr, char *end, const char *fmt, ...) {
 	int n = vsnprintf(ptr, end - ptr, fmt, ap);
 	va_end(ap);
 	if (n < 0) return NULL;
-	ptr += n;
-	return (ptr > end ? end : ptr);
+	if (n > end - ptr) return end;
+	return ptr + n;
 }
 
 enum Attr {
