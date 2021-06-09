@@ -56,22 +56,6 @@ static inline char *seprintf(char *ptr, char *end, const char *fmt, ...) {
 	return (ptr > end ? end : ptr);
 }
 
-struct Cat {
-	char *buf;
-	size_t cap;
-	size_t len;
-};
-static inline void __attribute__((format(printf, 2, 3)))
-catf(struct Cat *cat, const char *format, ...) {
-	va_list ap;
-	va_start(ap, format);
-	int len = vsnprintf(&cat->buf[cat->len], cat->cap - cat->len, format, ap);
-	assert(len >= 0);
-	va_end(ap);
-	cat->len += len;
-	if (cat->len >= cat->cap) cat->len = cat->cap - 1;
-}
-
 enum Attr {
 	BIT(Bold),
 	BIT(Reverse),
