@@ -71,11 +71,16 @@ void ircConfig(
 		if (error) errx(EX_NOINPUT, "%s: %s", trust, tls_config_error(config));
 	}
 
+	// Explicitly load the default CA cert file on OpenBSD now so it doesn't
+	// need to be unveiled. Other systems might use a CA directory, so avoid
+	// changing the default behavior.
+#ifdef __OpenBSD__
 	if (!insecure && !trust) {
 		const char *ca = tls_default_ca_cert_file();
 		error = tls_config_set_ca_file(config, ca);
 		if (error) errx(EX_OSFILE, "%s: %s", ca, tls_config_error(config));
 	}
+#endif
 
 	if (cert) {
 		const char *dirs = NULL;
