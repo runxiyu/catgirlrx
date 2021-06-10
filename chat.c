@@ -128,14 +128,6 @@ static void parseHash(char *str) {
 
 #ifdef __OpenBSD__
 
-static void unveilConfig(const char *name) {
-	const char *dirs = NULL;
-	for (const char *path; NULL != (path = configPath(&dirs, name));) {
-		int error = unveil(path, "r");
-		if (error && errno != ENOENT) err(EX_NOINPUT, "%s", path);
-	}
-}
-
 static void unveilData(const char *name) {
 	const char *dirs = NULL;
 	for (const char *path; NULL != (path = dataPath(&dirs, name));) {
@@ -144,25 +136,12 @@ static void unveilData(const char *name) {
 	}
 }
 
-static void unveilAll(const char *trust, const char *cert, const char *priv) {
+static void unveilAll(void) {
 	if (save || logEnable) {
 		dataMkdir("");
 		unveilData("");
 	}
-	if (trust) unveilConfig(trust);
-	if (cert) unveilConfig(cert);
-	if (priv) unveilConfig(priv);
 	if (save) unveilData(save);
-	struct {
-		const char *path;
-		const char *perm;
-	} paths[] = {
-		{ tls_default_ca_cert_file(), "r" },
-	};
-	for (size_t i = 0; i < ARRAY_LEN(paths); ++i) {
-		int error = unveil(paths[i].path, paths[i].perm);
-		if (error) err(EX_OSFILE, "%s", paths[i].path);
-	}
 }
 
 #endif /* __OpenBSD__ */
@@ -266,12 +245,11 @@ int main(int argc, char *argv[]) {
 	if (!host) errx(EX_USAGE, "host required");
 
 	if (printCert) {
+		ircConfig(insecure, trust, cert, priv);
 #ifdef __OpenBSD__
-		unveilAll(trust, cert, priv);
 		int error = pledge("stdio rpath inet dns", NULL);
 		if (error) err(EX_OSERR, "pledge");
 #endif
-		ircConfig(insecure, trust, cert, priv);
 		ircConnect(bind, host, port);
 		ircPrintCert();
 		ircClose();
@@ -310,7 +288,7 @@ int main(int argc, char *argv[]) {
 	uiInitEarly();
 
 #ifdef __OpenBSD__
-	if (self.restricted) unveilAll(trust, cert, priv);
+	if (self.restricted) unveilAll();
 
 	char promises[64] = "stdio tty";
 	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
