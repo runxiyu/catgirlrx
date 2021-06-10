@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
 	if (printCert) {
 		ircConfig(insecure, trust, cert, priv);
 #ifdef __OpenBSD__
-		int error = pledge("stdio rpath inet dns", NULL);
+		int error = pledge("stdio inet dns", NULL);
 		if (error) err(EX_OSERR, "pledge");
 #endif
 		ircConnect(bind, host, port);
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
 	char *promisesFinal = strdup(promises);
 	if (!promisesFinal) err(EX_OSERR, "strdup");
 
-	seprintf(ptr, end, " rpath inet dns");
+	seprintf(ptr, end, " inet dns");
 	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif
