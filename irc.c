@@ -71,6 +71,12 @@ void ircConfig(
 		if (error) errx(EX_NOINPUT, "%s: %s", trust, tls_config_error(config));
 	}
 
+	if (!insecure && !trust) {
+		const char *ca = tls_default_ca_cert_file();
+		error = tls_config_set_ca_file(config, ca);
+		if (error) errx(EX_OSFILE, "%s: %s", ca, tls_config_error(config));
+	}
+
 	if (cert) {
 		const char *dirs = NULL;
 		for (const char *path; NULL != (path = configPath(&dirs, cert));) {
