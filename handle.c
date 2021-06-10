@@ -1082,6 +1082,7 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 	char *ptr = buf, *end = &buf[sizeof(buf)];
 	while (msg->params[2]) {
 		char *channel = strsep(&msg->params[2], " ");
+		if (!channel[0]) break;
 		char *name = &channel[strspn(channel, network.prefixes)];
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3",
