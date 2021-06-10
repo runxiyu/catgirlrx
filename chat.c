@@ -127,7 +127,6 @@ static void parseHash(char *str) {
 }
 
 #ifdef __OpenBSD__
-
 static void unveilData(const char *name) {
 	const char *dirs = NULL;
 	for (const char *path; NULL != (path = dataPath(&dirs, name));) {
@@ -135,16 +134,7 @@ static void unveilData(const char *name) {
 		if (error && errno != ENOENT) err(EX_CANTCREAT, "%s", path);
 	}
 }
-
-static void unveilAll(void) {
-	if (save || logEnable) {
-		dataMkdir("");
-		unveilData("");
-	}
-	if (save) unveilData(save);
-}
-
-#endif /* __OpenBSD__ */
+#endif
 
 static volatile sig_atomic_t signals[NSIG];
 static void signalHandler(int signal) {
@@ -288,7 +278,13 @@ int main(int argc, char *argv[]) {
 	uiInitEarly();
 
 #ifdef __OpenBSD__
-	if (self.restricted) unveilAll();
+	if (self.restricted) {
+		if (save || logEnable) {
+			dataMkdir("");
+			unveilData("");
+		}
+		if (save) unveilData(save);
+	}
 
 	char promises[64] = "stdio tty";
 	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
