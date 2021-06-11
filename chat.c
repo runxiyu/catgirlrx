@@ -283,16 +283,15 @@ int main(int argc, char *argv[]) {
 
 #ifdef __OpenBSD__
 	if (self.restricted) {
-		if (save || logEnable) {
+		if (logEnable) {
 			dataMkdir("");
 			unveilData("");
 		}
-		if (save) unveilData(save);
 	}
 
 	char promises[64] = "stdio tty";
 	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
-	if (save || logEnable) ptr = seprintf(ptr, end, " wpath cpath");
+	if (logEnable) ptr = seprintf(ptr, end, " wpath cpath");
 	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
 
 	char *promisesFinal = strdup(promises);
