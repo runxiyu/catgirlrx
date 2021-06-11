@@ -41,6 +41,7 @@ static const char *Pattern = {
 	"("
 	"cvs|"
 	"ftp|"
+	"gemini|"
 	"git|"
 	"gopher|"
 	"http|"
