@@ -312,7 +312,7 @@ void uiFormat(
 	uint id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 void uiLoad(const char *name);
-int uiSave(const char *name);
+int uiSave(void);
 
 enum { BufferCap = 1024 };
 struct Buffer;

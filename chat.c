@@ -83,7 +83,7 @@ struct Self self = { .color = Default };
 
 static const char *save;
 static void exitSave(void) {
-	int error = uiSave(save);
+	int error = uiSave();
 	if (error) {
 		warn("%s", save);
 		_exit(EX_IOERR);

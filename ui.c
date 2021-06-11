@@ -1128,11 +1128,12 @@ static int writeString(FILE *file, const char *str) {
 	return (fwrite(str, strlen(str) + 1, 1, file) ? 0 : -1);
 }
 
-int uiSave(const char *name) {
-	FILE *saveFile = dataOpen(name, "w");
-	if (!saveFile) return -1;
+static FILE *saveFile;
 
+int uiSave(void) {
 	int error = 0
+		|| ftruncate(fileno(saveFile), 0)
+		|| fseek(saveFile, 0, SEEK_SET)
 		|| writeTime(saveFile, Signatures[7])
 		|| writeTime(saveFile, self.pos);
 	if (error) return error;
@@ -1179,12 +1180,11 @@ static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 }
 
 void uiLoad(const char *name) {
-	FILE *saveFile = dataOpen(name, "r");
+	saveFile = dataOpen(name, "r+");
 	if (!saveFile) {
 		if (errno != ENOENT) exit(EX_NOINPUT);
 		saveFile = dataOpen(name, "w");
 		if (!saveFile) exit(EX_CANTCREAT);
-		fclose(saveFile);
 		return;
 	}
 
@@ -1192,7 +1192,6 @@ void uiLoad(const char *name) {
 	fread(&signature, sizeof(signature), 1, saveFile);
 	if (ferror(saveFile)) err(EX_IOERR, "fread");
 	if (feof(saveFile)) {
-		fclose(saveFile);
 		return;
 	}
 	size_t version = signatureVersion(signature);
@@ -1225,5 +1224,4 @@ void uiLoad(const char *name) {
 	urlLoad(saveFile, version);
 
 	free(buf);
-	fclose(saveFile);
 }
