@@ -276,6 +276,10 @@ int main(int argc, char *argv[]) {
 	ircConfig(insecure, trust, cert, priv);
 
 	uiInitEarly();
+	if (save) {
+		uiLoad(save);
+		atexit(exitSave);
+	}
 
 #ifdef __OpenBSD__
 	if (self.restricted) {
@@ -288,7 +292,7 @@ int main(int argc, char *argv[]) {
 
 	char promises[64] = "stdio tty";
 	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
-	if (save || logEnable) ptr = seprintf(ptr, end, " rpath wpath cpath");
+	if (save || logEnable) ptr = seprintf(ptr, end, " wpath cpath");
 	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
 
 	char *promisesFinal = strdup(promises);
@@ -299,10 +303,6 @@ int main(int argc, char *argv[]) {
 	if (error) err(EX_OSERR, "pledge");
 #endif
 
-	if (save) {
-		uiLoad(save);
-		atexit(exitSave);
-	}
 	uiShowID(Network);
 	uiFormat(
 		Network, Cold, NULL,
