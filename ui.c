@@ -1129,40 +1129,40 @@ static int writeString(FILE *file, const char *str) {
 }
 
 int uiSave(const char *name) {
-	FILE *file = dataOpen(name, "w");
-	if (!file) return -1;
+	FILE *saveFile = dataOpen(name, "w");
+	if (!saveFile) return -1;
 
 	int error = 0
-		|| writeTime(file, Signatures[7])
-		|| writeTime(file, self.pos);
+		|| writeTime(saveFile, Signatures[7])
+		|| writeTime(saveFile, self.pos);
 	if (error) return error;
 	for (uint num = 0; num < windows.len; ++num) {
 		const struct Window *window = windows.ptrs[num];
 		error = 0
-			|| writeString(file, idNames[window->id])
-			|| writeTime(file, window->mute)
-			|| writeTime(file, window->time)
-			|| writeTime(file, window->thresh)
-			|| writeTime(file, window->heat)
-			|| writeTime(file, window->unreadSoft)
-			|| writeTime(file, window->unreadWarm);
+			|| writeString(saveFile, idNames[window->id])
+			|| writeTime(saveFile, window->mute)
+			|| writeTime(saveFile, window->time)
+			|| writeTime(saveFile, window->thresh)
+			|| writeTime(saveFile, window->heat)
+			|| writeTime(saveFile, window->unreadSoft)
+			|| writeTime(saveFile, window->unreadWarm);
 		if (error) return error;
 		for (size_t i = 0; i < BufferCap; ++i) {
 			const struct Line *line = bufferSoft(window->buffer, i);
 			if (!line) continue;
 			error = 0
-				|| writeTime(file, line->time)
-				|| writeTime(file, line->heat)
-				|| writeString(file, line->str);
+				|| writeTime(saveFile, line->time)
+				|| writeTime(saveFile, line->heat)
+				|| writeString(saveFile, line->str);
 			if (error) return error;
 		}
-		error = writeTime(file, 0);
+		error = writeTime(saveFile, 0);
 		if (error) return error;
 	}
 	return 0
-		|| writeString(file, "")
-		|| urlSave(file)
-		|| fclose(file);
+		|| writeString(saveFile, "")
+		|| urlSave(saveFile)
+		|| fclose(saveFile);
 }
 
 static time_t readTime(FILE *file) {
@@ -1179,51 +1179,51 @@ static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 }
 
 void uiLoad(const char *name) {
-	FILE *file = dataOpen(name, "r");
-	if (!file) {
+	FILE *saveFile = dataOpen(name, "r");
+	if (!saveFile) {
 		if (errno != ENOENT) exit(EX_NOINPUT);
-		file = dataOpen(name, "w");
-		if (!file) exit(EX_CANTCREAT);
-		fclose(file);
+		saveFile = dataOpen(name, "w");
+		if (!saveFile) exit(EX_CANTCREAT);
+		fclose(saveFile);
 		return;
 	}
 
 	time_t signature;
-	fread(&signature, sizeof(signature), 1, file);
-	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) {
-		fclose(file);
+	fread(&signature, sizeof(signature), 1, saveFile);
+	if (ferror(saveFile)) err(EX_IOERR, "fread");
+	if (feof(saveFile)) {
+		fclose(saveFile);
 		return;
 	}
 	size_t version = signatureVersion(signature);
 
 	if (version > 1) {
-		self.pos = readTime(file);
+		self.pos = readTime(saveFile);
 	}
 
 	char *buf = NULL;
 	size_t cap = 0;
-	while (0 < readString(file, &buf, &cap) && buf[0]) {
+	while (0 < readString(saveFile, &buf, &cap) && buf[0]) {
 		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
-		if (version > 3) window->mute = readTime(file);
-		if (version > 6) window->time = readTime(file);
-		if (version > 5) window->thresh = readTime(file);
+		if (version > 3) window->mute = readTime(saveFile);
+		if (version > 6) window->time = readTime(saveFile);
+		if (version > 5) window->thresh = readTime(saveFile);
 		if (version > 0) {
-			window->heat = readTime(file);
-			window->unreadSoft = readTime(file);
-			window->unreadWarm = readTime(file);
+			window->heat = readTime(saveFile);
+			window->unreadSoft = readTime(saveFile);
+			window->unreadWarm = readTime(saveFile);
 		}
 		for (;;) {
-			time_t time = readTime(file);
+			time_t time = readTime(saveFile);
 			if (!time) break;
-			enum Heat heat = (version > 2 ? readTime(file) : Cold);
-			readString(file, &buf, &cap);
+			enum Heat heat = (version > 2 ? readTime(saveFile) : Cold);
+			readString(saveFile, &buf, &cap);
 			bufferPush(window->buffer, COLS, window->thresh, heat, time, buf);
 		}
 		windowReflow(window);
 	}
-	urlLoad(file, version);
+	urlLoad(saveFile, version);
 
 	free(buf);
-	fclose(file);
+	fclose(saveFile);
 }
