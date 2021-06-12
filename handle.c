@@ -447,7 +447,7 @@ static void handleSetname(struct Message *msg) {
 	for (uint id; (id = completeID(msg->nick));) {
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
-			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s)",
+			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s\17)",
 			hash(msg->user), msg->nick, hash(msg->user), msg->nick,
 			msg->params[0]
 		);
