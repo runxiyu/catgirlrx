@@ -130,7 +130,7 @@ static void parseHash(char *str) {
 static void unveilData(const char *name) {
 	const char *dirs = NULL;
 	for (const char *path; NULL != (path = dataPath(&dirs, name));) {
-		int error = unveil(path, "rwc");
+		int error = unveil(path, "wc");
 		if (error && errno != ENOENT) err(EX_CANTCREAT, "%s", path);
 	}
 }
