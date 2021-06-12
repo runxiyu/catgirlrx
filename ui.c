@@ -32,6 +32,7 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -1182,6 +1183,11 @@ void uiLoad(const char *name) {
 	saveFile = dataOpen(name, "a+");
 	if (!saveFile) exit(EX_CANTCREAT);
 	rewind(saveFile);
+
+	int error = flock(fileno(saveFile), LOCK_EX | LOCK_NB);
+	if (error && errno == EWOULDBLOCK) {
+		errx(EX_CANTCREAT, "%s: save file in use", name);
+	}
 
 	time_t signature;
 	fread(&signature, sizeof(signature), 1, saveFile);
