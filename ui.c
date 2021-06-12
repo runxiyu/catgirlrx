@@ -1119,7 +1119,7 @@ static size_t signatureVersion(time_t signature) {
 	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
 		if (signature == Signatures[i]) return i;
 	}
-	err(EX_DATAERR, "unknown file signature %jX", (uintmax_t)signature);
+	errx(EX_DATAERR, "unknown file signature %jX", (uintmax_t)signature);
 }
 
 static int writeTime(FILE *file, time_t time) {
