@@ -472,6 +472,7 @@ static void commandExec(uint id, char *params) {
 	if (pid < 0) err(EX_OSERR, "fork");
 	if (pid) return;
 
+	setsid();
 	close(STDIN_FILENO);
 	dup2(execPipe[1], STDOUT_FILENO);
 	dup2(utilPipe[1], STDERR_FILENO);

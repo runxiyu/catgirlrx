@@ -567,6 +567,7 @@ static void notify(uint id, const char *str) {
 	if (pid < 0) err(EX_OSERR, "fork");
 	if (pid) return;
 
+	setsid();
 	close(STDIN_FILENO);
 	dup2(utilPipe[1], STDOUT_FILENO);
 	dup2(utilPipe[1], STDERR_FILENO);
