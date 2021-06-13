@@ -190,10 +190,11 @@ int main(int argc, char *argv[]) {
 		{ .val = 'w', .name = "pass", required_argument },
 		{0},
 	};
-	char opts[2 * ARRAY_LEN(options)];
+	char opts[3 * ARRAY_LEN(options)];
 	for (size_t i = 0, j = 0; i < ARRAY_LEN(options); ++i) {
 		opts[j++] = options[i].val;
-		if (options[i].has_arg) opts[j++] = ':';
+		if (options[i].has_arg != no_argument) opts[j++] = ':';
+		if (options[i].has_arg == optional_argument) opts[j++] = ':';
 	}
 
 	for (int opt; 0 < (opt = getopt_config(argc, argv, opts, options, NULL));) {

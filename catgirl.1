@@ -15,7 +15,7 @@
 .Op Fl N Ar notify
 .Op Fl O Ar open
 .Op Fl S Ar bind
-.Op Fl T Ar timestamp
+.Op Fl T Ns Op Ar timestamp
 .Op Fl a Ar plain
 .Op Fl c Ar cert
 .Op Fl h Ar host
@@ -188,7 +188,7 @@ Bind to source address
 .Ar host
 when connecting to the server.
 .
-.It Fl T Ar format | Cm timestamp Op = Ar format
+.It Fl T Ns Oo Ar format Oc | Cm timestamp Op = Ar format
 Show timestamps by default,
 in the specified
 .Xr strftime 3
