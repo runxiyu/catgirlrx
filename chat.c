@@ -315,6 +315,12 @@ int main(int argc, char *argv[]) {
 	
 	int irc = ircConnect(bind, host, port);
 
+#ifdef __OpenBSD__
+	error = pledge(promisesFinal, NULL);
+	if (error) err(EX_OSERR, "pledge");
+	free(promisesFinal);
+#endif
+
 	if (pass) ircFormat("PASS :%s\r\n", pass);
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
@@ -342,12 +348,6 @@ int main(int argc, char *argv[]) {
 		fcntl(execPipe[0], F_SETFD, FD_CLOEXEC);
 		fcntl(execPipe[1], F_SETFD, FD_CLOEXEC);
 	}
-
-#ifdef __OpenBSD__
-	error = pledge(promisesFinal, NULL);
-	if (error) err(EX_OSERR, "pledge");
-	free(promisesFinal);
-#endif
 
 	struct pollfd fds[] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
