@@ -295,10 +295,9 @@ int main(int argc, char *argv[]) {
 	if (logEnable) ptr = seprintf(ptr, end, " wpath cpath");
 	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
 
-	char *promisesFinal = strdup(promises);
-	if (!promisesFinal) err(EX_OSERR, "strdup");
+	char *promisesInitial = ptr;
 
-	seprintf(ptr, end, " inet dns");
+	ptr = seprintf(ptr, end, " inet dns");
 	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif
@@ -316,9 +315,9 @@ int main(int argc, char *argv[]) {
 	int irc = ircConnect(bind, host, port);
 
 #ifdef __OpenBSD__
-	error = pledge(promisesFinal, NULL);
+	*promisesInitial = '\0';
+	error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
-	free(promisesFinal);
 #endif
 
 	if (pass) ircFormat("PASS :%s\r\n", pass);
