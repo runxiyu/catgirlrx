@@ -88,6 +88,7 @@ static const struct {
 	{ L"\\banhammer", L"▬▬▬▬▬▬▬▋ Ò╭╮Ó" },
 	{ L"\\bear", L"ʕっ•ᴥ•ʔっ" },
 	{ L"\\blush", L"（˶′◡‵˶）" },
+	{ L"\\com", L"\0038,5\2 ☭ " },
 	{ L"\\cool", L"(⌐■_■)" },
 	{ L"\\flip", L"(╯°□°）╯︵ ┻━┻" },
 	{ L"\\gary", L"ᕕ( ᐛ )ᕗ" },
