@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <sysexits.h>
 #include <time.h>
@@ -329,6 +330,7 @@ int main(int argc, char *argv[]) {
 	uiInitLate();
 	signal(SIGHUP, signalHandler);
 	signal(SIGINT, signalHandler);
+	signal(SIGALRM, signalHandler);
 	signal(SIGTERM, signalHandler);
 	signal(SIGCHLD, signalHandler);
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
@@ -348,6 +350,7 @@ int main(int argc, char *argv[]) {
 		fcntl(execPipe[1], F_SETFD, FD_CLOEXEC);
 	}
 
+	bool ping = false;
 	struct pollfd fds[] = {
 		{ .events = POLLIN, .fd = STDIN_FILENO },
 		{ .events = POLLIN, .fd = irc },
@@ -366,6 +369,25 @@ int main(int argc, char *argv[]) {
 
 		if (signals[SIGHUP]) self.quit = "zzz";
 		if (signals[SIGINT] || signals[SIGTERM]) break;
+
+		if (nfds > 0 && fds[1].revents) {
+			ping = false;
+			struct itimerval timer = {
+				.it_value.tv_sec = 2 * 60,
+				.it_interval.tv_sec = 30,
+			};
+			int error = setitimer(ITIMER_REAL, &timer, NULL);
+			if (error) err(EX_OSERR, "setitimer");
+		}
+		if (signals[SIGALRM]) {
+			signals[SIGALRM] = 0;
+			if (ping) {
+				errx(EX_UNAVAILABLE, "ping timeout");
+			} else {
+				ircFormat("PING nyaa\r\n");
+				ping = true;
+			}
+		}
 
 		if (signals[SIGCHLD]) {
 			signals[SIGCHLD] = 0;
