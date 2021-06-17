@@ -284,11 +284,9 @@ int main(int argc, char *argv[]) {
 	}
 
 #ifdef __OpenBSD__
-	if (self.restricted) {
-		if (logEnable) {
-			dataMkdir("");
-			unveilData("");
-		}
+	if (self.restricted && logEnable) {
+		dataMkdir("");
+		unveilData("");
 	}
 
 	char promises[64] = "stdio tty";
@@ -338,10 +336,7 @@ int main(int argc, char *argv[]) {
 	fcntl(irc, F_SETFD, FD_CLOEXEC);
 	bool pipes = !self.kiosk && !self.restricted;
 	if (pipes) {
-		int error = pipe(utilPipe);
-		if (error) err(EX_OSERR, "pipe");
-
-		error = pipe(execPipe);
+		int error = pipe(utilPipe) || pipe(execPipe);
 		if (error) err(EX_OSERR, "pipe");
 
 		fcntl(utilPipe[0], F_SETFD, FD_CLOEXEC);
