@@ -360,6 +360,7 @@ char *editBuffer(size_t *pos);
 void editCompleteAdd(void);
 
 const char *complete(uint id, const char *prefix);
+const char *completeSubstr(uint id, const char *substr);
 void completeAccept(void);
 void completeReject(void);
 void completeAdd(uint id, const char *str, enum Color color);

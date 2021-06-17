@@ -379,7 +379,17 @@ static void commandWindow(uint id, char *params) {
 		uiShowNum(strtoul(params, NULL, 10));
 	} else {
 		id = idFind(params);
-		if (id) uiShowID(id);
+		if (id) {
+			uiShowID(id);
+			return;
+		}
+		for (const char *match; (match = completeSubstr(None, params));) {
+			id = idFind(match);
+			if (!id) continue;
+			completeAccept();
+			uiShowID(id);
+			break;
+		}
 	}
 }
 

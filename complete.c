@@ -119,6 +119,15 @@ const char *complete(uint id, const char *prefix) {
 	return NULL;
 }
 
+const char *completeSubstr(uint id, const char *substr) {
+	for (match = (match ? match->next : head); match; match = match->next) {
+		if (match->id && match->id != id) continue;
+		if (!strcasestr(match->str, substr)) continue;
+		return match->str;
+	}
+	return NULL;
+}
+
 void completeAccept(void) {
 	if (match) prepend(detach(match));
 	match = NULL;
