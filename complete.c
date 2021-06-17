@@ -122,7 +122,7 @@ const char *complete(uint id, const char *prefix) {
 const char *completeSubstr(uint id, const char *substr) {
 	for (match = (match ? match->next : head); match; match = match->next) {
 		if (match->id && match->id != id) continue;
-		if (!strcasestr(match->str, substr)) continue;
+		if (!strstr(match->str, substr)) continue;
 		return match->str;
 	}
 	return NULL;
