@@ -180,6 +180,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'j', .name = "join", required_argument },
 		{ .val = 'k', .name = "priv", required_argument },
 		{ .val = 'l', .name = "log", no_argument },
+		{ .val = 'm', .name = "mode", required_argument },
 		{ .val = 'n', .name = "nick", required_argument },
 		{ .val = 'o', .name = "print-chain", no_argument },
 		{ .val = 'p', .name = "port", required_argument },
@@ -222,6 +223,7 @@ int main(int argc, char *argv[]) {
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;
 			break; case 'l': logEnable = true;
+			break; case 'm': self.mode = optarg;
 			break; case 'n': nick = optarg;
 			break; case 'o': insecure = true; printCert = true;
 			break; case 'p': port = optarg;

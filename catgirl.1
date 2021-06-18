@@ -1,4 +1,4 @@
-.Dd June 17, 2021
+.Dd June 18, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -22,6 +22,7 @@
 .Op Fl i Ar ignore
 .Op Fl j Ar join
 .Op Fl k Ar priv
+.Op Fl m Ar mode
 .Op Fl n Ar nick
 .Op Fl p Ar port
 .Op Fl r Ar real
@@ -286,6 +287,10 @@ as configuration files.
 .It Fl l | Cm log
 Log chat events to files in paths
 .Pa $XDG_DATA_HOME/catgirl/log/network/channel/YYYY-MM-DD.log .
+.
+.It Fl m Ar mode | Cm mode No = Ar mode
+Set the user
+.Ar mode .
 .
 .It Fl n Ar nick | Cm nick No = Ar nick
 Set nickname to

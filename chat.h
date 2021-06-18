@@ -192,6 +192,7 @@ extern struct Self {
 	size_t pos;
 	enum Cap caps;
 	char *plain;
+	char *mode;
 	char *join;
 	char *nick;
 	char *user;

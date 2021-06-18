@@ -241,6 +241,7 @@ static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
 	completeTouch(Network, self.nick, Default);
+	if (self.mode) ircFormat("MODE %s %s\r\n", self.nick, self.mode);
 	if (self.join) {
 		uint count = 1;
 		for (const char *ch = self.join; *ch && *ch != ' '; ++ch) {
