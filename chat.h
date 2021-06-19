@@ -403,7 +403,7 @@ const char *configPath(const char **dirs, const char *path);
 const char *dataPath(const char **dirs, const char *path);
 FILE *configOpen(const char *path, const char *mode);
 FILE *dataOpen(const char *path, const char *mode);
-void dataMkdir(const char *path);
+const char *dataMkdir(const char *path);
 
 int getopt_config(
 	int argc, char *const *argv,

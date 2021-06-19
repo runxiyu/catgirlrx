@@ -114,11 +114,12 @@ FILE *configOpen(const char *path, const char *mode) {
 	return NULL;
 }
 
-void dataMkdir(const char *path) {
+const char *dataMkdir(const char *path) {
 	const char *dirs = NULL;
 	path = dataPath(&dirs, path);
 	int error = mkdir(path, S_IRWXU);
 	if (error && errno != EEXIST) err(EX_CANTCREAT, "%s", path);
+	return path;
 }
 
 FILE *dataOpen(const char *path, const char *mode) {
