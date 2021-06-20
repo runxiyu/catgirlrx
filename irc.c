@@ -49,14 +49,7 @@ void ircConfig(
 	struct tls_config *config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
-	int error = tls_config_set_ciphers(config, "compat");
-	if (error) {
-		errx(
-			EX_SOFTWARE, "tls_config_set_ciphers: %s",
-			tls_config_error(config)
-		);
-	}
-
+	int error;
 	if (insecure) {
 		tls_config_insecure_noverifycert(config);
 		tls_config_insecure_noverifyname(config);
