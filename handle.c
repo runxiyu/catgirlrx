@@ -1241,7 +1241,7 @@ static void handlePrivmsg(struct Message *msg) {
 	}
 
 	bool notice = (msg->cmd[0] == 'N');
-	bool action = isAction(msg);
+	bool action = !notice && isAction(msg);
 	bool highlight = !mine && isMention(msg);
 	enum Heat heat = filterCheck((highlight || query ? Hot : Warm), id, msg);
 	if (heat > Warm && !mine && !query) highlight = true;
