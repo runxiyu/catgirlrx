@@ -1163,10 +1163,18 @@ static void handleReplyNowAway(struct Message *msg) {
 }
 
 static bool isAction(struct Message *msg) {
-	if (strncmp(msg->params[1], "\1ACTION ", 8)) return false;
-	msg->params[1] += 8;
+	if (strncmp(msg->params[1], "\1ACTION", 7)) return false;
+	if (msg->params[1][7] == ' ') {
+		msg->params[1] += 8;
+	} else if (msg->params[1][7] == '\1') {
+		msg->params[1] += 7;
+	} else {
+		return false;
+	}
 	size_t len = strlen(msg->params[1]);
-	if (msg->params[1][len - 1] == '\1') msg->params[1][len - 1] = '\0';
+	if (msg->params[1][len - 1] == '\1') {
+		msg->params[1][len - 1] = '\0';
+	}
 	return true;
 }
 
