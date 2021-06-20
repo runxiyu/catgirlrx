@@ -27,6 +27,7 @@
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -148,6 +149,7 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 
 		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
 		if (!error) break;
+		if (error && errno == EINTR) break; // connect continues asynchronously
 
 		close(sock);
 		sock = -1;
