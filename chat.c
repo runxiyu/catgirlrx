@@ -270,6 +270,7 @@ int main(int argc, char *argv[]) {
 	ircConfig(insecure, trust, cert, priv);
 
 	uiInitEarly();
+	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 	if (save) {
 		uiLoad(save);
 		atexit(exitSave);
@@ -324,7 +325,6 @@ int main(int argc, char *argv[]) {
 	signal(SIGALRM, signalHandler);
 	signal(SIGTERM, signalHandler);
 	signal(SIGCHLD, signalHandler);
-	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 
 	fcntl(irc, F_SETFD, FD_CLOEXEC);
 	bool pipes = !self.kiosk && !self.restricted;
