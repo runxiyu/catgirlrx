@@ -355,12 +355,12 @@ static void commandWhowas(uint id, char *params) {
 
 static void commandNS(uint id, char *params) {
 	(void)id;
-	ircFormat("PRIVMSG NickServ :%s\r\n", (params ?: "HELP"));
+	ircFormat("NS %s\r\n", (params ?: "HELP"));
 }
 
 static void commandCS(uint id, char *params) {
 	(void)id;
-	ircFormat("PRIVMSG ChanServ :%s\r\n", (params ?: "HELP"));
+	ircFormat("CS %s\r\n", (params ?: "HELP"));
 }
 
 static void commandQuery(uint id, char *params) {
