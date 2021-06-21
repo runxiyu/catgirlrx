@@ -82,7 +82,7 @@ static FILE *logFile(uint id, const struct tm *tm) {
 	dataMkdir(path);
 
 	strftime(&path[len], sizeof(path) - len, "/%F.log", tm);
-	logs[id].file = dataOpen(path, "a");
+	logs[id].file = dataOpen(path, "ae");
 	if (!logs[id].file) exit(EX_CANTCREAT);
 
 	setlinebuf(logs[id].file);
