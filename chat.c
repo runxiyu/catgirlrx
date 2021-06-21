@@ -399,8 +399,7 @@ int main(int argc, char *argv[]) {
 		if (signals[SIGWINCH]) {
 			signals[SIGWINCH] = 0;
 			cursesWinch(SIGWINCH);
-			// XXX: For some reason, calling uiDraw() here is the only way to
-			// get uiRead() to properly receive KEY_RESIZE.
+			// doupdate(3) needs to be called for KEY_RESIZE to be picked up.
 			uiDraw();
 			uiRead();
 		}
