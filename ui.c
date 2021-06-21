@@ -1181,7 +1181,7 @@ static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 }
 
 void uiLoad(const char *name) {
-	saveFile = dataOpen(name, "a+");
+	saveFile = dataOpen(name, "a+e");
 	if (!saveFile) exit(EX_CANTCREAT);
 	rewind(saveFile);
 
