@@ -46,6 +46,10 @@
 #include <tls.h>
 #include <unistd.h>
 
+#ifdef __FreeBSD__
+#include <sys/capsicum.h>
+#endif
+
 #include "chat.h"
 
 #ifndef OPENSSL_BIN
@@ -312,6 +316,13 @@ int main(int argc, char *argv[]) {
 	*promisesInitial = '\0';
 	error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
+#endif
+
+#ifdef __FreeBSD__
+	if (self.restricted) {
+		int error = cap_enter();
+		if (error) err(EX_OSERR, "cap_enter");
+	}
 #endif
 
 	if (pass) ircFormat("PASS :%s\r\n", pass);
