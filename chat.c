@@ -144,6 +144,7 @@ int main(int argc, char *argv[]) {
 	const char *cert = NULL;
 	const char *priv = NULL;
 
+	bool log = false;
 	bool sasl = false;
 	const char *pass = NULL;
 	const char *nick = NULL;
@@ -212,7 +213,7 @@ int main(int argc, char *argv[]) {
 			break; case 'i': filterAdd(Ice, optarg);
 			break; case 'j': self.join = optarg;
 			break; case 'k': priv = optarg;
-			break; case 'l': logEnable = true;
+			break; case 'l': log = true; logOpen();
 			break; case 'm': self.mode = optarg;
 			break; case 'n': nick = optarg;
 			break; case 'o': insecure = true; printCert = true;
@@ -277,7 +278,7 @@ int main(int argc, char *argv[]) {
 	}
 
 #ifdef __OpenBSD__
-	if (self.restricted && logEnable) {
+	if (self.restricted && log) {
 		const char *logdir = dataMkdir("");
 		int error = unveil(logdir, "wc");
 		if (error) err(EX_OSERR, "unveil");
@@ -285,7 +286,7 @@ int main(int argc, char *argv[]) {
 
 	char promises[64] = "stdio tty";
 	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
-	if (logEnable) ptr = seprintf(ptr, end, " wpath cpath");
+	if (log) ptr = seprintf(ptr, end, " wpath cpath");
 	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
 
 	char *promisesInitial = ptr;

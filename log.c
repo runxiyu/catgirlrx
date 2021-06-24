@@ -27,16 +27,32 @@
 
 #include <assert.h>
 #include <err.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sysexits.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "chat.h"
 
-bool logEnable;
+static int logDir = -1;
+
+void logOpen(void) {
+	dataMkdir("");
+	const char *path = dataMkdir("log");
+	logDir = open(path, O_RDONLY | O_CLOEXEC);
+	if (logDir < 0) err(EX_CANTCREAT, "%s", path);
+}
+
+static void logMkdir(const char *path) {
+	int error = mkdirat(logDir, path, S_IRWXU);
+	if (error && errno != EEXIST) err(EX_CANTCREAT, "log/%s", path);
+}
 
 static struct {
 	int year;
@@ -62,44 +78,47 @@ static FILE *logFile(uint id, const struct tm *tm) {
 	logs[id].month = tm->tm_mon;
 	logs[id].day = tm->tm_mday;
 
-	char path[PATH_MAX] = "log";
-	size_t len = strlen(path);
-	dataMkdir("");
-	dataMkdir(path);
-
-	path[len++] = '/';
+	size_t len = 0;
+	char path[PATH_MAX];
 	for (const char *ch = network.name; *ch; ++ch) {
 		path[len++] = (*ch == '/' ? '_' : *ch);
 	}
 	path[len] = '\0';
-	dataMkdir(path);
+	logMkdir(path);
 
 	path[len++] = '/';
 	for (const char *ch = idNames[id]; *ch; ++ch) {
 		path[len++] = (*ch == '/' ? '_' : *ch);
 	}
 	path[len] = '\0';
-	dataMkdir(path);
+	logMkdir(path);
 
 	strftime(&path[len], sizeof(path) - len, "/%F.log", tm);
-	logs[id].file = dataOpen(path, "ae");
-	if (!logs[id].file) exit(EX_CANTCREAT);
+	int fd = openat(
+		logDir, path,
+		O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC,
+		S_IRUSR | S_IWUSR
+	);
+	if (fd < 0) err(EX_CANTCREAT, "log/%s", path);
+	logs[id].file = fdopen(fd, "a");
+	if (!logs[id].file) err(EX_OSERR, "fdopen");
 
 	setlinebuf(logs[id].file);
 	return logs[id].file;
 }
 
 void logClose(void) {
-	if (!logEnable) return;
+	if (logDir < 0) return;
 	for (uint id = 0; id < IDCap; ++id) {
 		if (!logs[id].file) continue;
 		int error = fclose(logs[id].file);
 		if (error) err(EX_IOERR, "%s", idNames[id]);
 	}
+	close(logDir);
 }
 
 void logFormat(uint id, const time_t *src, const char *format, ...) {
-	if (!logEnable) return;
+	if (logDir < 0) return;
 
 	time_t ts = (src ? *src : time(NULL));
 	struct tm *tm = localtime(&ts);

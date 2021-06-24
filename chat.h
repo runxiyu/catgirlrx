@@ -394,7 +394,7 @@ struct Filter filterAdd(enum Heat heat, const char *pattern);
 bool filterRemove(struct Filter filter);
 enum Heat filterCheck(enum Heat heat, uint id, const struct Message *msg);
 
-extern bool logEnable;
+void logOpen(void);
 void logFormat(uint id, const time_t *time, const char *format, ...)
 	__attribute__((format(printf, 3, 4)));
 void logClose(void);
