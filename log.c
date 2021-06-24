@@ -38,6 +38,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef __FreeBSD__
+#include <sys/capsicum.h>
+#endif
+
 #include "chat.h"
 
 static int logDir = -1;
@@ -47,6 +51,16 @@ void logOpen(void) {
 	const char *path = dataMkdir("log");
 	logDir = open(path, O_RDONLY | O_CLOEXEC);
 	if (logDir < 0) err(EX_CANTCREAT, "%s", path);
+
+#ifdef __FreeBSD__
+	cap_rights_t rights;
+	cap_rights_init(
+		&rights, CAP_MKDIRAT, CAP_CREATE, CAP_WRITE,
+		/* for fdopen(3) */ CAP_FCNTL, CAP_FSTAT
+	);
+	int error = cap_rights_limit(logDir, &rights);
+	if (error) err(EX_OSERR, "cap_rights_limit");
+#endif
 }
 
 static void logMkdir(const char *path) {
