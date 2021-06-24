@@ -319,6 +319,18 @@ int main(int argc, char *argv[]) {
 #endif
 
 #ifdef __FreeBSD__
+	struct { cap_rights_t stdin, stdout, stderr, irc; } rights;
+	cap_rights_init(&rights.stdin, CAP_READ, CAP_EVENT);
+	cap_rights_init(&rights.stdout, CAP_WRITE, CAP_IOCTL);
+	cap_rights_init(&rights.stderr, CAP_WRITE);
+	cap_rights_init(&rights.irc, CAP_SEND, CAP_RECV, CAP_EVENT);
+	int error = 0
+		|| cap_rights_limit(STDIN_FILENO, &rights.stdin)
+		|| cap_rights_limit(STDOUT_FILENO, &rights.stdout)
+		|| cap_rights_limit(STDERR_FILENO, &rights.stderr)
+		|| cap_rights_limit(irc, &rights.irc);
+	if (error) err(EX_OSERR, "cap_rights_limit");
+
 	if (self.restricted) {
 		int error = cap_enter();
 		if (error) err(EX_OSERR, "cap_enter");
