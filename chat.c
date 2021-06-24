@@ -338,7 +338,6 @@ int main(int argc, char *argv[]) {
 	signal(SIGTERM, signalHandler);
 	signal(SIGCHLD, signalHandler);
 
-	fcntl(irc, F_SETFD, FD_CLOEXEC);
 	bool pipes = !self.kiosk && !self.restricted;
 	if (pipes) {
 		int error = pipe(utilPipe) || pipe(execPipe);

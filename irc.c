@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -157,6 +158,7 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	if (sock < 0) err(EX_UNAVAILABLE, "%s:%s", host, port);
 	freeaddrinfo(head);
 
+	fcntl(sock, F_SETFD, FD_CLOEXEC);
 	error = tls_connect_socket(client, sock, host);
 	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
 
