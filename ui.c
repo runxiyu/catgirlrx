@@ -48,6 +48,10 @@
 #include <wchar.h>
 #include <wctype.h>
 
+#ifdef __FreeBSD__
+#include <sys/capsicum.h>
+#endif
+
 #include "chat.h"
 
 // Annoying stuff from <term.h>:
@@ -1181,11 +1185,19 @@ static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 }
 
 void uiLoad(const char *name) {
+	int error;
 	saveFile = dataOpen(name, "a+e");
 	if (!saveFile) exit(EX_CANTCREAT);
 	rewind(saveFile);
 
-	int error = flock(fileno(saveFile), LOCK_EX | LOCK_NB);
+#ifdef __FreeBSD__
+	cap_rights_t rights;
+	cap_rights_init(&rights, CAP_READ, CAP_WRITE, CAP_FLOCK, CAP_FTRUNCATE);
+	error = cap_rights_limit(fileno(saveFile), &rights);
+	if (error) err(EX_OSERR, "cap_rights_limit");
+#endif
+
+	error = flock(fileno(saveFile), LOCK_EX | LOCK_NB);
 	if (error && errno == EWOULDBLOCK) {
 		errx(EX_CANTCREAT, "%s: save file in use", name);
 	}
