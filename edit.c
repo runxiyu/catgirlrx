@@ -111,7 +111,7 @@ void editCompleteAdd(void) {
 
 static void macroExpand(void) {
 	size_t macro = pos;
-	while (macro && !iswspace(buf[macro - 1])) macro--;
+	while (macro && buf[macro] != L'\\') macro--;
 	if (macro == pos) return;
 	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
 		if (wcsncmp(Macros[i].name, &buf[macro], pos - macro)) continue;
