@@ -86,7 +86,7 @@ chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
 	cp -af /usr/share/locale root/usr/share
 	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
 	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
-	${MAKE} install DESTDIR=root PREFIX=/usr
+	${MAKE} install DESTDIR=root PREFIX=/usr MANDIR=/usr/share/man
 	install scripts/chroot-prompt.sh root/usr/bin/catgirl-prompt
 	install scripts/chroot-man.sh root/usr/bin/man
 	tar -c -f chroot.tar -C root bin etc home lib libexec usr
