@@ -39,7 +39,7 @@
 #include <unistd.h>
 
 #ifdef __FreeBSD__
-#include <sys/capsicum.h>
+#include <capsicum_helpers.h>
 #endif
 
 #include "chat.h"
@@ -54,11 +54,9 @@ void logOpen(void) {
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
-	cap_rights_init(
-		&rights, CAP_MKDIRAT, CAP_CREATE, CAP_WRITE,
-		/* for fdopen(3) */ CAP_FCNTL, CAP_FSTAT
-	);
-	int error = cap_rights_limit(logDir, &rights);
+	caph_stream_rights(&rights, CAPH_WRITE);
+	cap_rights_set(&rights, CAP_MKDIRAT, CAP_CREATE);
+	int error = caph_rights_limit(logDir, &rights);
 	if (error) err(EX_OSERR, "cap_rights_limit");
 #endif
 }

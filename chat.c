@@ -47,7 +47,7 @@
 #include <unistd.h>
 
 #ifdef __FreeBSD__
-#include <sys/capsicum.h>
+#include <capsicum_helpers.h>
 #endif
 
 #include "chat.h"
@@ -319,21 +319,24 @@ int main(int argc, char *argv[]) {
 #endif
 
 #ifdef __FreeBSD__
-	struct { cap_rights_t stdin, stdout, stderr, irc; } rights;
-	cap_rights_init(&rights.stdin, CAP_READ, CAP_EVENT);
-	cap_rights_init(&rights.stdout, CAP_WRITE, CAP_IOCTL);
-	cap_rights_init(&rights.stderr, CAP_WRITE);
-	cap_rights_init(&rights.irc, CAP_SEND, CAP_RECV, CAP_EVENT);
+	cap_rights_t rights;
+	caph_stream_rights(&rights, CAPH_WRITE);
 	int error = 0
-		|| cap_rights_limit(STDIN_FILENO, &rights.stdin)
-		|| cap_rights_limit(STDOUT_FILENO, &rights.stdout)
-		|| cap_rights_limit(STDERR_FILENO, &rights.stderr)
-		|| cap_rights_limit(irc, &rights.irc);
+		|| caph_limit_stdin()
+		|| caph_rights_limit(STDOUT_FILENO, cap_rights_set(&rights, CAP_IOCTL))
+		|| caph_limit_stderr()
+		|| caph_rights_limit(
+			irc, cap_rights_init(&rights, CAP_SEND, CAP_RECV, CAP_EVENT)
+		);
 	if (error) err(EX_OSERR, "cap_rights_limit");
 
 	if (self.restricted) {
-		int error = cap_enter();
-		if (error) err(EX_OSERR, "cap_enter");
+		// caph_cache_tzdata(3) doesn't load UTC info, which we need for
+		// certificate verification. gmtime(3) does.
+		caph_cache_tzdata();
+		gmtime(&(time_t) { time(NULL) });
+		error = caph_enter();
+		if (error) err(EX_OSERR, "caph_enter");
 	}
 #endif
 
