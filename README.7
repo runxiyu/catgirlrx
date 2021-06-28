@@ -1,5 +1,5 @@
 .\" To view this file, run: man ./README.7
-.Dd May  4, 2021
+.Dd June 28, 2021
 .Dt README 7
 .Os "Causal Agency"
 .
@@ -45,6 +45,16 @@ is highlighted.
 Ignore:
 visibility of filtered messages
 can be toggled.
+.It
+Security:
+on
+.Fx
+and
+.Ox ,
+the
+.Cm restrict
+option enables sandboxing
+and limits filesystem access.
 .El
 .
 .Ss Non-features
@@ -98,6 +108,11 @@ provided by either
 .Lk https://git.causal.agency/libretls/about LibreTLS
 (for OpenSSL)
 or by LibreSSL.
+It targets
+.Fx ,
+.Ox ,
+macOS
+and Linux.
 .Nm
 and
 .Sy libtls
@@ -106,22 +121,6 @@ Check the Repology pages for
 .Lk https://repology.org/project/catgirl/versions catgirl
 and
 .Lk https://repology.org/project/libretls/versions libretls .
-.
-.Pp
-.Nm
-targets
-.Fx ,
-.Ox ,
-macOS
-and Linux.
-On
-.Ox ,
-.Xr pledge 2
-is used to limit system operations,
-and with
-.Nm Fl R ,
-.Xr unveil 2
-is used to limit filesystem access.
 .
 .Bd -literal -offset indent
 \&./configure
