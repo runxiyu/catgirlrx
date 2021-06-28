@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef __OpenBSD__
 	if (self.restricted && log) {
-		const char *logdir = dataMkdir("");
+		const char *logdir = dataMkdir("log");
 		int error = unveil(logdir, "wc");
 		if (error) err(EX_OSERR, "unveil");
 	}
