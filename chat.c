@@ -282,24 +282,23 @@ int main(int argc, char *argv[]) {
 	}
 
 #ifdef __OpenBSD__
+	char promises[64] = "stdio tty";
+	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
+
 	if (log) {
 		const char *logdir = dataMkdir("log");
 		int error = unveil(logdir, "wc");
 		if (error) err(EX_OSERR, "unveil");
+		ptr = seprintf(ptr, end, " wpath cpath");
 	}
 
 	if (!self.restricted) {
 		int error = unveil("/", "x");
 		if (error) err(EX_OSERR, "unveil");
+		ptr = seprintf(ptr, end, " proc exec");
 	}
 
-	char promises[64] = "stdio tty";
-	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
-	if (log) ptr = seprintf(ptr, end, " wpath cpath");
-	if (!self.restricted) ptr = seprintf(ptr, end, " proc exec");
-
 	char *promisesInitial = ptr;
-
 	ptr = seprintf(ptr, end, " inet dns");
 	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
