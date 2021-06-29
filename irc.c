@@ -104,7 +104,6 @@ void ircConfig(
 
 	error = tls_configure(client, config);
 	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(client));
-	tls_config_free(config);
 }
 
 int ircConnect(const char *bindHost, const char *host, const char *port) {
@@ -163,17 +162,22 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	error = tls_connect_socket(client, sock, host);
 	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
 
+	return sock;
+}
+
+void ircHandshake(void) {
+	int error;
 	do {
 		error = tls_handshake(client);
 	} while (error == TLS_WANT_POLLIN || error == TLS_WANT_POLLOUT);
 	if (error) errx(EX_PROTOCOL, "tls_handshake: %s", tls_error(client));
 
 	tls_config_clear_keys(config);
-	return sock;
 }
 
 void ircPrintCert(void) {
 	size_t len;
+	ircHandshake();
 	const byte *pem = tls_peer_cert_chain_pem(client, &len);
 	printf("subject= %s\n", tls_peer_cert_subject(client));
 	fwrite(pem, len, 1, stdout);

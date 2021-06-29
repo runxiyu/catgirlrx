@@ -345,6 +345,7 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
+	ircHandshake();
 	if (pass) {
 		ircFormat("PASS :");
 		ircSend(pass, strlen(pass));
