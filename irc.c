@@ -43,12 +43,13 @@
 
 #include "chat.h"
 
-struct tls *client;
+static struct tls *client;
+static struct tls_config *config;
 
 void ircConfig(
 	bool insecure, const char *trust, const char *cert, const char *priv
 ) {
-	struct tls_config *config = tls_config_new();
+	config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
 	int error;
@@ -167,6 +168,7 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 	} while (error == TLS_WANT_POLLIN || error == TLS_WANT_POLLOUT);
 	if (error) errx(EX_PROTOCOL, "tls_handshake: %s", tls_error(client));
 
+	tls_config_clear_keys(config);
 	return sock;
 }
 
