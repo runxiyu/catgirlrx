@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
 			break; case 'l': log = true; logOpen();
 			break; case 'm': self.mode = optarg;
 			break; case 'n': nick = optarg;
-			break; case 'o': insecure = true; printCert = true;
+			break; case 'o': printCert = true;
 			break; case 'p': port = optarg;
 			break; case 'r': real = optarg;
 			break; case 's': save = optarg;
@@ -234,11 +234,11 @@ int main(int argc, char *argv[]) {
 	if (!host) errx(EX_USAGE, "host required");
 
 	if (printCert) {
-		ircConfig(insecure, trust, cert, priv);
 #ifdef __OpenBSD__
 		int error = pledge("stdio inet dns", NULL);
 		if (error) err(EX_OSERR, "pledge");
 #endif
+		ircConfig(true, NULL, NULL, NULL);
 		ircConnect(bind, host, port);
 		ircPrintCert();
 		ircClose();
