@@ -198,6 +198,7 @@ extern struct Self {
 	char *user;
 	char *host;
 	enum Color color;
+	char *invited;
 	char *quit;
 } self;
 

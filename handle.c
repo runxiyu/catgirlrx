@@ -479,6 +479,7 @@ static void handleQuit(struct Message *msg) {
 static void handleInvite(struct Message *msg) {
 	require(msg, true, 2);
 	if (!strcmp(msg->params[0], self.nick)) {
+		set(&self.invited, msg->params[1]);
 		uiFormat(
 			Network, filterCheck(Hot, Network, msg), tagTime(msg),
 			"\3%02d%s\3\tinvites you to \3%02d%s\3",

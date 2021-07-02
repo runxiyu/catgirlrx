@@ -149,6 +149,7 @@ static void commandMsg(uint id, char *params) {
 }
 
 static void commandJoin(uint id, char *params) {
+	if (!params && id == Network) params = self.invited;
 	if (!params) params = idNames[id];
 	uint count = 1;
 	for (char *ch = params; *ch && *ch != ' '; ++ch) {
