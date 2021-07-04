@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 
 	bool log = false;
 	bool sasl = false;
-	const char *pass = NULL;
+	char *pass = NULL;
 	const char *nick = NULL;
 	const char *user = NULL;
 	const char *real = NULL;
@@ -344,7 +344,12 @@ int main(int argc, char *argv[]) {
 	}
 #endif
 
-	if (pass) ircFormat("PASS :%s\r\n", pass);
+	if (pass) {
+		ircFormat("PASS :");
+		ircSend(pass, strlen(pass));
+		ircFormat("\r\n");
+		explicit_bzero(pass, strlen(pass));
+	}
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
 	ircFormat("NICK :%s\r\n", nick);
