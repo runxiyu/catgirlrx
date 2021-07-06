@@ -264,7 +264,7 @@ static void commandOp(uint id, char *params) {
 	if (params) {
 		channelListMode(id, '+', 'o', params);
 	} else {
-		ircFormat("PRIVMSG ChanServ :OP %s\r\n", idNames[id]);
+		ircFormat("CS OP %s\r\n", idNames[id]);
 	}
 }
 
@@ -276,7 +276,7 @@ static void commandVoice(uint id, char *params) {
 	if (params) {
 		channelListMode(id, '+', 'v', params);
 	} else {
-		ircFormat("PRIVMSG ChanServ :VOICE %s\r\n", idNames[id]);
+		ircFormat("CS VOICE %s\r\n", idNames[id]);
 	}
 }
 
