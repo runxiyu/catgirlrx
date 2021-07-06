@@ -69,11 +69,21 @@ Options can be loaded from files
 listed on the command line.
 Files are searched for in
 .Pa $XDG_CONFIG_DIRS/catgirl
+.Po
+usually
+.Pa ~/.config/catgirl
+.Pc
 unless the path starts with
 .Ql / ,
 .Ql \&./
 or
 .Ql \&../ .
+Files and flags listed later
+on the command line
+take precedence over
+those listed earlier.
+.
+.Pp
 Each option is placed on a line,
 and lines beginning with
 .Ql #
@@ -81,8 +91,6 @@ are ignored.
 The options are listed below
 following their corresponding flags.
 .
-.Pp
-The arguments are as follows:
 .Bl -tag -width Ds
 .It Fl C Ar util | Cm copy No = Ar util
 Set the utility used by
