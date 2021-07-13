@@ -280,6 +280,15 @@ int main(int argc, char *argv[]) {
 		uiLoad(save);
 		atexit(exitSave);
 	}
+	uiShowID(Network);
+	uiFormat(
+		Network, Cold, NULL,
+		"\3%dcatgirl\3\tis GPLv3 fwee softwawe ^w^  "
+		"code is avaiwable fwom https://git.causal.agency/catgirl",
+		Pink
+	);
+	uiFormat(Network, Cold, NULL, "Traveling...");
+	uiDraw();
 
 #ifdef __OpenBSD__
 	char promises[64] = "stdio tty";
@@ -303,16 +312,6 @@ int main(int argc, char *argv[]) {
 	int error = pledge(promises, NULL);
 	if (error) err(EX_OSERR, "pledge");
 #endif
-
-	uiShowID(Network);
-	uiFormat(
-		Network, Cold, NULL,
-		"\3%dcatgirl\3\tis GPLv3 fwee softwawe ^w^  "
-		"code is avaiwable fwom https://git.causal.agency/catgirl",
-		Pink
-	);
-	uiFormat(Network, Cold, NULL, "Traveling...");
-	uiDraw();
 	
 	int irc = ircConnect(bind, host, port);
 
