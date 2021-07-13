@@ -136,6 +136,84 @@ static void signalHandler(int signal) {
 	signals[signal] = 1;
 }
 
+static void sandboxEarly(bool log);
+static void sandboxLate(int irc);
+
+#if defined __OpenBSD__
+
+static char *promisesInitial;
+static char promises[64] = "stdio tty";
+
+static void sandboxEarly(bool log) {
+	char *ptr = &promises[strlen(promises)];
+	char *end = &promises[sizeof(promises)];
+
+	if (log) {
+		const char *logdir = dataMkdir("log");
+		int error = unveil(logdir, "wc");
+		if (error) err(EX_OSERR, "unveil");
+		ptr = seprintf(ptr, end, " wpath cpath");
+	}
+
+	if (!self.restricted) {
+		int error = unveil("/", "x");
+		if (error) err(EX_OSERR, "unveil");
+		ptr = seprintf(ptr, end, " proc exec");
+	}
+
+	promisesInitial = ptr;
+	ptr = seprintf(ptr, end, " inet dns");
+	int error = pledge(promises, NULL);
+	if (error) err(EX_OSERR, "pledge");
+}
+
+static void sandboxLate(int irc) {
+	(void)irc;
+	*promisesInitial = '\0';
+	int error = pledge(promises, NULL);
+	if (error) err(EX_OSERR, "pledge");
+}
+
+#elif defined __FreeBSD__
+
+static void sandboxEarly(bool log) {
+	(void)log;
+}
+
+static void sandboxLate(int irc) {
+	if (!self.restricted) return;
+
+	// Rights are also limited in uiLoad() and logOpen().
+	cap_rights_t rights;
+	int error = 0
+		|| caph_limit_stdin()
+		|| caph_rights_limit(
+			STDOUT_FILENO, cap_rights_init(&rights, CAP_WRITE, CAP_IOCTL)
+		)
+		|| caph_limit_stderr()
+		|| caph_rights_limit(
+			irc, cap_rights_init(&rights, CAP_SEND, CAP_RECV, CAP_EVENT)
+		);
+	if (error) err(EX_OSERR, "cap_rights_limit");
+
+	// caph_cache_tzdata(3) doesn't load UTC info, which we need for
+	// certificate verification. gmtime(3) does.
+	caph_cache_tzdata();
+	gmtime(&(time_t) { time(NULL) });
+
+	error = caph_enter();
+	if (error) err(EX_OSERR, "caph_enter");
+}
+
+#else
+static void sandboxEarly(bool log) {
+	(void)log;
+}
+static void sandboxLate(int irc) {
+	(void)irc;
+}
+#endif
+
 int main(int argc, char *argv[]) {
 	setlocale(LC_CTYPE, "");
 
@@ -289,60 +367,10 @@ int main(int argc, char *argv[]) {
 	);
 	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
-
-#ifdef __OpenBSD__
-	char promises[64] = "stdio tty";
-	char *ptr = &promises[strlen(promises)], *end = &promises[sizeof(promises)];
-
-	if (log) {
-		const char *logdir = dataMkdir("log");
-		int error = unveil(logdir, "wc");
-		if (error) err(EX_OSERR, "unveil");
-		ptr = seprintf(ptr, end, " wpath cpath");
-	}
-
-	if (!self.restricted) {
-		int error = unveil("/", "x");
-		if (error) err(EX_OSERR, "unveil");
-		ptr = seprintf(ptr, end, " proc exec");
-	}
-
-	char *promisesInitial = ptr;
-	ptr = seprintf(ptr, end, " inet dns");
-	int error = pledge(promises, NULL);
-	if (error) err(EX_OSERR, "pledge");
-#endif
 	
+	sandboxEarly(log);
 	int irc = ircConnect(bind, host, port);
-
-#ifdef __OpenBSD__
-	*promisesInitial = '\0';
-	error = pledge(promises, NULL);
-	if (error) err(EX_OSERR, "pledge");
-#endif
-
-#ifdef __FreeBSD__
-	cap_rights_t rights;
-	int error = 0
-		|| caph_limit_stdin()
-		|| caph_rights_limit(
-			STDOUT_FILENO, cap_rights_init(&rights, CAP_WRITE, CAP_IOCTL)
-		)
-		|| caph_limit_stderr()
-		|| caph_rights_limit(
-			irc, cap_rights_init(&rights, CAP_SEND, CAP_RECV, CAP_EVENT)
-		);
-	if (error) err(EX_OSERR, "cap_rights_limit");
-
-	if (self.restricted) {
-		// caph_cache_tzdata(3) doesn't load UTC info, which we need for
-		// certificate verification. gmtime(3) does.
-		caph_cache_tzdata();
-		gmtime(&(time_t) { time(NULL) });
-		error = caph_enter();
-		if (error) err(EX_OSERR, "caph_enter");
-	}
-#endif
+	sandboxLate(irc);
 
 	ircHandshake();
 	if (pass) {
