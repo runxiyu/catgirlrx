@@ -54,8 +54,10 @@ void logOpen(void) {
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
-	caph_stream_rights(&rights, CAPH_WRITE);
-	cap_rights_set(&rights, CAP_MKDIRAT, CAP_CREATE);
+	cap_rights_init(
+		&rights, CAP_MKDIRAT, CAP_CREATE, CAP_WRITE,
+		/* for fdopen(3) */ CAP_FCNTL, CAP_FSTAT
+	);
 	int error = caph_rights_limit(logDir, &rights);
 	if (error) err(EX_OSERR, "cap_rights_limit");
 #endif

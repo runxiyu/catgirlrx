@@ -324,10 +324,11 @@ int main(int argc, char *argv[]) {
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
-	caph_stream_rights(&rights, CAPH_WRITE);
 	int error = 0
 		|| caph_limit_stdin()
-		|| caph_rights_limit(STDOUT_FILENO, cap_rights_set(&rights, CAP_IOCTL))
+		|| caph_rights_limit(
+			STDOUT_FILENO, cap_rights_init(&rights, CAP_WRITE, CAP_IOCTL)
+		)
 		|| caph_limit_stderr()
 		|| caph_rights_limit(
 			irc, cap_rights_init(&rights, CAP_SEND, CAP_RECV, CAP_EVENT)

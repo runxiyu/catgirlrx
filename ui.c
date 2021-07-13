@@ -1192,8 +1192,7 @@ void uiLoad(const char *name) {
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
-	caph_stream_rights(&rights, CAPH_READ | CAPH_WRITE);
-	cap_rights_set(&rights, CAP_FLOCK, CAP_FTRUNCATE);
+	cap_rights_init(&rights, CAP_READ, CAP_WRITE, CAP_FLOCK, CAP_FTRUNCATE);
 	error = caph_rights_limit(fileno(saveFile), &rights);
 	if (error) err(EX_OSERR, "cap_rights_limit");
 #endif
