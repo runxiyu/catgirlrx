@@ -541,7 +541,7 @@ static const struct Handler {
 	{ "/deop", commandDeop, 0 },
 	{ "/devoice", commandDevoice, 0 },
 	{ "/except", commandExcept, 0 },
-	{ "/exec", commandExec, Multiline | Restrict },
+	{ "/exec", commandExec, Multiline | Restrict | Kiosk },
 	{ "/help", commandHelp, 0 }, // Restrict special case.
 	{ "/highlight", commandHighlight, 0 },
 	{ "/ignore", commandIgnore, 0 },
