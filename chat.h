@@ -292,6 +292,7 @@ void commandCompleteAdd(void);
 
 enum Heat { Ice, Cold, Warm, Hot };
 enum { TimeCap = 64 };
+extern enum Heat uiThreshold;
 extern struct Time {
 	bool enable;
 	const char *format;

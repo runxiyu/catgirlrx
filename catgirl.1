@@ -1,4 +1,4 @@
-.Dd July  2, 2021
+.Dd July 20, 2021
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl KRelv
+.Op Fl KRelqv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl I Ar highlight
@@ -322,6 +322,11 @@ and exit.
 Connect to
 .Ar port .
 The default port is 6697.
+.
+.It Fl q | Cm quiet
+Raise the default message visibility threshold
+for new windows,
+hiding general events.
 .
 .It Fl r Ar real | Cm real No = Ar real
 Set realname to

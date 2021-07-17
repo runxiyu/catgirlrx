@@ -127,6 +127,8 @@ static struct Window *windowRemove(uint num) {
 	return window;
 }
 
+enum Heat uiThreshold = Cold;
+
 static uint windowFor(uint id) {
 	for (uint num = 0; num < windows.len; ++num) {
 		if (windows.ptrs[num]->id == id) return num;
@@ -136,7 +138,7 @@ static uint windowFor(uint id) {
 	window->id = id;
 	window->mark = true;
 	window->time = uiTime.enable;
-	window->thresh = Cold;
+	window->thresh = uiThreshold;
 	window->buffer = bufferAlloc();
 	completeAdd(None, idNames[id], idColors[id]);
 	return windowPush(window);

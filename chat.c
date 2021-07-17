@@ -257,6 +257,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'n', .name = "nick", required_argument },
 		{ .val = 'o', .name = "print-chain", no_argument },
 		{ .val = 'p', .name = "port", required_argument },
+		{ .val = 'q', .name = "quiet", no_argument },
 		{ .val = 'r', .name = "real", required_argument },
 		{ .val = 's', .name = "save", required_argument },
 		{ .val = 't', .name = "trust", required_argument },
@@ -300,6 +301,7 @@ int main(int argc, char *argv[]) {
 			break; case 'n': nick = optarg;
 			break; case 'o': printCert = true;
 			break; case 'p': port = optarg;
+			break; case 'q': uiThreshold = Warm;
 			break; case 'r': real = optarg;
 			break; case 's': save = optarg;
 			break; case 't': trust = optarg;
