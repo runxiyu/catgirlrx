@@ -201,8 +201,8 @@ static void sandboxLate(int irc) {
 	caph_cache_tzdata();
 	gmtime(&(time_t) { time(NULL) });
 
-	error = caph_enter();
-	if (error) err(EX_OSERR, "caph_enter");
+	error = cap_enter();
+	if (error) err(EX_OSERR, "cap_enter");
 }
 
 #else
