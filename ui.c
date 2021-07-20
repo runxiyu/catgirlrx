@@ -138,7 +138,11 @@ static uint windowFor(uint id) {
 	window->id = id;
 	window->mark = true;
 	window->time = uiTime.enable;
-	window->thresh = uiThreshold;
+	if (id == Network || id == Debug) {
+		window->thresh = Cold;
+	} else {
+		window->thresh = uiThreshold;
+	}
 	window->buffer = bufferAlloc();
 	completeAdd(None, idNames[id], idColors[id]);
 	return windowPush(window);
