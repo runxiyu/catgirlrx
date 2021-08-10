@@ -52,7 +52,7 @@ void ircConfig(
 	config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
-	int error;
+	int error = 0;
 	if (insecure) {
 		tls_config_insecure_noverifycert(config);
 		tls_config_insecure_noverifyname(config);
