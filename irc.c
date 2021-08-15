@@ -250,8 +250,12 @@ static struct Message parse(char *line) {
 			char *key = strsep(&tag, "=");
 			for (uint i = 0; i < TagCap; ++i) {
 				if (strcmp(key, TagNames[i])) continue;
-				unescape(tag);
-				msg.tags[i] = tag;
+				if (tag) {
+					unescape(tag);
+					msg.tags[i] = tag;
+				} else {
+					msg.tags[i] = "";
+				}
 				break;
 			}
 		}
