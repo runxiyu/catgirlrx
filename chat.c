@@ -369,7 +369,7 @@ int main(int argc, char *argv[]) {
 	);
 	uiFormat(Network, Cold, NULL, "Traveling...");
 	uiDraw();
-	
+
 	sandboxEarly(log);
 	int irc = ircConnect(bind, host, port);
 	sandboxLate(irc);
