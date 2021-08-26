@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <sysexits.h>
 #include <time.h>
 #include <wchar.h>
@@ -119,7 +120,7 @@ extern uint idNext;
 
 static inline uint idFind(const char *name) {
 	for (uint id = 0; id < idNext; ++id) {
-		if (!strcmp(idNames[id], name)) return id;
+		if (!strcasecmp(idNames[id], name)) return id;
 	}
 	return None;
 }
