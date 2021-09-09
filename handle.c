@@ -208,13 +208,13 @@ static void handleAuthenticate(struct Message *msg) {
 		return;
 	}
 
-	byte buf[299];
+	byte buf[299] = {0};
 	size_t len = 1 + strlen(self.plain);
-	if (sizeof(buf) < len) errx(EX_CONFIG, "SASL PLAIN is too long");
-	buf[0] = 0;
-	for (size_t i = 0; self.plain[i]; ++i) {
-		buf[1 + i] = (self.plain[i] == ':' ? 0 : self.plain[i]);
-	}
+	if (sizeof(buf) < len) errx(EX_USAGE, "SASL PLAIN is too long");
+	memcpy(&buf[1], self.plain, len - 1);
+	byte *sep = memchr(buf, ':', len);
+	if (!sep) errx(EX_USAGE, "SASL PLAIN missing colon");
+	*sep = 0;
 
 	char b64[BASE64_SIZE(sizeof(buf))];
 	base64(b64, buf, len);
