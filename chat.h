@@ -178,7 +178,8 @@ extern struct Network {
 	X("sasl", CapSASL) \
 	X("server-time", CapServerTime) \
 	X("setname", CapSetname) \
-	X("userhost-in-names", CapUserhostInNames)
+	X("userhost-in-names", CapUserhostInNames) \
+	X("znc.in/self-message", CapSelfMessage)
 
 enum Cap {
 #define X(name, id) BIT(id),
