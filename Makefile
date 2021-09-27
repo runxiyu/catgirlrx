@@ -63,36 +63,11 @@ CHROOT_USER = chat
 CHROOT_GROUP = ${CHROOT_USER}
 
 chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
-	install -d -o root -g wheel \
-		root \
-		root/bin \
-		root/etc \
-		root/home \
-		root/lib \
-		root/libexec \
-		root/usr/bin \
-		root/usr/local/etc/ssl \
-		root/usr/share/man \
-		root/usr/share/misc
-	install -d -o ${CHROOT_USER} -g ${CHROOT_GROUP} \
-		root/home/${CHROOT_USER} \
-		root/home/${CHROOT_USER}/.local/share
-	cp -fp /libexec/ld-elf.so.1 root/libexec
-	ldd -f '%p\n' catgirl /usr/bin/mandoc /usr/bin/less \
-		| sort -u | xargs -t -J % cp -fp % root/lib
-	chflags noschg root/libexec/* root/lib/*
-	cp -fp /etc/hosts /etc/resolv.conf root/etc
-	cp -fp /usr/local/etc/ssl/cert.pem root/usr/local/etc/ssl
-	cp -af /usr/share/locale root/usr/share
-	cp -fp /usr/share/misc/termcap.db root/usr/share/misc
-	cp -fp /rescue/sh /usr/bin/mandoc /usr/bin/less root/bin
-	${MAKE} install DESTDIR=root PREFIX=/usr MANDIR=/usr/share/man
-	install scripts/chroot-prompt.sh root/usr/bin/catgirl-prompt
-	install scripts/chroot-man.sh root/usr/bin/man
-	tar -c -f chroot.tar -C root bin etc home lib libexec usr
+chroot.tar: scripts/build-chroot.sh
+	sh scripts/build-chroot.sh ${CHROOT_USER} ${CHROOT_GROUP}
 
 install-chroot: chroot.tar
-	tar -x -f chroot.tar -C /home/${CHROOT_USER}
+	tar -px -f chroot.tar -C /home/${CHROOT_USER}
 
 clean-chroot:
 	rm -fr chroot.tar root
