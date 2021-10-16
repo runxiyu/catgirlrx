@@ -47,10 +47,15 @@
 static int logDir = -1;
 
 void logOpen(void) {
-	dataMkdir("");
-	const char *path = dataMkdir("log");
-	logDir = open(path, O_RDONLY | O_CLOEXEC);
-	if (logDir < 0) err(EX_CANTCREAT, "%s", path);
+	char buf[PATH_MAX];
+	int error = mkdir(dataPath(buf, sizeof(buf), "", 0), S_IRWXU);
+	if (error && errno != EEXIST) err(EX_CANTCREAT, "%s", buf);
+
+	error = mkdir(dataPath(buf, sizeof(buf), "log", 0), S_IRWXU);
+	if (error && errno != EEXIST) err(EX_CANTCREAT, "%s", buf);
+
+	logDir = open(buf, O_RDONLY | O_CLOEXEC);
+	if (logDir < 0) err(EX_CANTCREAT, "%s", buf);
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
@@ -58,7 +63,7 @@ void logOpen(void) {
 		&rights, CAP_MKDIRAT, CAP_CREATE, CAP_WRITE,
 		/* for fdopen(3) */ CAP_FCNTL, CAP_FSTAT
 	);
-	int error = caph_rights_limit(logDir, &rights);
+	error = caph_rights_limit(logDir, &rights);
 	if (error) err(EX_OSERR, "cap_rights_limit");
 #endif
 }

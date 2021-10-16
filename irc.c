@@ -29,6 +29,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdarg.h>
@@ -49,19 +50,20 @@ static struct tls_config *config;
 void ircConfig(
 	bool insecure, const char *trust, const char *cert, const char *priv
 ) {
+	int error = 0;
+	char buf[PATH_MAX];
+
 	config = tls_config_new();
 	if (!config) errx(EX_SOFTWARE, "tls_config_new");
 
-	int error = 0;
 	if (insecure) {
 		tls_config_insecure_noverifycert(config);
 		tls_config_insecure_noverifyname(config);
 	}
 	if (trust) {
 		tls_config_insecure_noverifyname(config);
-		const char *dirs = NULL;
-		for (const char *path; NULL != (path = configPath(&dirs, trust));) {
-			error = tls_config_set_ca_file(config, path);
+		for (int i = 0; configPath(buf, sizeof(buf), trust, i); ++i) {
+			error = tls_config_set_ca_file(config, buf);
 			if (!error) break;
 		}
 		if (error) errx(EX_NOINPUT, "%s: %s", trust, tls_config_error(config));
@@ -79,21 +81,19 @@ void ircConfig(
 #endif
 
 	if (cert) {
-		const char *dirs = NULL;
-		for (const char *path; NULL != (path = configPath(&dirs, cert));) {
+		for (int i = 0; configPath(buf, sizeof(buf), cert, i); ++i) {
 			if (priv) {
-				error = tls_config_set_cert_file(config, path);
+				error = tls_config_set_cert_file(config, buf);
 			} else {
-				error = tls_config_set_keypair_file(config, path, path);
+				error = tls_config_set_keypair_file(config, buf, buf);
 			}
 			if (!error) break;
 		}
 		if (error) errx(EX_NOINPUT, "%s: %s", cert, tls_config_error(config));
 	}
 	if (priv) {
-		const char *dirs = NULL;
-		for (const char *path; NULL != (path = configPath(&dirs, priv));) {
-			error = tls_config_set_key_file(config, path);
+		for (int i = 0; configPath(buf, sizeof(buf), priv, i); ++i) {
+			error = tls_config_set_key_file(config, buf);
 			if (!error) break;
 		}
 		if (error) errx(EX_NOINPUT, "%s: %s", priv, tls_config_error(config));

@@ -404,11 +404,10 @@ void logFormat(uint id, const time_t *time, const char *format, ...)
 	__attribute__((format(printf, 3, 4)));
 void logClose(void);
 
-const char *configPath(const char **dirs, const char *path);
-const char *dataPath(const char **dirs, const char *path);
+char *configPath(char *buf, size_t cap, const char *path, int i);
+char *dataPath(char *buf, size_t cap, const char *path, int i);
 FILE *configOpen(const char *path, const char *mode);
 FILE *dataOpen(const char *path, const char *mode);
-const char *dataMkdir(const char *path);
 
 int getopt_config(
 	int argc, char *const *argv,

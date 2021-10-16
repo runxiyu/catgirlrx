@@ -149,8 +149,8 @@ static void sandboxEarly(bool log) {
 	char *end = &promises[sizeof(promises)];
 
 	if (log) {
-		const char *logdir = dataMkdir("log");
-		int error = unveil(logdir, "wc");
+		char buf[PATH_MAX];
+		int error = unveil(dataPath(buf, sizeof(buf), "log", 0), "wc");
 		if (error) err(EX_OSERR, "unveil");
 		ptr = seprintf(ptr, end, " wpath cpath");
 	}
