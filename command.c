@@ -243,6 +243,12 @@ static void commandMode(uint id, char *params) {
 		}
 	} else {
 		if (params) {
+			if (!params[1] || (params[0] == '+' && !params[2])) {
+				char m = (params[0] == '+' ? params[1] : params[0]);
+				if (m == 'b') replies[ReplyBan]++;
+				if (m == network.excepts) replies[ReplyExcepts]++;
+				if (m == network.invex) replies[ReplyInvex]++;
+			}
 			ircFormat("MODE %s %s\r\n", idNames[id], params);
 		} else {
 			ircFormat("MODE %s\r\n", idNames[id]);
