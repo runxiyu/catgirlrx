@@ -91,7 +91,7 @@ static const time_t *tagTime(const struct Message *msg) {
 	static time_t time;
 	struct tm tm;
 	if (!msg->tags[TagTime]) return NULL;
-	if (!strptime(msg->tags[TagTime], "%FT%T", &tm)) return NULL;
+	if (!strptime(msg->tags[TagTime], "%Y-%m-%dT%T", &tm)) return NULL;
 	time = timegm(&tm);
 	return &time;
 }
