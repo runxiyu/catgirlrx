@@ -276,10 +276,12 @@ void uiInitEarly(void) {
 	if (!main) err(EX_OSERR, "newwin");
 
 	int y;
+	char fmt[TimeCap];
 	char buf[TimeCap];
+	styleStrip(fmt, sizeof(fmt), uiTime.format);
 	struct tm *time = localtime(&(time_t) { -22100400 });
-	size_t len = strftime(buf, sizeof(buf), uiTime.format, time);
-	if (!len) errx(EX_CONFIG, "invalid timestamp format: %s", uiTime.format);
+	size_t len = strftime(buf, sizeof(buf), fmt, time);
+	if (!len) errx(EX_CONFIG, "invalid timestamp format: %s", fmt);
 	waddstr(main, buf);
 	waddch(main, ' ');
 	getyx(main, y, uiTime.width);
@@ -386,8 +388,8 @@ static short stylePair(struct Style style) {
 	return colorPair(Colors[style.fg], Colors[style.bg]);
 }
 
-static int styleAdd(WINDOW *win, const char *str) {
-	struct Style style = StyleDefault;
+static int styleAdd(WINDOW *win, struct Style init, const char *str) {
+	struct Style style = init;
 	while (*str) {
 		size_t len = styleParse(&style, &str);
 		wattr_set(win, styleAttr(style), stylePair(style), NULL);
@@ -433,7 +435,7 @@ static void statusUpdate(void) {
 		if (window->scroll) {
 			ptr = seprintf(ptr, end, "~%d ", window->scroll);
 		}
-		if (styleAdd(status, buf) < 0) break;
+		if (styleAdd(status, StyleDefault, buf) < 0) break;
 	}
 	wclrtoeol(status);
 
@@ -514,18 +516,14 @@ static void mainAdd(int y, bool time, const struct Line *line) {
 	if (time && line->time) {
 		char buf[TimeCap];
 		strftime(buf, sizeof(buf), uiTime.format, localtime(&line->time));
-		wattr_set(
-			main,
-			colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1),
-			NULL
-		);
-		waddstr(main, buf);
+		struct Style init = { .fg = Gray, .bg = Default };
+		styleAdd(main, init, buf);
 		waddch(main, ' ');
 	} else if (time) {
 		whline(main, ' ', uiTime.width);
 		wmove(main, y, uiTime.width);
 	}
-	styleAdd(main, line->str);
+	styleAdd(main, StyleDefault, line->str);
 	getyx(main, ny, nx);
 	if (ny != y) return;
 	wclrtoeol(main);
