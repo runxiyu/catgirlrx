@@ -1321,6 +1321,7 @@ static const struct Handler {
 	{ "317", +ReplyWhois, handleReplyWhoisIdle },
 	{ "318", -ReplyWhois, handleReplyEndOfWhois },
 	{ "319", +ReplyWhois, handleReplyWhoisChannels },
+	{ "320", +ReplyWhois, handleReplyWhoisGeneric },
 	{ "322", +ReplyList, handleReplyList },
 	{ "323", -ReplyList, NULL },
 	{ "324", -ReplyMode, handleReplyChannelModeIs },
