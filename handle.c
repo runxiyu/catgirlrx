@@ -571,7 +571,7 @@ static void handleReplyWho(struct Message *msg) {
 	require(msg, false, 7);
 	if (who.ptr == who.buf) {
 		who.ptr = seprintf(
-			who.ptr, who.end, "The operators of \3%02d%s\3 are ",
+			who.ptr, who.end, "The council of \3%02d%s\3 are ",
 			hash(msg->params[1]), msg->params[1]
 		);
 	}
