@@ -130,6 +130,7 @@ static struct {
 	size_t pos;
 	size_t pre;
 	size_t len;
+	bool suffix;
 } tab;
 
 static void tabComplete(uint id) {
@@ -139,6 +140,7 @@ static void tabComplete(uint id) {
 		if (tab.pos == pos) return;
 		tab.pre = pos - tab.pos;
 		tab.len = tab.pre;
+		tab.suffix = true;
 	}
 
 	char mbs[MB_LEN_MAX * Cap];
@@ -148,7 +150,10 @@ static void tabComplete(uint id) {
 	mbs[n] = '\0';
 
 	const char *comp = complete(id, mbs);
-	if (!comp) comp = complete(id, mbs);
+	if (!comp) {
+		comp = complete(id, mbs);
+		tab.suffix ^= true;
+	}
 	if (!comp) {
 		tab.len = 0;
 		return;
@@ -169,12 +174,12 @@ static void tabComplete(uint id) {
 	tab.len = n;
 	if (wcs[0] == L'\\' || wcschr(wcs, L' ')) {
 		reserve(tab.pos, tab.len);
-	} else if (wcs[0] != L'/' && (!tab.pos || colon)) {
+	} else if (wcs[0] != L'/' && tab.suffix && (!tab.pos || colon)) {
 		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos + n + 0] = L':';
 		buf[tab.pos + n + 1] = L' ';
-	} else if (tab.pos >= 2 && buf[tab.pos - 2] == L':') {
+	} else if (tab.suffix && tab.pos >= 2 && buf[tab.pos - 2] == L':') {
 		tab.len += 2;
 		reserve(tab.pos, tab.len);
 		buf[tab.pos - 2] = L',';
@@ -183,6 +188,9 @@ static void tabComplete(uint id) {
 	} else {
 		tab.len++;
 		reserve(tab.pos, tab.len);
+		if (!tab.suffix && tab.pos >= 2 && buf[tab.pos - 2] == L',') {
+			buf[tab.pos - 2] = L':';
+		}
 		buf[tab.pos + n] = L' ';
 	}
 	wmemcpy(&buf[tab.pos], wcs, n);
