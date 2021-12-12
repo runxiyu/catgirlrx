@@ -135,7 +135,7 @@ The format of the pattern is as follows:
 .Ar nick Ns Op Ar !user@host Op Ar command Op Ar channel Op Ar message
 .Ed
 .Pp
-The commands which can be filtered are:
+The commands which can be matched are:
 .Sy INVITE ,
 .Sy JOIN ,
 .Sy NICK ,
@@ -196,7 +196,7 @@ and
 .Ic /open
 commands,
 the
-.Fl N
+.Cm notify
 option,
 and viewing this manual with
 .Ic /help .
@@ -211,6 +211,8 @@ Show timestamps by default,
 in the specified
 .Xr strftime 3
 .Ar format .
+The format string may contain
+raw IRC formatting codes.
 The default format is
 .Qq \&%X .
 .
@@ -235,9 +237,9 @@ is searched for in the same manner
 as configuration files.
 If the private key is in a separate file,
 it is loaded with
-.Fl k .
+.Cm priv .
 With
-.Fl e ,
+.Cm sasl-external ,
 authenticate using SASL EXTERNAL.
 Certificates can be generated with
 .Fl g .
@@ -246,7 +248,7 @@ Certificates can be generated with
 Authenticate using SASL EXTERNAL,
 also known as CertFP.
 The TLS client certificate is loaded with
-.Fl c .
+.Cm cert .
 See
 .Sx Configuring CertFP .
 .
@@ -274,7 +276,7 @@ The format of the pattern is as follows:
 .Ar nick Ns Op Ar !user@host Op Ar command Op Ar channel Op Ar message
 .Ed
 .Pp
-The commands which can be filtered are:
+The commands which can be matched are:
 .Sy INVITE ,
 .Sy JOIN ,
 .Sy NICK ,
@@ -380,13 +382,13 @@ Log in with the server password
 .It
 Generate a new TLS client certificate:
 .Bd -literal -offset indent
-catgirl -g ~/.config/catgirl/example.pem
+$ catgirl -g ~/.config/catgirl/example.pem
 .Ed
 .It
 Connect to the server using the certificate:
 .Bd -literal -offset indent
 cert = example.pem
-# or: catgirl -c example.pem
+# or: $ catgirl -c example.pem
 .Ed
 .It
 Identify with services or use
@@ -404,7 +406,7 @@ when connecting
 .Bd -literal -offset indent
 cert = example.pem
 sasl-external
-# or: catgirl -e -c example.pem
+# or: $ catgirl -e -c example.pem
 .Ed
 .El
 .
@@ -414,7 +416,7 @@ sasl-external
 Connect to the server
 and write its certificate to a file:
 .Bd -literal -offset indent
-catgirl -o -h irc.example.org > ~/.config/catgirl/example.pem
+$ catgirl -o -h irc.example.org > ~/.config/catgirl/example.pem
 .Ed
 .It
 Configure
@@ -422,7 +424,7 @@ Configure
 to trust the certificate:
 .Bd -literal -offset indent
 trust = example.pem
-# or: catgirl -t example.pem
+# or: $ catgirl -t example.pem
 .Ed
 .El
 .
@@ -524,13 +526,17 @@ for a list of topics.
 .It Ic /highlight Op Ar pattern
 List message highlight patterns
 or temporarily add a pattern.
-To permanently add a pattern, use
-.Fl I .
+To permanently add a pattern,
+use the
+.Cm highlight
+option.
 .It Ic /ignore Op Ar pattern
 List message ignore patterns
 or temporarily add a pattern.
-To permanently add a pattern, use
-.Fl i .
+To permanently add a pattern,
+use the
+.Cm ignore
+option.
 .It Ic /move Oo Ar name Oc Ar num
 Move the named or current window to number.
 .It Ic /open Op Ar count
@@ -760,13 +766,10 @@ The color numbers are as follows:
 .Sh ENVIRONMENT
 .Bl -tag -width Ds
 .It Ev SHELL
-The path executed by
-.Ic /exec
-with
-.Fl c Ar command .
-If unset,
-.Pa /bin/sh
-is used.
+The shell used by
+.Ic /exec .
+The default is
+.Pa /bin/sh .
 .It Ev USER
 The default nickname.
 .El
@@ -813,7 +816,7 @@ Join
 .Li #ascii.town
 from the command line:
 .Bd -literal -offset indent
-catgirl -h irc.tilde.chat -j '#ascii.town'
+$ catgirl -h irc.tilde.chat -j '#ascii.town'
 .Ed
 .Pp
 Create a configuration file in
@@ -825,7 +828,7 @@ join = #ascii.town
 .Pp
 Load the configuration file:
 .Bd -literal -offset indent
-catgirl tilde
+$ catgirl tilde
 .Ed
 .
 .Sh STANDARDS

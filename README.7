@@ -124,9 +124,9 @@ and
 .Lk https://repology.org/project/libretls/versions libretls .
 .
 .Bd -literal -offset indent
-\&./configure
-make all
-sudo make install
+$ ./configure
+$ make all
+# make install
 .Ed
 .
 .Pp
@@ -155,7 +155,7 @@ for
 .Nm ./configure
 to find it.
 .Bd -literal -offset indent
-PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure
+$ PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure
 .Ed
 .
 .Pp
@@ -167,8 +167,8 @@ to stop and start
 on system sleep and wake.
 Install it as follows:
 .Bd -literal -offset indent
-make scripts/sandman
-sudo make install-sandman
+$ make scripts/sandman
+# make install-sandman
 .Ed
 .
 .Sh FILES
