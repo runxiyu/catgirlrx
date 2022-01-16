@@ -1148,7 +1148,7 @@ static void handleReplyAway(struct Message *msg) {
 		id = idFor(msg->params[1]);
 	}
 	uiFormat(
-		id, Warm, tagTime(msg),
+		id, (id == Network ? Warm : Cold), tagTime(msg),
 		"\3%02d%s\3\tis away: %s",
 		completeColor(id, msg->params[1]), msg->params[1], msg->params[2]
 	);
