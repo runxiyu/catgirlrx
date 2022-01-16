@@ -219,7 +219,7 @@ static void handleAuthenticate(struct Message *msg) {
 	char b64[BASE64_SIZE(sizeof(buf))];
 	base64(b64, buf, len);
 	ircFormat("AUTHENTICATE ");
-	ircSend(b64, BASE64_SIZE(len));
+	ircSend(b64, BASE64_SIZE(len) - 1);
 	ircFormat("\r\n");
 
 	explicit_bzero(b64, sizeof(b64));
