@@ -210,6 +210,7 @@ static short colorPair(short fg, short bg) {
 	X(KeyMetaN, "\33n", NULL) \
 	X(KeyMetaP, "\33p", NULL) \
 	X(KeyMetaQ, "\33q", NULL) \
+	X(KeyMetaS, "\33s", NULL) \
 	X(KeyMetaT, "\33t", NULL) \
 	X(KeyMetaU, "\33u", NULL) \
 	X(KeyMetaV, "\33v", NULL) \
@@ -384,7 +385,12 @@ static attr_t styleAttr(struct Style style) {
 	return attr | colorAttr(Colors[style.fg]);
 }
 
+static bool spoilerReveal;
+
 static short stylePair(struct Style style) {
+	if (spoilerReveal && style.fg == style.bg) {
+		return colorPair(Colors[Default], Colors[style.bg]);
+	}
 	return colorPair(Colors[style.fg], Colors[style.bg]);
 }
 
@@ -986,6 +992,7 @@ static void keyCode(int code) {
 		break; case KeyMetaN: scrollHot(window, +1);
 		break; case KeyMetaP: scrollHot(window, -1);
 		break; case KeyMetaQ: edit(id, EditCollapse, 0);
+		break; case KeyMetaS: spoilerReveal ^= true; mainUpdate();
 		break; case KeyMetaT: toggleTime(window);
 		break; case KeyMetaU: scrollTo(window, window->unreadHard);
 		break; case KeyMetaV: scrollPage(window, +1);
@@ -1088,6 +1095,7 @@ void uiRead(void) {
 	wint_t ch;
 	static bool paste, style, literal;
 	for (int ret; ERR != (ret = wget_wch(input, &ch));) {
+		bool spr = spoilerReveal;
 		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
 			paste = true;
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
@@ -1113,6 +1121,10 @@ void uiRead(void) {
 		}
 		style = false;
 		literal = false;
+		if (spr) {
+			spoilerReveal = false;
+			mainUpdate();
+		}
 	}
 	inputUpdate();
 }
