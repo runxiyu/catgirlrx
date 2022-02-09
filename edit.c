@@ -207,6 +207,10 @@ static void tabReject(void) {
 	tab.len = 0;
 }
 
+static bool isword(wchar_t ch) {
+	return !iswspace(ch) && !iswpunct(ch);
+}
+
 void edit(uint id, enum Edit op, wchar_t ch) {
 	size_t init = pos;
 	switch (op) {
@@ -215,12 +219,12 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 		break; case EditPrev: if (pos) pos--;
 		break; case EditNext: if (pos < len) pos++;
 		break; case EditPrevWord: {
-			if (pos) pos--;
-			while (pos && !iswspace(buf[pos - 1])) pos--;
+			while (pos && !isword(buf[pos - 1])) pos--;
+			while (pos && isword(buf[pos - 1])) pos--;
 		}
 		break; case EditNextWord: {
-			if (pos < len) pos++;
-			while (pos < len && !iswspace(buf[pos])) pos++;
+			while (pos < len && !isword(buf[pos])) pos++;
+			while (pos < len && isword(buf[pos])) pos++;
 		}
 
 		break; case EditDeleteHead: delete(true, 0, pos); pos = 0;
@@ -229,15 +233,17 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 		break; case EditDeleteNext: delete(false, pos, 1);
 		break; case EditDeletePrevWord: {
 			if (!pos) break;
-			size_t word = pos - 1;
-			while (word && !iswspace(buf[word - 1])) word--;
+			size_t word = pos;
+			while (word && !isword(buf[word - 1])) word--;
+			while (word && isword(buf[word - 1])) word--;
 			delete(true, word, pos - word);
 			pos = word;
 		}
 		break; case EditDeleteNextWord: {
 			if (pos == len) break;
-			size_t word = pos + 1;
-			while (word < len && !iswspace(buf[word])) word++;
+			size_t word = pos;
+			while (word < len && !isword(buf[word])) word++;
+			while (word < len && isword(buf[word])) word++;
 			delete(true, pos, word - pos);
 		}
 		break; case EditPaste: {
