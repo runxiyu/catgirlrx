@@ -164,7 +164,9 @@ static void handleCap(struct Message *msg) {
 	} else if (!strcmp(msg->params[1], "ACK")) {
 		self.caps |= caps;
 		if (caps & CapSASL) {
-			ircFormat("AUTHENTICATE %s\r\n", (self.plain ? "PLAIN" : "EXTERNAL"));
+			ircFormat(
+				"AUTHENTICATE %s\r\n", (self.plainUser ? "PLAIN" : "EXTERNAL")
+			);
 		}
 		if (!(self.caps & CapSASL)) ircFormat("CAP END\r\n");
 	} else if (!strcmp(msg->params[1], "NAK")) {
@@ -203,18 +205,18 @@ static void base64(char *dst, const byte *src, size_t len) {
 
 static void handleAuthenticate(struct Message *msg) {
 	(void)msg;
-	if (!self.plain) {
+	if (!self.plainUser) {
 		ircFormat("AUTHENTICATE +\r\n");
 		return;
 	}
 
 	byte buf[299] = {0};
-	size_t len = 1 + strlen(self.plain);
+	size_t userLen = strlen(self.plainUser);
+	size_t passLen = strlen(self.plainPass);
+	size_t len = 1 + userLen + 1 + passLen;
 	if (sizeof(buf) < len) errx(EX_USAGE, "SASL PLAIN is too long");
-	memcpy(&buf[1], self.plain, len - 1);
-	byte *sep = memchr(buf, ':', len);
-	if (!sep) errx(EX_USAGE, "SASL PLAIN missing colon");
-	*sep = 0;
+	memcpy(&buf[1], self.plainUser, userLen);
+	memcpy(&buf[1 + userLen + 1], self.plainPass, passLen);
 
 	char b64[BASE64_SIZE(sizeof(buf))];
 	base64(b64, buf, len);
@@ -224,7 +226,7 @@ static void handleAuthenticate(struct Message *msg) {
 
 	explicit_bzero(b64, sizeof(b64));
 	explicit_bzero(buf, sizeof(buf));
-	explicit_bzero(self.plain, strlen(self.plain));
+	explicit_bzero(self.plainPass, strlen(self.plainPass));
 }
 
 static void handleReplyLoggedIn(struct Message *msg) {

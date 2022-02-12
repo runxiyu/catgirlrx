@@ -50,6 +50,8 @@
 #include <capsicum_helpers.h>
 #endif
 
+char *readpassphrase(const char *prompt, char *buf, size_t bufsiz, int flags);
+
 #include "chat.h"
 
 #ifndef OPENSSL_BIN
@@ -129,6 +131,12 @@ uint32_t hashBound = 75;
 static void parseHash(char *str) {
 	hashInit = strtoul(str, &str, 0);
 	if (*str) hashBound = strtoul(&str[1], NULL, 0);
+}
+
+static void parsePlain(char *str) {
+	self.plainUser = strsep(&str, ":");
+	if (!str) errx(EX_USAGE, "SASL PLAIN missing colon");
+	self.plainPass = str;
 }
 
 static volatile sig_atomic_t signals[NSIG];
@@ -288,7 +296,7 @@ int main(int argc, char *argv[]) {
 				uiTime.enable = true;
 				if (optarg) uiTime.format = optarg;
 			}
-			break; case 'a': sasl = true; self.plain = optarg;
+			break; case 'a': sasl = true; parsePlain(optarg);
 			break; case 'c': cert = optarg;
 			break; case 'e': sasl = true;
 			break; case 'g': genCert(optarg);
@@ -335,6 +343,20 @@ int main(int argc, char *argv[]) {
 		int n = asprintf(&hash, "%08" PRIx32, _hash(user));
 		if (n < 0) err(EX_OSERR, "asprintf");
 		user = hash;
+	}
+
+	if (pass && !pass[0]) {
+		char *buf = malloc(512);
+		if (!buf) err(EX_OSERR, "malloc");
+		pass = readpassphrase("Server password: ", buf, 512, 0);
+		if (!pass) errx(EX_IOERR, "unable to read passphrase");
+	}
+
+	if (self.plainPass && !self.plainPass[0]) {
+		char *buf = malloc(512);
+		if (!buf) err(EX_OSERR, "malloc");
+		self.plainPass = readpassphrase("Account password: ", buf, 512, 0);
+		if (!self.plainPass) errx(EX_IOERR, "unable to read passphrase");
 	}
 
 	// Modes defined in RFC 1459:

@@ -193,7 +193,8 @@ extern struct Self {
 	bool restricted;
 	size_t pos;
 	enum Cap caps;
-	char *plain;
+	char *plainUser;
+	char *plainPass;
 	char *mode;
 	char *join;
 	char *nick;

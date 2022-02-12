@@ -1,4 +1,4 @@
-.Dd February  3, 2022
+.Dd February 12, 2022
 .Dt CATGIRL 1
 .Os
 .
@@ -222,11 +222,9 @@ Authenticate as
 with
 .Ar pass
 using SASL PLAIN.
-Since this requires the account password
-in plain text,
-it is recommended to use CertFP instead.
-See
-.Sx Configuring CertFP .
+Leave
+.Ar pass
+blank to prompt for the password.
 .
 .It Fl c Ar path | Cm cert No = Ar path
 Load the TLS client certificate from
@@ -375,6 +373,9 @@ if it is not a terminal.
 .It Fl w Ar pass | Cm pass No = Ar pass
 Log in with the server password
 .Ar pass .
+Leave
+.Ar pass
+blank to prompt for the password.
 .El
 .
 .Ss Configuring CertFP
