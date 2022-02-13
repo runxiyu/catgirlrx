@@ -48,17 +48,6 @@ install: catgirl catgirl.1
 uninstall:
 	rm -f ${DESTDIR}${BINDIR}/catgirl ${DESTDIR}${MANDIR}/man1/catgirl.1
 
-scripts/sandman: scripts/sandman.o
-	${CC} ${LDFLAGS} scripts/sandman.o -framework Cocoa -o $@
-
-install-sandman: scripts/sandman scripts/sandman.1
-	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
-	install scripts/sandman ${DESTDIR}${BINDIR}
-	install -m 644 scripts/sandman.1 ${DESTDIR}${MANDIR}/man1
-
-uninstall-sandman:
-	rm -f ${DESTDIR}${BINDIR}/sandman ${DESTDIR}${MANDIR}/man1/sandman.1
-
 CHROOT_USER = chat
 CHROOT_GROUP = ${CHROOT_USER}
 

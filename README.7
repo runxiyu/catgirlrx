@@ -1,5 +1,5 @@
 .\" To view this file, run: man ./README.7
-.Dd June 28, 2021
+.Dd February 12, 2022
 .Dt README 7
 .Os "Causal Agency"
 .
@@ -167,8 +167,8 @@ to stop and start
 on system sleep and wake.
 Install it as follows:
 .Bd -literal -offset indent
-$ make scripts/sandman
-# make install-sandman
+$ make -C scripts sandman
+# make -C scripts install
 .Ed
 .
 .Sh FILES
