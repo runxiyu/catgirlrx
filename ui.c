@@ -791,6 +791,7 @@ static void inputUpdate(void) {
 		skip = buf;
 	}
 
+	int y, x;
 	wmove(input, 0, 0);
 	if (window->time && window->id != Network) {
 		whline(input, ' ', uiTime.width);
@@ -800,25 +801,24 @@ static void inputUpdate(void) {
 	waddstr(input, prefix);
 	waddstr(input, prompt);
 	waddstr(input, suffix);
-
-	int y, x;
-	const char *ptr = skip;
-	struct Style style = styleInput;
-	if (split && split < pos) {
-		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
-		style = styleInput;
-		style.bg = Red;
-	}
-	ptr = inputStop(styleInput, &style, ptr, &buf[pos]);
 	getyx(input, y, x);
-	if (split && split >= pos) {
+
+	int posx;
+	struct Style style = styleInput;
+	inputStop(styleInput, &style, skip, &buf[pos]);
+	getyx(input, y, posx);
+	wmove(input, y, x);
+
+	style = styleInput;
+	const char *ptr = skip;
+	if (split) {
 		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
 		style = styleInput;
 		style.bg = Red;
 	}
 	inputAdd(styleInput, &style, ptr);
 	wclrtoeol(input);
-	wmove(input, y, x);
+	wmove(input, y, posx);
 }
 
 void uiWindows(void) {
