@@ -1,4 +1,5 @@
 *.o
+*.t
 catgirl
 chroot.tar
 config.mk

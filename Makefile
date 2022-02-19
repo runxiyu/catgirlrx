@@ -25,20 +25,30 @@ OBJS += ui.o
 OBJS += url.o
 OBJS += xdg.o
 
-dev: tags all
+TESTS += edit.t
+
+dev: tags all check
 
 all: catgirl
 
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@
 
-${OBJS}: chat.h edit.h
+${OBJS} ${TESTS}: chat.h edit.h
+
+check: ${TESTS}
+
+.SUFFIXES: .t
+
+.c.t:
+	${CC} ${CFLAGS} -DTEST ${LDFLAGS} $< ${LDLIBS} -o $@
+	./$@ || rm $@
 
 tags: *.[ch]
 	ctags -w *.[ch]
 
 clean:
-	rm -f catgirl ${OBJS} tags
+	rm -f catgirl ${OBJS} ${TESTS} tags
 
 install: catgirl catgirl.1
 	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
