@@ -223,8 +223,8 @@ void edit(uint id, enum Edit op, wchar_t ch) {
 			while (pos && isword(buf[pos - 1])) pos--;
 		}
 		break; case EditNextWord: {
-			while (pos < len && !isword(buf[pos])) pos++;
 			while (pos < len && isword(buf[pos])) pos++;
+			while (pos < len && !isword(buf[pos])) pos++;
 		}
 
 		break; case EditDeleteHead: delete(true, 0, pos); pos = 0;
