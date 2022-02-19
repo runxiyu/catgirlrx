@@ -24,6 +24,7 @@ OBJS += irc.o
 OBJS += log.o
 OBJS += ui.o
 OBJS += url.o
+OBJS += window.o
 OBJS += xdg.o
 
 TESTS += edit.t

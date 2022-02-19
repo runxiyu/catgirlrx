@@ -293,26 +293,34 @@ const char *commandIsAction(uint id, const char *input);
 size_t commandWillSplit(uint id, const char *input);
 void commandCompleteAdd(void);
 
-enum Heat { Ice, Cold, Warm, Hot };
-enum { TimeCap = 64 };
-extern enum Heat uiThreshold;
-extern struct Time {
-	bool enable;
-	const char *format;
-	int width;
-} uiTime;
+enum Heat {
+	Ice,
+	Cold,
+	Warm,
+	Hot,
+};
+
+enum {
+	TitleCap = 256,
+	StatusLines = 1,
+	MarkerLines = 1,
+	SplitLines = 5,
+	InputLines = 1,
+	InputCols = 1024,
+};
+extern char uiTitle[TitleCap];
+extern struct _win_st *uiStatus;
+extern struct _win_st *uiMain;
 extern struct Util uiNotifyUtil;
 void uiInitEarly(void);
 void uiInitLate(void);
+uint uiAttr(struct Style style);
+short uiPair(struct Style style);
+void uiUpdate(void);
 void uiShow(void);
 void uiHide(void);
+void uiWait(void);
 void uiDraw(void);
-void uiWindows(void);
-void uiShowID(uint id);
-void uiShowNum(uint num);
-void uiMoveID(uint id, uint num);
-void uiCloseID(uint id);
-void uiCloseNum(uint id);
 void uiRead(void);
 void uiWrite(uint id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
@@ -320,6 +328,44 @@ void uiFormat(
 ) __attribute__((format(printf, 4, 5)));
 void uiLoad(const char *name);
 int uiSave(void);
+
+enum Scroll {
+	ScrollOne,
+	ScrollPage,
+	ScrollAll,
+	ScrollUnread,
+	ScrollHot,
+};
+extern struct Time {
+	bool enable;
+	const char *format;
+	int width;
+} windowTime;
+extern enum Heat windowThreshold;
+void windowInit(void);
+void windowUpdate(void);
+void windowResize(void);
+bool windowWrite(uint id, enum Heat heat, const time_t *time, const char *str);
+void windowBare(void);
+uint windowID(void);
+uint windowNum(void);
+uint windowFor(uint id);
+void windowShow(uint num);
+void windowAuto(void);
+void windowSwap(void);
+void windowMove(uint from, uint to);
+void windowClose(uint num);
+void windowList(void);
+void windowMark(void);
+void windowUnmark(void);
+void windowToggleMute(void);
+void windowToggleTime(void);
+void windowToggleThresh(int n);
+bool windowTimeEnable(void);
+void windowScroll(enum Scroll by, int n);
+void windowSearch(const char *str, int dir);
+int windowSave(FILE *file);
+void windowLoad(FILE *file, size_t version);
 
 enum { BufferCap = 1024 };
 struct Buffer;

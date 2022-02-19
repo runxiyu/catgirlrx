@@ -144,7 +144,7 @@ static void commandMsg(uint id, char *params) {
 	if (params) {
 		splitMessage("PRIVMSG", msg, params);
 	} else {
-		uiShowID(msg);
+		windowShow(windowFor(msg));
 	}
 }
 
@@ -376,25 +376,25 @@ static void commandQuery(uint id, char *params) {
 	if (idColors[query] == Default) {
 		idColors[query] = completeColor(id, params);
 	}
-	uiShowID(query);
+	windowShow(windowFor(query));
 }
 
 static void commandWindow(uint id, char *params) {
 	if (!params) {
-		uiWindows();
+		windowList();
 	} else if (isdigit(params[0])) {
-		uiShowNum(strtoul(params, NULL, 10));
+		windowShow(strtoul(params, NULL, 10));
 	} else {
 		id = idFind(params);
 		if (id) {
-			uiShowID(id);
+			windowShow(windowFor(id));
 			return;
 		}
 		for (const char *match; (match = completeSubstr(None, params));) {
 			id = idFind(match);
 			if (!id) continue;
 			completeAccept();
-			uiShowID(id);
+			windowShow(windowFor(id));
 			break;
 		}
 	}
@@ -405,20 +405,20 @@ static void commandMove(uint id, char *params) {
 	char *name = strsep(&params, " ");
 	if (params) {
 		id = idFind(name);
-		if (id) uiMoveID(id, strtoul(params, NULL, 10));
+		if (id) windowMove(windowFor(id), strtoul(params, NULL, 10));
 	} else {
-		uiMoveID(id, strtoul(name, NULL, 10));
+		windowMove(windowFor(id), strtoul(name, NULL, 10));
 	}
 }
 
 static void commandClose(uint id, char *params) {
 	if (!params) {
-		uiCloseID(id);
+		windowClose(windowFor(id));
 	} else if (isdigit(params[0])) {
-		uiCloseNum(strtoul(params, NULL, 10));
+		windowClose(strtoul(params, NULL, 10));
 	} else {
 		id = idFind(params);
-		if (id) uiCloseID(id);
+		if (id) windowClose(windowFor(id));
 	}
 }
 

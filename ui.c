@@ -33,15 +33,15 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <sys/file.h>
+#include <sysexits.h>
 #include <term.h>
 #include <termios.h>
 #include <time.h>
@@ -60,101 +60,13 @@
 #undef lines
 #undef tab
 
-enum {
-	StatusLines = 1,
-	MarkerLines = 1,
-	SplitLines = 5,
-	InputLines = 1,
-	InputCols = 1024,
-};
-
 #define BOTTOM (LINES - 1)
 #define RIGHT (COLS - 1)
 #define MAIN_LINES (LINES - StatusLines - InputLines)
 
-static WINDOW *status;
-static WINDOW *main;
+WINDOW *uiStatus;
+WINDOW *uiMain;
 static WINDOW *input;
-
-struct Window {
-	uint id;
-	int scroll;
-	bool mark;
-	bool mute;
-	bool time;
-	enum Heat thresh;
-	enum Heat heat;
-	uint unreadSoft;
-	uint unreadHard;
-	uint unreadWarm;
-	struct Buffer *buffer;
-};
-
-static struct {
-	struct Window *ptrs[IDCap];
-	uint len;
-	uint show;
-	uint swap;
-	uint user;
-} windows;
-
-static uint windowPush(struct Window *window) {
-	assert(windows.len < IDCap);
-	windows.ptrs[windows.len] = window;
-	return windows.len++;
-}
-
-static uint windowInsert(uint num, struct Window *window) {
-	assert(windows.len < IDCap);
-	assert(num <= windows.len);
-	memmove(
-		&windows.ptrs[num + 1],
-		&windows.ptrs[num],
-		sizeof(*windows.ptrs) * (windows.len - num)
-	);
-	windows.ptrs[num] = window;
-	windows.len++;
-	return num;
-}
-
-static struct Window *windowRemove(uint num) {
-	assert(num < windows.len);
-	struct Window *window = windows.ptrs[num];
-	windows.len--;
-	memmove(
-		&windows.ptrs[num],
-		&windows.ptrs[num + 1],
-		sizeof(*windows.ptrs) * (windows.len - num)
-	);
-	return window;
-}
-
-enum Heat uiThreshold = Cold;
-
-static uint windowFor(uint id) {
-	for (uint num = 0; num < windows.len; ++num) {
-		if (windows.ptrs[num]->id == id) return num;
-	}
-	struct Window *window = calloc(1, sizeof(*window));
-	if (!window) err(EX_OSERR, "malloc");
-	window->id = id;
-	window->mark = true;
-	window->time = uiTime.enable;
-	if (id == Network || id == Debug) {
-		window->thresh = Cold;
-	} else {
-		window->thresh = uiThreshold;
-	}
-	window->buffer = bufferAlloc();
-	completeAdd(None, idNames[id], idColors[id]);
-	return windowPush(window);
-}
-
-static void windowFree(struct Window *window) {
-	completeRemove(None, idNames[window->id]);
-	bufferFree(window->buffer);
-	free(window);
-}
 
 static short colorPairs;
 
@@ -240,8 +152,6 @@ enum {
 static const char *FocusMode[2] = { "\33[?1004l", "\33[?1004h" };
 static const char *PasteMode[2] = { "\33[?2004l", "\33[?2004h" };
 
-struct Time uiTime = { .format = "%X" };
-
 static void errExit(void) {
 	putp(FocusMode[false]);
 	putp(PasteMode[false]);
@@ -271,30 +181,18 @@ void uiInitEarly(void) {
 	ENUM_KEY
 #undef X
 
-	status = newwin(StatusLines, COLS, 0, 0);
-	if (!status) err(EX_OSERR, "newwin");
+	uiStatus = newwin(StatusLines, COLS, 0, 0);
+	if (!uiStatus) err(EX_OSERR, "newwin");
 
-	main = newwin(MAIN_LINES, COLS, StatusLines, 0);
-	if (!main) err(EX_OSERR, "newwin");
-
-	int y;
-	char fmt[TimeCap];
-	char buf[TimeCap];
-	styleStrip(fmt, sizeof(fmt), uiTime.format);
-	struct tm *time = localtime(&(time_t) { -22100400 });
-	size_t len = strftime(buf, sizeof(buf), fmt, time);
-	if (!len) errx(EX_CONFIG, "invalid timestamp format: %s", fmt);
-	waddstr(main, buf);
-	waddch(main, ' ');
-	getyx(main, y, uiTime.width);
-	(void)y;
+	uiMain = newwin(MAIN_LINES, COLS, StatusLines, 0);
+	if (!uiMain) err(EX_OSERR, "newwin");
 
 	input = newpad(InputLines, InputCols);
 	if (!input) err(EX_OSERR, "newpad");
 	keypad(input, true);
 	nodelay(input, true);
 
-	windowFor(Network);
+	windowInit();
 	uiShow();
 }
 
@@ -323,13 +221,13 @@ void uiInitLate(void) {
 static bool hidden = true;
 static bool waiting;
 
-static char title[256];
-static char prevTitle[sizeof(title)];
+char uiTitle[TitleCap];
+static char prevTitle[TitleCap];
 
 void uiDraw(void) {
 	if (hidden) return;
-	wnoutrefresh(status);
-	wnoutrefresh(main);
+	wnoutrefresh(uiStatus);
+	wnoutrefresh(uiMain);
 	int y, x;
 	getyx(input, y, x);
 	pnoutrefresh(
@@ -342,10 +240,10 @@ void uiDraw(void) {
 	doupdate();
 
 	if (!to_status_line) return;
-	if (!strcmp(title, prevTitle)) return;
-	strcpy(prevTitle, title);
+	if (!strcmp(uiTitle, prevTitle)) return;
+	strcpy(prevTitle, uiTitle);
 	putp(to_status_line);
-	putp(title);
+	putp(uiTitle);
 	putp(from_status_line);
 	fflush(stdout);
 }
@@ -377,7 +275,7 @@ static const short Colors[ColorCap] = {
 	16, 233, 235, 237, 239, 241, 244, 247, 250, 254, 231,
 };
 
-static attr_t styleAttr(struct Style style) {
+uint uiAttr(struct Style style) {
 	attr_t attr = A_NORMAL;
 	if (style.attr & Bold) attr |= A_BOLD;
 	if (style.attr & Reverse) attr |= A_REVERSE;
@@ -388,94 +286,11 @@ static attr_t styleAttr(struct Style style) {
 
 static bool spoilerReveal;
 
-static short stylePair(struct Style style) {
+short uiPair(struct Style style) {
 	if (spoilerReveal && style.fg == style.bg) {
 		return colorPair(Colors[Default], Colors[style.bg]);
 	}
 	return colorPair(Colors[style.fg], Colors[style.bg]);
-}
-
-static int styleAdd(WINDOW *win, struct Style init, const char *str) {
-	struct Style style = init;
-	while (*str) {
-		size_t len = styleParse(&style, &str);
-		wattr_set(win, styleAttr(style), stylePair(style), NULL);
-		if (waddnstr(win, str, len) == ERR)
-			return -1;
-		str += len;
-	}
-	return 0;
-}
-
-static void statusUpdate(void) {
-	struct {
-		uint unread;
-		enum Heat heat;
-	} others = { 0, Cold };
-
-	wmove(status, 0, 0);
-	for (uint num = 0; num < windows.len; ++num) {
-		const struct Window *window = windows.ptrs[num];
-		if (num != windows.show && !window->scroll) {
-			if (window->heat < Warm) continue;
-			if (window->mute && window->heat < Hot) continue;
-		}
-		if (num != windows.show) {
-			others.unread += window->unreadWarm;
-			if (window->heat > others.heat) others.heat = window->heat;
-		}
-		char buf[256], *end = &buf[sizeof(buf)];
-		char *ptr = seprintf(
-			buf, end, "\3%d%s %u%s%s %s ",
-			idColors[window->id], (num == windows.show ? "\26" : ""),
-			num, window->thresh[(const char *[]) { "-", "", "+", "++" }],
-			&"="[!window->mute], idNames[window->id]
-		);
-		if (window->mark && window->unreadWarm) {
-			ptr = seprintf(
-				ptr, end, "\3%d+%d\3%d%s",
-				(window->heat > Warm ? White : idColors[window->id]),
-				window->unreadWarm, idColors[window->id],
-				(window->scroll ? "" : " ")
-			);
-		}
-		if (window->scroll) {
-			ptr = seprintf(ptr, end, "~%d ", window->scroll);
-		}
-		if (styleAdd(status, StyleDefault, buf) < 0) break;
-	}
-	wclrtoeol(status);
-
-	const struct Window *window = windows.ptrs[windows.show];
-	char *end = &title[sizeof(title)];
-	char *ptr = seprintf(
-		title, end, "%s %s", network.name, idNames[window->id]
-	);
-	if (window->mark && window->unreadWarm) {
-		ptr = seprintf(
-			ptr, end, " +%d%s", window->unreadWarm, &"!"[window->heat < Hot]
-		);
-	}
-	if (others.unread) {
-		ptr = seprintf(
-			ptr, end, " (+%d%s)", others.unread, &"!"[others.heat < Hot]
-		);
-	}
-}
-
-static void mark(struct Window *window) {
-	if (window->scroll) return;
-	window->mark = true;
-	window->unreadSoft = 0;
-	window->unreadWarm = 0;
-}
-
-static void unmark(struct Window *window) {
-	if (!window->scroll) {
-		window->mark = false;
-		window->heat = Cold;
-	}
-	statusUpdate();
 }
 
 void uiShow(void) {
@@ -485,86 +300,20 @@ void uiShow(void) {
 	putp(PasteMode[true]);
 	fflush(stdout);
 	hidden = false;
-	unmark(windows.ptrs[windows.show]);
+	windowUnmark();
 }
 
 void uiHide(void) {
 	if (hidden) return;
-	mark(windows.ptrs[windows.show]);
+	windowMark();
 	hidden = true;
 	putp(FocusMode[false]);
 	putp(PasteMode[false]);
 	endwin();
 }
 
-static size_t windowTop(const struct Window *window) {
-	size_t top = BufferCap - MAIN_LINES - window->scroll;
-	if (window->scroll) top += MarkerLines;
-	return top;
-}
-
-static size_t windowBottom(const struct Window *window) {
-	size_t bottom = BufferCap - (window->scroll ?: 1);
-	if (window->scroll) bottom -= SplitLines + MarkerLines;
-	return bottom;
-}
-
-static int windowCols(const struct Window *window) {
-	return COLS - (window->time ? uiTime.width : 0);
-}
-
-static void mainAdd(int y, bool time, const struct Line *line) {
-	int ny, nx;
-	wmove(main, y, 0);
-	if (!line || !line->str[0]) {
-		wclrtoeol(main);
-		return;
-	}
-	if (time && line->time) {
-		char buf[TimeCap];
-		strftime(buf, sizeof(buf), uiTime.format, localtime(&line->time));
-		struct Style init = { .fg = Gray, .bg = Default };
-		styleAdd(main, init, buf);
-		waddch(main, ' ');
-	} else if (time) {
-		whline(main, ' ', uiTime.width);
-		wmove(main, y, uiTime.width);
-	}
-	styleAdd(main, StyleDefault, line->str);
-	getyx(main, ny, nx);
-	if (ny != y) return;
-	wclrtoeol(main);
-	(void)nx;
-}
-
-static void mainUpdate(void) {
-	struct Window *window = windows.ptrs[windows.show];
-
-	int y = 0;
-	int marker = MAIN_LINES - SplitLines - MarkerLines;
-	for (size_t i = windowTop(window); i < BufferCap; ++i) {
-		mainAdd(y++, window->time, bufferHard(window->buffer, i));
-		if (window->scroll && y == marker) break;
-	}
-	if (!window->scroll) return;
-
-	y = MAIN_LINES - SplitLines;
-	for (size_t i = BufferCap - SplitLines; i < BufferCap; ++i) {
-		mainAdd(y++, window->time, bufferHard(window->buffer, i));
-	}
-	wattr_set(main, A_NORMAL, 0, NULL);
-	mvwhline(main, marker, 0, ACS_BULLET, COLS);
-}
-
-static void windowScroll(struct Window *window, int n) {
-	mark(window);
-	window->scroll += n;
-	if (window->scroll > BufferCap - MAIN_LINES) {
-		window->scroll = BufferCap - MAIN_LINES;
-	}
-	if (window->scroll < 0) window->scroll = 0;
-	unmark(window);
-	if (window == windows.ptrs[windows.show]) mainUpdate();
+void uiWait(void) {
+	waiting = true;
 }
 
 struct Util uiNotifyUtil;
@@ -593,36 +342,8 @@ static void notify(uint id, const char *str) {
 }
 
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
-	struct Window *window = windows.ptrs[windowFor(id)];
-	time_t ts = (src ? *src : time(NULL));
-
-	if (heat >= window->thresh) {
-		if (!window->unreadSoft++) window->unreadHard = 0;
-	}
-	if (window->mark && heat > Cold) {
-		if (!window->unreadWarm++) {
-			int lines = bufferPush(
-				window->buffer, windowCols(window),
-				window->thresh, Warm, ts, ""
-			);
-			if (window->scroll) windowScroll(window, lines);
-			if (window->unreadSoft > 1) {
-				window->unreadSoft++;
-				window->unreadHard += lines;
-			}
-		}
-		if (heat > window->heat) window->heat = heat;
-		statusUpdate();
-	}
-	int lines = bufferPush(
-		window->buffer, windowCols(window),
-		window->thresh, heat, ts, str
-	);
-	window->unreadHard += lines;
-	if (window->scroll) windowScroll(window, lines);
-	if (window == windows.ptrs[windows.show]) mainUpdate();
-
-	if (window->mark && heat > Warm) {
+	bool note = windowWrite(id, heat, src, str);
+	if (note) {
 		beep();
 		notify(id, str);
 	}
@@ -640,78 +361,10 @@ void uiFormat(
 	uiWrite(id, heat, time, buf);
 }
 
-static void scrollTo(struct Window *window, int top) {
-	window->scroll = 0;
-	windowScroll(window, top - MAIN_LINES + MarkerLines);
-}
-
-static void windowReflow(struct Window *window) {
-	uint num = 0;
-	const struct Line *line = bufferHard(window->buffer, windowTop(window));
-	if (line) num = line->num;
-	window->unreadHard = bufferReflow(
-		window->buffer, windowCols(window),
-		window->thresh, window->unreadSoft
-	);
-	if (!window->scroll || !num) return;
-	for (size_t i = 0; i < BufferCap; ++i) {
-		line = bufferHard(window->buffer, i);
-		if (!line || line->num != num) continue;
-		scrollTo(window, BufferCap - i);
-		break;
-	}
-}
-
 static void resize(void) {
-	wclear(main);
-	wresize(main, MAIN_LINES, COLS);
-	for (uint num = 0; num < windows.len; ++num) {
-		windowReflow(windows.ptrs[num]);
-	}
-	statusUpdate();
-	mainUpdate();
-}
-
-static void windowList(const struct Window *window) {
-	uiHide();
-	waiting = true;
-
-	uint num = 0;
-	const struct Line *line = bufferHard(window->buffer, windowBottom(window));
-	if (line) num = line->num;
-	for (size_t i = 0; i < BufferCap; ++i) {
-		line = bufferSoft(window->buffer, i);
-		if (!line) continue;
-		if (line->num > num) break;
-		if (!line->str[0]) {
-			printf("\n");
-			continue;
-		}
-
-		char buf[TimeCap];
-		strftime(buf, sizeof(buf), uiTime.format, localtime(&line->time));
-		vid_attr(colorAttr(Colors[Gray]), colorPair(Colors[Gray], -1), NULL);
-		printf("%s ", buf);
-
-		bool align = false;
-		struct Style style = StyleDefault;
-		for (const char *str = line->str; *str;) {
-			if (*str == '\t') {
-				printf("%c", (align ? '\t' : ' '));
-				align = true;
-				str++;
-			}
-
-			size_t len = styleParse(&style, &str);
-			size_t tab = strcspn(str, "\t");
-			if (tab < len) len = tab;
-
-			vid_attr(styleAttr(style), stylePair(style), NULL);
-			printf("%.*s", (int)len, str);
-			str += len;
-		}
-		printf("\n");
-	}
+	wclear(uiMain);
+	wresize(uiMain, MAIN_LINES, COLS);
+	windowResize();
 }
 
 static void inputAdd(struct Style reset, struct Style *style, const char *str) {
@@ -736,7 +389,7 @@ static void inputAdd(struct Style reset, struct Style *style, const char *str) {
 		}
 		size_t nl = strcspn(str, "\n");
 		if (nl < len) len = nl;
-		wattr_set(input, styleAttr(*style), stylePair(*style), NULL);
+		wattr_set(input, uiAttr(*style), uiPair(*style), NULL);
 		waddnstr(input, str, len);
 		str += len;
 	}
@@ -755,9 +408,9 @@ static char *inputStop(
 
 static struct Edit edit;
 
-static void inputUpdate(void) {
+void uiUpdate(void) {
 	char *buf = editString(&edit);
-	struct Window *window = windows.ptrs[windows.show];
+	uint id = windowID();
 
 	const char *prefix = "";
 	const char *prompt = self.nick;
@@ -766,10 +419,10 @@ static void inputUpdate(void) {
 	struct Style stylePrompt = { .fg = self.color, .bg = Default };
 	struct Style styleInput = StyleDefault;
 
-	size_t split = commandWillSplit(window->id, buf);
-	const char *privmsg = commandIsPrivmsg(window->id, buf);
-	const char *notice = commandIsNotice(window->id, buf);
-	const char *action = commandIsAction(window->id, buf);
+	size_t split = commandWillSplit(id, buf);
+	const char *privmsg = commandIsPrivmsg(id, buf);
+	const char *notice = commandIsNotice(id, buf);
+	const char *action = commandIsAction(id, buf);
 	if (privmsg) {
 		prefix = "<"; suffix = "> ";
 		skip = privmsg;
@@ -782,7 +435,7 @@ static void inputUpdate(void) {
 		stylePrompt.attr |= Italic;
 		styleInput.attr |= Italic;
 		skip = action;
-	} else if (window->id == Debug && buf[0] != '/') {
+	} else if (id == Debug && buf[0] != '/') {
 		prompt = "<< ";
 		stylePrompt.fg = Gray;
 	} else {
@@ -795,11 +448,11 @@ static void inputUpdate(void) {
 
 	int y, x;
 	wmove(input, 0, 0);
-	if (window->time && window->id != Network) {
-		whline(input, ' ', uiTime.width);
-		wmove(input, 0, uiTime.width);
+	if (windowTimeEnable() && id != Network) {
+		whline(input, ' ', windowTime.width);
+		wmove(input, 0, windowTime.width);
 	}
-	wattr_set(input, styleAttr(stylePrompt), stylePair(stylePrompt), NULL);
+	wattr_set(input, uiAttr(stylePrompt), uiPair(stylePrompt), NULL);
 	waddstr(input, prefix);
 	waddstr(input, prompt);
 	waddstr(input, suffix);
@@ -823,209 +476,61 @@ static void inputUpdate(void) {
 	wmove(input, y, pos);
 }
 
-void uiWindows(void) {
-	for (uint num = 0; num < windows.len; ++num) {
-		const struct Window *window = windows.ptrs[num];
-		uiFormat(
-			Network, Warm, NULL, "\3%02d%u %s",
-			idColors[window->id], num, idNames[window->id]
-		);
-	}
-}
-
-static void windowShow(uint num) {
-	if (num != windows.show) {
-		windows.swap = windows.show;
-		mark(windows.ptrs[windows.swap]);
-	}
-	windows.show = num;
-	windows.user = num;
-	unmark(windows.ptrs[windows.show]);
-	mainUpdate();
-	inputUpdate();
-}
-
-void uiShowID(uint id) {
-	windowShow(windowFor(id));
-}
-
-void uiShowNum(uint num) {
-	if (num < windows.len) windowShow(num);
-}
-
-void uiMoveID(uint id, uint num) {
-	struct Window *window = windowRemove(windowFor(id));
-	if (num < windows.len) {
-		windowShow(windowInsert(num, window));
-	} else {
-		windowShow(windowPush(window));
-	}
-}
-
-static void windowClose(uint num) {
-	if (windows.ptrs[num]->id == Network) return;
-	struct Window *window = windowRemove(num);
-	completeClear(window->id);
-	windowFree(window);
-	if (windows.swap >= num) windows.swap--;
-	if (windows.show == num) {
-		windowShow(windows.swap);
-		windows.swap = windows.show;
-	} else if (windows.show > num) {
-		windows.show--;
-		mainUpdate();
-	}
-	statusUpdate();
-}
-
-void uiCloseID(uint id) {
-	windowClose(windowFor(id));
-}
-
-void uiCloseNum(uint num) {
-	if (num < windows.len) windowClose(num);
-}
-
-static void scrollPage(struct Window *window, int n) {
-	windowScroll(window, n * (MAIN_LINES - SplitLines - MarkerLines - 1));
-}
-
-static void scrollTop(struct Window *window) {
-	for (size_t i = 0; i < BufferCap; ++i) {
-		if (!bufferHard(window->buffer, i)) continue;
-		scrollTo(window, BufferCap - i);
-		break;
-	}
-}
-
-static void scrollHot(struct Window *window, int dir) {
-	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		const struct Line *prev = bufferHard(window->buffer, i - 1);
-		if (!line || line->heat < Hot) continue;
-		if (prev && prev->heat > Warm) continue;
-		scrollTo(window, BufferCap - i);
-		break;
-	}
-}
-
-static void scrollSearch(struct Window *window, const char *str, int dir) {
-	for (size_t i = windowTop(window) + dir; i < BufferCap; i += dir) {
-		const struct Line *line = bufferHard(window->buffer, i);
-		if (!line || !strcasestr(line->str, str)) continue;
-		scrollTo(window, BufferCap - i);
-		break;
-	}
-}
-
-static void toggleTime(struct Window *window) {
-	window->time ^= true;
-	windowReflow(window);
-	statusUpdate();
-	mainUpdate();
-	inputUpdate();
-}
-
-static void incThresh(struct Window *window, int n) {
-	if (n > 0 && window->thresh == Hot) return;
-	if (n < 0 && window->thresh == Ice) {
-		window->thresh = Cold;
-	} else {
-		window->thresh += n;
-	}
-	windowReflow(window);
-	statusUpdate();
-	mainUpdate();
-	statusUpdate();
-}
-
-static void showAuto(void) {
-	uint minHot = UINT_MAX, numHot = 0;
-	uint minWarm = UINT_MAX, numWarm = 0;
-	for (uint num = 0; num < windows.len; ++num) {
-		struct Window *window = windows.ptrs[num];
-		if (window->heat >= Hot) {
-			if (window->unreadWarm >= minHot) continue;
-			minHot = window->unreadWarm;
-			numHot = num;
-		}
-		if (window->heat >= Warm && !window->mute) {
-			if (window->unreadWarm >= minWarm) continue;
-			minWarm = window->unreadWarm;
-			numWarm = num;
-		}
-	}
-	uint user = windows.user;
-	if (minHot < UINT_MAX) {
-		windowShow(numHot);
-		windows.user = user;
-	} else if (minWarm < UINT_MAX) {
-		windowShow(numWarm);
-		windows.user = user;
-	} else if (user != windows.show) {
-		windowShow(user);
-	}
-}
-
-static void inputEnter(uint id) {
-	command(id, editString(&edit));
+static void inputEnter(void) {
+	command(windowID(), editString(&edit));
 	editFn(&edit, EditClear);
 }
 
 static void keyCode(int code) {
-	struct Window *window = windows.ptrs[windows.show];
-	uint id = window->id;
 	switch (code) {
 		break; case KEY_RESIZE:  resize();
-		break; case KeyFocusIn:  unmark(window);
-		break; case KeyFocusOut: mark(window);
+		break; case KeyFocusIn:  windowUnmark();
+		break; case KeyFocusOut: windowMark();
 
 		break; case KeyMetaEnter: editInsert(&edit, L'\n');
-		break; case KeyMetaEqual: window->mute ^= true; statusUpdate();
-		break; case KeyMetaMinus: incThresh(window, -1);
-		break; case KeyMetaPlus:  incThresh(window, +1);
-		break; case KeyMetaSlash: windowShow(windows.swap);
+		break; case KeyMetaEqual: windowToggleMute();
+		break; case KeyMetaMinus: windowToggleThresh(-1);
+		break; case KeyMetaPlus:  windowToggleThresh(+1);
+		break; case KeyMetaSlash: windowSwap();
 
-		break; case KeyMetaGt: scrollTo(window, 0);
-		break; case KeyMetaLt: scrollTop(window);
+		break; case KeyMetaGt: windowScroll(ScrollAll, -1);
+		break; case KeyMetaLt: windowScroll(ScrollAll, +1);
 
-		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
-		break; case KeyMetaA: showAuto();
+		break; case KeyMeta0 ... KeyMeta9: windowShow(code - KeyMeta0);
+		break; case KeyMetaA: windowAuto();
 		break; case KeyMetaB: editFn(&edit, EditPrevWord);
 		break; case KeyMetaD: editFn(&edit, EditDeleteNextWord);
 		break; case KeyMetaF: editFn(&edit, EditNextWord);
-		break; case KeyMetaL: windowList(window);
-		break; case KeyMetaM: uiWrite(id, Warm, NULL, "");
-		break; case KeyMetaN: scrollHot(window, +1);
-		break; case KeyMetaP: scrollHot(window, -1);
+		break; case KeyMetaL: windowBare();
+		break; case KeyMetaM: uiWrite(windowID(), Warm, NULL, "");
+		break; case KeyMetaN: windowScroll(ScrollHot, +1);
+		break; case KeyMetaP: windowScroll(ScrollHot, -1);
 		break; case KeyMetaQ: editFn(&edit, EditCollapse);
-		break; case KeyMetaS: spoilerReveal ^= true; mainUpdate();
-		break; case KeyMetaT: toggleTime(window);
-		break; case KeyMetaU: scrollTo(window, window->unreadHard);
-		break; case KeyMetaV: scrollPage(window, +1);
+		break; case KeyMetaS: spoilerReveal ^= true; windowUpdate();
+		break; case KeyMetaT: windowToggleTime();
+		break; case KeyMetaU: windowScroll(ScrollUnread, 0);
+		break; case KeyMetaV: windowScroll(ScrollPage, +1);
 
 		break; case KeyCtrlLeft: editFn(&edit, EditPrevWord);
 		break; case KeyCtrlRight: editFn(&edit, EditNextWord);
 
 		break; case KEY_BACKSPACE: editFn(&edit, EditDeletePrev);
 		break; case KEY_DC: editFn(&edit, EditDeleteNext);
-		break; case KEY_DOWN: windowScroll(window, -1);
+		break; case KEY_DOWN: windowScroll(ScrollOne, -1);
 		break; case KEY_END: editFn(&edit, EditTail);
-		break; case KEY_ENTER: inputEnter(id);
+		break; case KEY_ENTER: inputEnter();
 		break; case KEY_HOME: editFn(&edit, EditHead);
 		break; case KEY_LEFT: editFn(&edit, EditPrev);
-		break; case KEY_NPAGE: scrollPage(window, -1);
-		break; case KEY_PPAGE: scrollPage(window, +1);
+		break; case KEY_NPAGE: windowScroll(ScrollPage, -1);
+		break; case KEY_PPAGE: windowScroll(ScrollPage, +1);
 		break; case KEY_RIGHT: editFn(&edit, EditNext);
-		break; case KEY_SEND: scrollTo(window, 0);
-		break; case KEY_SHOME: scrollTo(window, BufferCap);
-		break; case KEY_UP: windowScroll(window, +1);
+		break; case KEY_SEND: windowScroll(ScrollAll, -1);
+		break; case KEY_SHOME: windowScroll(ScrollAll, +1);
+		break; case KEY_UP: windowScroll(ScrollOne, +1);
 	}
 }
 
 static void keyCtrl(wchar_t ch) {
-	struct Window *window = windows.ptrs[windows.show];
-	uint id = window->id;
 	switch (ch ^ L'@') {
 		break; case L'?': editFn(&edit, EditDeletePrev);
 		break; case L'A': editFn(&edit, EditHead);
@@ -1035,16 +540,16 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'E': editFn(&edit, EditTail);
 		break; case L'F': editFn(&edit, EditNext);
 		break; case L'H': editFn(&edit, EditDeletePrev);
-		break; case L'J': inputEnter(id);
+		break; case L'J': inputEnter();
 		break; case L'K': editFn(&edit, EditDeleteTail);
 		break; case L'L': clearok(curscr, true);
-		break; case L'N': uiShowNum(windows.show + 1);
-		break; case L'P': uiShowNum(windows.show - 1);
-		break; case L'R': scrollSearch(window, editString(&edit), -1);
-		break; case L'S': scrollSearch(window, editString(&edit), +1);
+		break; case L'N': windowShow(windowNum() + 1);
+		break; case L'P': windowShow(windowNum() - 1);
+		break; case L'R': windowSearch(editString(&edit), -1);
+		break; case L'S': windowSearch(editString(&edit), +1);
 		break; case L'T': editFn(&edit, EditTranspose);
 		break; case L'U': editFn(&edit, EditDeleteHead);
-		break; case L'V': scrollPage(window, -1);
+		break; case L'V': windowScroll(ScrollPage, -1);
 		break; case L'W': editFn(&edit, EditDeletePrevWord);
 		break; case L'Y': editFn(&edit, EditPaste);
 	}
@@ -1127,13 +632,15 @@ void uiRead(void) {
 		literal = false;
 		if (spr) {
 			spoilerReveal = false;
-			mainUpdate();
+			windowUpdate();
 		}
 	}
-	inputUpdate();
+	uiUpdate();
 }
 
-static const time_t Signatures[] = {
+static FILE *saveFile;
+
+static const uint64_t Signatures[] = {
 	0x6C72696774616301, // no heat, unread, unreadWarm
 	0x6C72696774616302, // no self.pos
 	0x6C72696774616303, // no buffer line heat
@@ -1144,68 +651,33 @@ static const time_t Signatures[] = {
 	0x6C72696774616308,
 };
 
-static size_t signatureVersion(time_t signature) {
+static size_t signatureVersion(uint64_t signature) {
 	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
 		if (signature == Signatures[i]) return i;
 	}
-	errx(EX_DATAERR, "unknown file signature %jX", (uintmax_t)signature);
+	errx(EX_DATAERR, "unknown file signature %" PRIX64, signature);
 }
 
-static int writeTime(FILE *file, time_t time) {
-	return (fwrite(&time, sizeof(time), 1, file) ? 0 : -1);
+static int writeUint64(FILE *file, uint64_t u) {
+	return (fwrite(&u, sizeof(u), 1, file) ? 0 : -1);
 }
-static int writeString(FILE *file, const char *str) {
-	return (fwrite(str, strlen(str) + 1, 1, file) ? 0 : -1);
-}
-
-static FILE *saveFile;
 
 int uiSave(void) {
-	int error = 0
-		|| ftruncate(fileno(saveFile), 0)
-		|| writeTime(saveFile, Signatures[7])
-		|| writeTime(saveFile, self.pos);
-	if (error) return error;
-	for (uint num = 0; num < windows.len; ++num) {
-		const struct Window *window = windows.ptrs[num];
-		error = 0
-			|| writeString(saveFile, idNames[window->id])
-			|| writeTime(saveFile, window->mute)
-			|| writeTime(saveFile, window->time)
-			|| writeTime(saveFile, window->thresh)
-			|| writeTime(saveFile, window->heat)
-			|| writeTime(saveFile, window->unreadSoft)
-			|| writeTime(saveFile, window->unreadWarm);
-		if (error) return error;
-		for (size_t i = 0; i < BufferCap; ++i) {
-			const struct Line *line = bufferSoft(window->buffer, i);
-			if (!line) continue;
-			error = 0
-				|| writeTime(saveFile, line->time)
-				|| writeTime(saveFile, line->heat)
-				|| writeString(saveFile, line->str);
-			if (error) return error;
-		}
-		error = writeTime(saveFile, 0);
-		if (error) return error;
-	}
 	return 0
-		|| writeString(saveFile, "")
+		|| ftruncate(fileno(saveFile), 0)
+		|| writeUint64(saveFile, Signatures[7])
+		|| writeUint64(saveFile, self.pos)
+		|| windowSave(saveFile)
 		|| urlSave(saveFile)
 		|| fclose(saveFile);
 }
 
-static time_t readTime(FILE *file) {
-	time_t time;
-	fread(&time, sizeof(time), 1, file);
+static uint64_t readUint64(FILE *file) {
+	uint64_t u;
+	fread(&u, sizeof(u), 1, file);
 	if (ferror(file)) err(EX_IOERR, "fread");
 	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
-	return time;
-}
-static ssize_t readString(FILE *file, char **buf, size_t *cap) {
-	ssize_t len = getdelim(buf, cap, '\0', file);
-	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
-	return len;
+	return u;
 }
 
 void uiLoad(const char *name) {
@@ -1235,31 +707,8 @@ void uiLoad(const char *name) {
 	size_t version = signatureVersion(signature);
 
 	if (version > 1) {
-		self.pos = readTime(saveFile);
+		self.pos = readUint64(saveFile);
 	}
-
-	char *buf = NULL;
-	size_t cap = 0;
-	while (0 < readString(saveFile, &buf, &cap) && buf[0]) {
-		struct Window *window = windows.ptrs[windowFor(idFor(buf))];
-		if (version > 3) window->mute = readTime(saveFile);
-		if (version > 6) window->time = readTime(saveFile);
-		if (version > 5) window->thresh = readTime(saveFile);
-		if (version > 0) {
-			window->heat = readTime(saveFile);
-			window->unreadSoft = readTime(saveFile);
-			window->unreadWarm = readTime(saveFile);
-		}
-		for (;;) {
-			time_t time = readTime(saveFile);
-			if (!time) break;
-			enum Heat heat = (version > 2 ? readTime(saveFile) : Cold);
-			readString(saveFile, &buf, &cap);
-			bufferPush(window->buffer, COLS, window->thresh, heat, time, buf);
-		}
-		windowReflow(window);
-	}
+	windowLoad(saveFile, version);
 	urlLoad(saveFile, version);
-
-	free(buf);
 }

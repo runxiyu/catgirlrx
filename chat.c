@@ -293,8 +293,8 @@ int main(int argc, char *argv[]) {
 			break; case 'R': self.restricted = true;
 			break; case 'S': bind = optarg;
 			break; case 'T': {
-				uiTime.enable = true;
-				if (optarg) uiTime.format = optarg;
+				windowTime.enable = true;
+				if (optarg) windowTime.format = optarg;
 			}
 			break; case 'a': sasl = true; parsePlain(optarg);
 			break; case 'c': cert = optarg;
@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
 			break; case 'n': nick = optarg;
 			break; case 'o': printCert = true;
 			break; case 'p': port = optarg;
-			break; case 'q': uiThreshold = Warm;
+			break; case 'q': windowThreshold = Warm;
 			break; case 'r': real = optarg;
 			break; case 's': save = optarg;
 			break; case 't': trust = optarg;
@@ -381,7 +381,7 @@ int main(int argc, char *argv[]) {
 		uiLoad(save);
 		atexit(exitSave);
 	}
-	uiShowID(Network);
+	windowShow(windowFor(Network));
 	uiFormat(
 		Network, Cold, NULL,
 		"\3%dcatgirl\3\tis GPLv3 fwee softwawe ^w^  "

@@ -343,7 +343,7 @@ static void handleJoin(struct Message *msg) {
 		idColors[id] = hash(msg->params[0]);
 		completeTouch(None, msg->params[0], idColors[id]);
 		if (replies[ReplyJoin]) {
-			uiShowID(id);
+			windowShow(windowFor(id));
 			replies[ReplyJoin]--;
 		}
 	}
