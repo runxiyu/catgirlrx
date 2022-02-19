@@ -1,4 +1,4 @@
-/* Copyright (C) 2020  C. McEnroe <june@causal.agency>
+/* Copyright (C) 2020, 2022  June McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
- * Additional permission under GNU GPL version 3 section 7:
- *
  * If you modify this Program, or any covered work, by linking or
  * combining it with OpenSSL (or a modified version of that library),
  * containing parts covered by the terms of the OpenSSL License and the
@@ -25,282 +23,272 @@
  * covered work.
  */
 
-#include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
 #include <wctype.h>
 
-#include "chat.h"
-
-enum { Cap = 1024 };
-static wchar_t buf[Cap];
-static size_t len;
-static size_t pos;
-
-char *editBuffer(size_t *mbsPos) {
-	static char mbs[MB_LEN_MAX * Cap];
-
-	const wchar_t *ptr = buf;
-	size_t mbsLen = wcsnrtombs(mbs, &ptr, pos, sizeof(mbs) - 1, NULL);
-	assert(mbsLen != (size_t)-1);
-	if (mbsPos) *mbsPos = mbsLen;
-
-	ptr = &buf[pos];
-	size_t n = wcsnrtombs(
-		&mbs[mbsLen], &ptr, len - pos, sizeof(mbs) - mbsLen - 1, NULL
-	);
-	assert(n != (size_t)-1);
-	mbsLen += n;
-
-	mbs[mbsLen] = '\0';
-	return mbs;
-}
-
-static struct {
-	wchar_t buf[Cap];
-	size_t len;
-} cut;
-
-static bool reserve(size_t index, size_t count) {
-	if (len + count > Cap) return false;
-	wmemmove(&buf[index + count], &buf[index], len - index);
-	len += count;
-	return true;
-}
-
-static void delete(bool copy, size_t index, size_t count) {
-	if (index + count > len) return;
-	if (copy) {
-		wmemcpy(cut.buf, &buf[index], count);
-		cut.len = count;
-	}
-	wmemmove(&buf[index], &buf[index + count], len - index - count);
-	len -= count;
-}
-
-static const struct {
-	const wchar_t *name;
-	const wchar_t *string;
-} Macros[] = {
-	{ L"\\banhammer", L"▬▬▬▬▬▬▬▋ Ò╭╮Ó" },
-	{ L"\\bear", L"ʕっ•ᴥ•ʔっ" },
-	{ L"\\blush", L"（˶′◡‵˶）" },
-	{ L"\\com", L"\0038,4\2 ☭ " },
-	{ L"\\cool", L"(⌐■_■)" },
-	{ L"\\flip", L"(╯°□°）╯︵ ┻━┻" },
-	{ L"\\gary", L"ᕕ( ᐛ )ᕗ" },
-	{ L"\\hug", L"（っ・∀・）っ" },
-	{ L"\\lenny", L"( ͡° ͜ʖ ͡°)" },
-	{ L"\\look", L"ಠ_ಠ" },
-	{ L"\\shrug", L"¯\\_(ツ)_/¯" },
-	{ L"\\unflip", L"┬─┬ノ(º_ºノ)" },
-	{ L"\\wave", L"ヾ(＾∇＾)" },
-};
-
-void editCompleteAdd(void) {
-	char mbs[256];
-	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
-		size_t n = wcstombs(mbs, Macros[i].name, sizeof(mbs));
-		assert(n != (size_t)-1);
-		completeAdd(None, mbs, Default);
-	}
-}
-
-static void macroExpand(void) {
-	size_t macro = pos;
-	while (macro && buf[macro] != L'\\') macro--;
-	if (macro == pos) return;
-	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
-		if (wcsncmp(Macros[i].name, &buf[macro], pos - macro)) continue;
-		if (wcstombs(NULL, Macros[i].string, 0) == (size_t)-1) continue;
-		delete(false, macro, pos - macro);
-		pos = macro;
-		size_t expand = wcslen(Macros[i].string);
-		if (reserve(macro, expand)) {
-			wcsncpy(&buf[macro], Macros[i].string, expand);
-			pos += expand;
-		}
-	}
-}
-
-static struct {
-	size_t pos;
-	size_t pre;
-	size_t len;
-	bool suffix;
-} tab;
-
-static void tabComplete(uint id) {
-	if (!tab.len) {
-		tab.pos = pos;
-		while (tab.pos && !iswspace(buf[tab.pos - 1])) tab.pos--;
-		if (tab.pos == pos) return;
-		tab.pre = pos - tab.pos;
-		tab.len = tab.pre;
-		tab.suffix = true;
-	}
-
-	char mbs[MB_LEN_MAX * Cap];
-	const wchar_t *ptr = &buf[tab.pos];
-	size_t n = wcsnrtombs(mbs, &ptr, tab.pre, sizeof(mbs) - 1, NULL);
-	assert(n != (size_t)-1);
-	mbs[n] = '\0';
-
-	const char *comp = complete(id, mbs);
-	if (!comp) {
-		comp = complete(id, mbs);
-		tab.suffix ^= true;
-	}
-	if (!comp) {
-		tab.len = 0;
-		return;
-	}
-
-	wchar_t wcs[Cap];
-	n = mbstowcs(wcs, comp, Cap);
-	assert(n != (size_t)-1);
-	if (tab.pos + n + 2 > Cap) {
-		completeReject();
-		tab.len = 0;
-		return;
-	}
-
-	bool colon = (tab.len >= 2 && buf[tab.pos + tab.len - 2] == L':');
-
-	delete(false, tab.pos, tab.len);
-	tab.len = n;
-	if (wcs[0] == L'\\' || wcschr(wcs, L' ')) {
-		reserve(tab.pos, tab.len);
-	} else if (wcs[0] != L'/' && tab.suffix && (!tab.pos || colon)) {
-		tab.len += 2;
-		reserve(tab.pos, tab.len);
-		buf[tab.pos + n + 0] = L':';
-		buf[tab.pos + n + 1] = L' ';
-	} else if (tab.suffix && tab.pos >= 2 && buf[tab.pos - 2] == L':') {
-		tab.len += 2;
-		reserve(tab.pos, tab.len);
-		buf[tab.pos - 2] = L',';
-		buf[tab.pos + n + 0] = L':';
-		buf[tab.pos + n + 1] = L' ';
-	} else {
-		tab.len++;
-		reserve(tab.pos, tab.len);
-		if (!tab.suffix && tab.pos >= 2 && buf[tab.pos - 2] == L',') {
-			buf[tab.pos - 2] = L':';
-		}
-		buf[tab.pos + n] = L' ';
-	}
-	wmemcpy(&buf[tab.pos], wcs, n);
-	pos = tab.pos + tab.len;
-}
-
-static void tabAccept(void) {
-	completeAccept();
-	tab.len = 0;
-}
-
-static void tabReject(void) {
-	completeReject();
-	tab.len = 0;
-}
+#include "edit.h"
 
 static bool isword(wchar_t ch) {
 	return !iswspace(ch) && !iswpunct(ch);
 }
 
-void edit(uint id, enum Edit op, wchar_t ch) {
-	size_t init = pos;
-	switch (op) {
-		break; case EditHead: pos = 0;
-		break; case EditTail: pos = len;
-		break; case EditPrev: if (pos) pos--;
-		break; case EditNext: if (pos < len) pos++;
+void editFree(struct Edit *e) {
+	free(e->buf);
+	free(e->cut.buf);
+	free(e->mbs.buf);
+	e->pos = e->len = e->cap = 0;
+	e->cut.len = 0;
+	e->mbs.pos = e->mbs.len = 0;
+}
+
+char *editString(struct Edit *e) {
+	size_t cap = e->len * MB_CUR_MAX + 1;
+	char *buf = realloc(e->mbs.buf, cap);
+	if (!buf) return NULL;
+	e->mbs.buf = buf;
+
+	const wchar_t *ptr = e->buf;
+	e->mbs.len = wcsnrtombs(e->mbs.buf, &ptr, e->pos, cap-1, NULL);
+	if (e->mbs.len == (size_t)-1) return NULL;
+	e->mbs.pos = e->mbs.len;
+
+	ptr = &e->buf[e->pos];
+	size_t n = wcsnrtombs(
+		&e->mbs.buf[e->mbs.len], &ptr, e->len - e->pos,
+		cap-1 - e->mbs.len, NULL
+	);
+	if (n == (size_t)-1) return NULL;
+	e->mbs.len += n;
+
+	e->mbs.buf[e->mbs.len] = '\0';
+	return e->mbs.buf;
+}
+
+int editReserve(struct Edit *e, size_t index, size_t count) {
+	if (index > e->len) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (e->len + count > e->cap) {
+		size_t cap = (e->cap ? e->cap * 2 : 256);
+		wchar_t *buf = realloc(e->buf, sizeof(*buf) * cap);
+		if (!buf) return -1;
+		e->buf = buf;
+		e->cap = cap;
+	}
+	wmemmove(&e->buf[index + count], &e->buf[index], e->len - index);
+	e->len += count;
+	return 0;
+}
+
+int editCopy(struct Edit *e, size_t index, size_t count) {
+	if (index + count > e->len) {
+		errno = EINVAL;
+		return -1;
+	}
+	wchar_t *buf = realloc(e->cut.buf, sizeof(*buf) * count);
+	if (!buf) return -1;
+	e->cut.buf = buf;
+	wmemcpy(e->cut.buf, &e->buf[index], count);
+	e->cut.len = count;
+	return 0;
+}
+
+int editDelete(struct Edit *e, bool cut, size_t index, size_t count) {
+	if (index + count > e->len) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (cut && editCopy(e, index, count) < 0) return -1;
+	wmemmove(&e->buf[index], &e->buf[index + count], e->len - index - count);
+	e->len -= count;
+	if (e->pos > e->len) e->pos = e->len;
+	return 0;
+}
+
+int editFn(struct Edit *e, enum EditFn fn) {
+	int ret = 0;
+	switch (fn) {
+		break; case EditHead: e->pos = 0;
+		break; case EditTail: e->pos = e->len;
+		break; case EditPrev: if (e->pos) e->pos--;
+		break; case EditNext: if (e->pos < e->len) e->pos++;
 		break; case EditPrevWord: {
-			while (pos && !isword(buf[pos - 1])) pos--;
-			while (pos && isword(buf[pos - 1])) pos--;
+			while (e->pos && !isword(e->buf[e->pos-1])) e->pos--;
+			while (e->pos && isword(e->buf[e->pos-1])) e->pos--;
 		}
 		break; case EditNextWord: {
-			while (pos < len && isword(buf[pos])) pos++;
-			while (pos < len && !isword(buf[pos])) pos++;
+			while (e->pos < e->len && isword(e->buf[e->pos])) e->pos++;
+			while (e->pos < e->len && !isword(e->buf[e->pos])) e->pos++;
 		}
 
-		break; case EditDeleteHead: delete(true, 0, pos); pos = 0;
-		break; case EditDeleteTail: delete(true, pos, len - pos);
-		break; case EditDeletePrev: if (pos) delete(false, --pos, 1);
-		break; case EditDeleteNext: delete(false, pos, 1);
+		break; case EditDeleteHead: {
+			ret = editDelete(e, true, 0, e->pos);
+			e->pos = 0;
+		}
+		break; case EditDeleteTail: {
+			ret = editDelete(e, true, e->pos, e->len - e->pos);
+		}
+		break; case EditDeletePrev: {
+			if (e->pos) editDelete(e, false, --e->pos, 1);
+		}
+		break; case EditDeleteNext: {
+			editDelete(e, false, e->pos, 1);
+		}
 		break; case EditDeletePrevWord: {
-			if (!pos) break;
-			size_t word = pos;
-			while (word && !isword(buf[word - 1])) word--;
-			while (word && isword(buf[word - 1])) word--;
-			delete(true, word, pos - word);
-			pos = word;
+			if (!e->pos) break;
+			size_t word = e->pos;
+			while (word && !isword(e->buf[word-1])) word--;
+			while (word && isword(e->buf[word-1])) word--;
+			ret = editDelete(e, true, word, e->pos - word);
+			e->pos = word;
 		}
 		break; case EditDeleteNextWord: {
-			if (pos == len) break;
-			size_t word = pos;
-			while (word < len && !isword(buf[word])) word++;
-			while (word < len && isword(buf[word])) word++;
-			delete(true, pos, word - pos);
-		}
-		break; case EditPaste: {
-			if (reserve(pos, cut.len)) {
-				wmemcpy(&buf[pos], cut.buf, cut.len);
-				pos += cut.len;
-			}
+			if (e->pos == e->len) break;
+			size_t word = e->pos;
+			while (word < e->len && !isword(e->buf[word])) word++;
+			while (word < e->len && isword(e->buf[word])) word++;
+			ret = editDelete(e, true, e->pos, word - e->pos);
 		}
 
+		break; case EditPaste: {
+			ret = editReserve(e, e->pos, e->cut.len);
+			if (ret == 0) {
+				wmemcpy(&e->buf[e->pos], e->cut.buf, e->cut.len);
+				e->pos += e->cut.len;
+			}
+		}
 		break; case EditTranspose: {
-			if (!pos || len < 2) break;
-			if (pos == len) pos--;
-			wchar_t t = buf[pos - 1];
-			buf[pos - 1] = buf[pos];
-			buf[pos++] = t;
+			if (e->len < 2) break;
+			if (!e->pos) e->pos++;
+			if (e->pos == e->len) e->pos--;
+			wchar_t x = e->buf[e->pos-1];
+			e->buf[e->pos-1] = e->buf[e->pos];
+			e->buf[e->pos++] = x;
 		}
 		break; case EditCollapse: {
 			size_t ws;
-			for (pos = 0; pos < len;) {
-				for (; pos < len && !iswspace(buf[pos]); ++pos);
-				for (ws = pos; ws < len && iswspace(buf[ws]); ++ws);
-				if (pos && ws < len) {
-					delete(false, pos, ws - pos - 1);
-					buf[pos++] = L' ';
+			for (e->pos = 0; e->pos < e->len;) {
+				for (; e->pos < e->len && !iswspace(e->buf[e->pos]); ++e->pos);
+				for (ws = e->pos; ws < e->len && iswspace(e->buf[ws]); ++ws);
+				if (e->pos && ws < e->len) {
+					editDelete(e, false, e->pos, ws - e->pos - 1);
+					e->buf[e->pos++] = L' ';
 				} else {
-					delete(false, pos, ws - pos);
+					editDelete(e, false, e->pos, ws - e->pos);
 				}
 			}
 		}
 
-		break; case EditInsert: {
-			char mb[MB_LEN_MAX];
-			if (wctomb(mb, ch) < 0) return;
-			if (reserve(pos, 1)) {
-				buf[pos++] = ch;
-			}
-		}
-		break; case EditComplete: {
-			tabComplete(id);
-			return;
-		}
-		break; case EditExpand: {
-			macroExpand();
-			tabAccept();
-			return;
-		}
-		break; case EditEnter: {
-			tabAccept();
-			command(id, editBuffer(NULL));
-			len = pos = 0;
-			return;
-		}
+		break; case EditClear: e->len = e->pos = 0;
 	}
+	return ret;
+}
 
-	if (pos < init) {
-		tabReject();
-	} else {
-		tabAccept();
+int editInsert(struct Edit *e, wchar_t ch) {
+	char mb[MB_LEN_MAX];
+	if (wctomb(mb, ch) < 0) return -1;
+	if (editReserve(e, e->pos, 1) < 0) return -1;
+	e->buf[e->pos++] = ch;
+	return 0;
+}
+
+#ifdef TEST
+#undef NDEBUG
+#include <assert.h>
+#include <string.h>
+
+static void fix(struct Edit *e, const char *str) {
+	editFn(e, EditClear);
+	for (const char *ch = str; *ch; ++ch) {
+		editInsert(e, (wchar_t)*ch);
 	}
 }
+
+static bool eq(struct Edit *e, const char *str1) {
+	const char *str2 = &str1[strlen(str1) + 1];
+	const char *buf = editString(e);
+	return e->mbs.pos == strlen(str1)
+		&& !strncmp(buf, str1, e->mbs.pos)
+		&& !strcmp(&buf[e->mbs.pos], str2);
+}
+
+int main(void) {
+	struct Edit e = { .mode = EditEmacs };
+
+	fix(&e, "foo bar");
+	editFn(&e, EditHead);
+	assert(eq(&e, "\0foo bar"));
+	editFn(&e, EditTail);
+	assert(eq(&e, "foo bar\0"));
+	editFn(&e, EditPrev);
+	assert(eq(&e, "foo ba\0r"));
+	editFn(&e, EditNext);
+	assert(eq(&e, "foo bar\0"));
+
+	fix(&e, "foo, bar");
+	editFn(&e, EditPrevWord);
+	assert(eq(&e, "foo, \0bar"));
+	editFn(&e, EditPrevWord);
+	assert(eq(&e, "\0foo, bar"));
+	editFn(&e, EditNextWord);
+	assert(eq(&e, "foo, \0bar"));
+	editFn(&e, EditNextWord);
+	assert(eq(&e, "foo, bar\0"));
+
+	fix(&e, "foo bar");
+	editFn(&e, EditPrevWord);
+	editFn(&e, EditDeleteHead);
+	assert(eq(&e, "\0bar"));
+
+	fix(&e, "foo bar");
+	editFn(&e, EditPrevWord);
+	editFn(&e, EditDeleteTail);
+	assert(eq(&e, "foo \0"));
+
+	fix(&e, "foo bar");
+	editFn(&e, EditDeletePrev);
+	assert(eq(&e, "foo ba\0"));
+	editFn(&e, EditHead);
+	editFn(&e, EditDeleteNext);
+	assert(eq(&e, "\0oo ba"));
+
+	fix(&e, "foo, bar");
+	editFn(&e, EditDeletePrevWord);
+	assert(eq(&e, "foo, \0"));
+	editFn(&e, EditDeletePrevWord);
+	assert(eq(&e, "\0"));
+
+	fix(&e, "foo, bar");
+	editFn(&e, EditHead);
+	editFn(&e, EditDeleteNextWord);
+	assert(eq(&e, "\0, bar"));
+	editFn(&e, EditDeleteNextWord);
+	assert(eq(&e, "\0"));
+
+	fix(&e, "foo bar");
+	editFn(&e, EditDeletePrevWord);
+	editFn(&e, EditPaste);
+	assert(eq(&e, "foo bar\0"));
+	editFn(&e, EditPaste);
+	assert(eq(&e, "foo barbar\0"));
+
+	fix(&e, "bar");
+	editFn(&e, EditTranspose);
+	assert(eq(&e, "bra\0"));
+	editFn(&e, EditHead);
+	editFn(&e, EditTranspose);
+	assert(eq(&e, "rb\0a"));
+	editFn(&e, EditTranspose);
+	assert(eq(&e, "rab\0"));
+
+	fix(&e, "  foo  bar  ");
+	editFn(&e, EditCollapse);
+	assert(eq(&e, "foo bar\0"));
+}
+
+#endif /* TEST */

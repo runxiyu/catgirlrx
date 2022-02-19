@@ -32,7 +32,7 @@ all: catgirl
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@
 
-${OBJS}: chat.h
+${OBJS}: chat.h edit.h
 
 tags: *.[ch]
 	ctags -w *.[ch]

@@ -371,7 +371,6 @@ int main(int argc, char *argv[]) {
 	set(&network.name, host);
 	set(&self.nick, "*");
 
-	editCompleteAdd();
 	commandCompleteAdd();
 
 	ircConfig(insecure, trust, cert, priv);

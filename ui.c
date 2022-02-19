@@ -54,6 +54,7 @@
 #endif
 
 #include "chat.h"
+#include "edit.h"
 
 // Annoying stuff from <term.h>:
 #undef lines
@@ -752,9 +753,10 @@ static char *inputStop(
 	return stop;
 }
 
+static struct Edit edit;
+
 static void inputUpdate(void) {
-	size_t pos;
-	char *buf = editBuffer(&pos);
+	char *buf = editString(&edit);
 	struct Window *window = windows.ptrs[windows.show];
 
 	const char *prefix = "";
@@ -786,7 +788,7 @@ static void inputUpdate(void) {
 	} else {
 		prompt = "";
 	}
-	if (skip > &buf[pos]) {
+	if (skip > &buf[edit.mbs.pos]) {
 		prefix = prompt = suffix = "";
 		skip = buf;
 	}
@@ -803,10 +805,10 @@ static void inputUpdate(void) {
 	waddstr(input, suffix);
 	getyx(input, y, x);
 
-	int posx;
+	int pos;
 	struct Style style = styleInput;
-	inputStop(styleInput, &style, skip, &buf[pos]);
-	getyx(input, y, posx);
+	inputStop(styleInput, &style, skip, &buf[edit.mbs.pos]);
+	getyx(input, y, pos);
 	wmove(input, y, x);
 
 	style = styleInput;
@@ -818,7 +820,7 @@ static void inputUpdate(void) {
 	}
 	inputAdd(styleInput, &style, ptr);
 	wclrtoeol(input);
-	wmove(input, y, posx);
+	wmove(input, y, pos);
 }
 
 void uiWindows(void) {
@@ -965,6 +967,11 @@ static void showAuto(void) {
 	}
 }
 
+static void inputEnter(uint id) {
+	command(id, editString(&edit));
+	editFn(&edit, EditClear);
+}
+
 static void keyCode(int code) {
 	struct Window *window = windows.ptrs[windows.show];
 	uint id = window->id;
@@ -973,7 +980,7 @@ static void keyCode(int code) {
 		break; case KeyFocusIn:  unmark(window);
 		break; case KeyFocusOut: mark(window);
 
-		break; case KeyMetaEnter: edit(id, EditInsert, L'\n');
+		break; case KeyMetaEnter: editInsert(&edit, L'\n');
 		break; case KeyMetaEqual: window->mute ^= true; statusUpdate();
 		break; case KeyMetaMinus: incThresh(window, -1);
 		break; case KeyMetaPlus:  incThresh(window, +1);
@@ -984,32 +991,32 @@ static void keyCode(int code) {
 
 		break; case KeyMeta0 ... KeyMeta9: uiShowNum(code - KeyMeta0);
 		break; case KeyMetaA: showAuto();
-		break; case KeyMetaB: edit(id, EditPrevWord, 0);
-		break; case KeyMetaD: edit(id, EditDeleteNextWord, 0);
-		break; case KeyMetaF: edit(id, EditNextWord, 0);
+		break; case KeyMetaB: editFn(&edit, EditPrevWord);
+		break; case KeyMetaD: editFn(&edit, EditDeleteNextWord);
+		break; case KeyMetaF: editFn(&edit, EditNextWord);
 		break; case KeyMetaL: windowList(window);
 		break; case KeyMetaM: uiWrite(id, Warm, NULL, "");
 		break; case KeyMetaN: scrollHot(window, +1);
 		break; case KeyMetaP: scrollHot(window, -1);
-		break; case KeyMetaQ: edit(id, EditCollapse, 0);
+		break; case KeyMetaQ: editFn(&edit, EditCollapse);
 		break; case KeyMetaS: spoilerReveal ^= true; mainUpdate();
 		break; case KeyMetaT: toggleTime(window);
 		break; case KeyMetaU: scrollTo(window, window->unreadHard);
 		break; case KeyMetaV: scrollPage(window, +1);
 
-		break; case KeyCtrlLeft: edit(id, EditPrevWord, 0);
-		break; case KeyCtrlRight: edit(id, EditNextWord, 0);
+		break; case KeyCtrlLeft: editFn(&edit, EditPrevWord);
+		break; case KeyCtrlRight: editFn(&edit, EditNextWord);
 
-		break; case KEY_BACKSPACE: edit(id, EditDeletePrev, 0);
-		break; case KEY_DC: edit(id, EditDeleteNext, 0);
+		break; case KEY_BACKSPACE: editFn(&edit, EditDeletePrev);
+		break; case KEY_DC: editFn(&edit, EditDeleteNext);
 		break; case KEY_DOWN: windowScroll(window, -1);
-		break; case KEY_END: edit(id, EditTail, 0);
-		break; case KEY_ENTER: edit(id, EditEnter, 0);
-		break; case KEY_HOME: edit(id, EditHead, 0);
-		break; case KEY_LEFT: edit(id, EditPrev, 0);
+		break; case KEY_END: editFn(&edit, EditTail);
+		break; case KEY_ENTER: inputEnter(id);
+		break; case KEY_HOME: editFn(&edit, EditHead);
+		break; case KEY_LEFT: editFn(&edit, EditPrev);
 		break; case KEY_NPAGE: scrollPage(window, -1);
 		break; case KEY_PPAGE: scrollPage(window, +1);
-		break; case KEY_RIGHT: edit(id, EditNext, 0);
+		break; case KEY_RIGHT: editFn(&edit, EditNext);
 		break; case KEY_SEND: scrollTo(window, 0);
 		break; case KEY_SHOME: scrollTo(window, BufferCap);
 		break; case KEY_UP: windowScroll(window, +1);
@@ -1020,33 +1027,30 @@ static void keyCtrl(wchar_t ch) {
 	struct Window *window = windows.ptrs[windows.show];
 	uint id = window->id;
 	switch (ch ^ L'@') {
-		break; case L'?': edit(id, EditDeletePrev, 0);
-		break; case L'A': edit(id, EditHead, 0);
-		break; case L'B': edit(id, EditPrev, 0);
+		break; case L'?': editFn(&edit, EditDeletePrev);
+		break; case L'A': editFn(&edit, EditHead);
+		break; case L'B': editFn(&edit, EditPrev);
 		break; case L'C': raise(SIGINT);
-		break; case L'D': edit(id, EditDeleteNext, 0);
-		break; case L'E': edit(id, EditTail, 0);
-		break; case L'F': edit(id, EditNext, 0);
-		break; case L'H': edit(id, EditDeletePrev, 0);
-		break; case L'I': edit(id, EditComplete, 0);
-		break; case L'J': edit(id, EditEnter, 0);
-		break; case L'K': edit(id, EditDeleteTail, 0);
+		break; case L'D': editFn(&edit, EditDeleteNext);
+		break; case L'E': editFn(&edit, EditTail);
+		break; case L'F': editFn(&edit, EditNext);
+		break; case L'H': editFn(&edit, EditDeletePrev);
+		break; case L'J': inputEnter(id);
+		break; case L'K': editFn(&edit, EditDeleteTail);
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': uiShowNum(windows.show + 1);
 		break; case L'P': uiShowNum(windows.show - 1);
-		break; case L'R': scrollSearch(window, editBuffer(NULL), -1);
-		break; case L'S': scrollSearch(window, editBuffer(NULL), +1);
-		break; case L'T': edit(id, EditTranspose, 0);
-		break; case L'U': edit(id, EditDeleteHead, 0);
+		break; case L'R': scrollSearch(window, editString(&edit), -1);
+		break; case L'S': scrollSearch(window, editString(&edit), +1);
+		break; case L'T': editFn(&edit, EditTranspose);
+		break; case L'U': editFn(&edit, EditDeleteHead);
 		break; case L'V': scrollPage(window, -1);
-		break; case L'W': edit(id, EditDeletePrevWord, 0);
-		break; case L'X': edit(id, EditExpand, 0);
-		break; case L'Y': edit(id, EditPaste, 0);
+		break; case L'W': editFn(&edit, EditDeletePrevWord);
+		break; case L'Y': editFn(&edit, EditPaste);
 	}
 }
 
 static void keyStyle(wchar_t ch) {
-	uint id = windows.ptrs[windows.show]->id;
 	if (iswcntrl(ch)) ch = towlower(ch ^ L'@');
 	char buf[8] = {0};
 	enum Color color = Default;
@@ -1077,7 +1081,7 @@ static void keyStyle(wchar_t ch) {
 		snprintf(buf, sizeof(buf), "%c%02d", C, color);
 	}
 	for (char *ch = buf; *ch; ++ch) {
-		edit(id, EditInsert, *ch);
+		editInsert(&edit, *ch);
 	}
 }
 
@@ -1103,7 +1107,7 @@ void uiRead(void) {
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteManual) {
 			paste ^= true;
 		} else if (paste || literal) {
-			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
+			editInsert(&edit, ch);
 		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
@@ -1117,7 +1121,7 @@ void uiRead(void) {
 		} else if (iswcntrl(ch)) {
 			keyCtrl(ch);
 		} else {
-			edit(windows.ptrs[windows.show]->id, EditInsert, ch);
+			editInsert(&edit, ch);
 		}
 		style = false;
 		literal = false;

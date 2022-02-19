@@ -341,31 +341,6 @@ int bufferReflow(
 	struct Buffer *buffer, int cols, enum Heat thresh, size_t tail
 );
 
-enum Edit {
-	EditHead,
-	EditTail,
-	EditPrev,
-	EditNext,
-	EditPrevWord,
-	EditNextWord,
-	EditDeleteHead,
-	EditDeleteTail,
-	EditDeletePrev,
-	EditDeleteNext,
-	EditDeletePrevWord,
-	EditDeleteNextWord,
-	EditPaste,
-	EditTranspose,
-	EditCollapse,
-	EditInsert,
-	EditComplete,
-	EditExpand,
-	EditEnter,
-};
-void edit(uint id, enum Edit op, wchar_t ch);
-char *editBuffer(size_t *pos);
-void editCompleteAdd(void);
-
 const char *complete(uint id, const char *prefix);
 const char *completeSubstr(uint id, const char *substr);
 void completeAccept(void);
