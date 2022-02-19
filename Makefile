@@ -3,7 +3,8 @@ BINDIR ?= ${PREFIX}/bin
 MANDIR ?= ${PREFIX}/man
 
 CEXTS = gnu-case-range gnu-conditional-omitted-operand
-CFLAGS += -std=c11 -Wall -Wextra -Wpedantic ${CEXTS:%=-Wno-%}
+CFLAGS += -std=c11 -Wall -Wextra -Wpedantic -Wmissing-prototypes
+CFLAGS += ${CEXTS:%=-Wno-%}
 LDADD.libtls = -ltls
 LDADD.ncursesw = -lncursesw
 
