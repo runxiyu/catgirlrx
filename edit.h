@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 enum EditMode {
-	EditEmacs,
+	EditInsert,
 };
 
 struct Edit {
@@ -62,9 +62,6 @@ enum EditFn {
 
 // Perform an editing function.
 int editFn(struct Edit *e, enum EditFn fn);
-
-// Perform a vi-mode editing function.
-int editVi(struct Edit *e, wchar_t ch);
 
 // Insert a character at the cursor.
 int editInsert(struct Edit *e, wchar_t ch);
