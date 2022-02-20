@@ -38,10 +38,7 @@ struct Edit {
 	size_t pos;
 	size_t len;
 	size_t cap;
-	struct {
-		wchar_t *buf;
-		size_t len;
-	} cut;
+	struct Edit *cut;
 };
 
 enum EditFn {
@@ -74,9 +71,6 @@ int editInsert(struct Edit *e, wchar_t ch);
 
 // Convert the buffer to a multi-byte string.
 char *editString(const struct Edit *e, char **buf, size_t *cap, size_t *pos);
-
-// Free all buffers.
-void editFree(struct Edit *e);
 
 // Reserve a range in the buffer.
 int editReserve(struct Edit *e, size_t index, size_t count);

@@ -38,13 +38,6 @@ static bool isword(wchar_t ch) {
 	return !iswspace(ch) && !iswpunct(ch);
 }
 
-void editFree(struct Edit *e) {
-	free(e->buf);
-	free(e->cut.buf);
-	e->pos = e->len = e->cap = 0;
-	e->cut.len = 0;
-}
-
 char *editString(const struct Edit *e, char **buf, size_t *cap, size_t *pos) {
 	size_t req = e->len * MB_CUR_MAX + 1;
 	if (req > *cap) {
@@ -93,11 +86,10 @@ int editCopy(struct Edit *e, size_t index, size_t count) {
 		errno = EINVAL;
 		return -1;
 	}
-	wchar_t *buf = realloc(e->cut.buf, sizeof(*buf) * count);
-	if (!buf) return -1;
-	e->cut.buf = buf;
-	wmemcpy(e->cut.buf, &e->buf[index], count);
-	e->cut.len = count;
+	if (!e->cut) return 0;
+	e->cut->len = 0;
+	if (editReserve(e->cut, 0, count) < 0) return -1;
+	wmemcpy(e->cut->buf, &e->buf[index], count);
 	return 0;
 }
 
@@ -159,10 +151,11 @@ int editFn(struct Edit *e, enum EditFn fn) {
 		}
 
 		break; case EditPaste: {
-			ret = editReserve(e, e->pos, e->cut.len);
+			if (!e->cut) break;
+			ret = editReserve(e, e->pos, e->cut->len);
 			if (ret == 0) {
-				wmemcpy(&e->buf[e->pos], e->cut.buf, e->cut.len);
-				e->pos += e->cut.len;
+				wmemcpy(&e->buf[e->pos], e->cut->buf, e->cut->len);
+				e->pos += e->cut->len;
 			}
 		}
 		break; case EditTranspose: {
@@ -226,7 +219,8 @@ static bool eq(struct Edit *e, const char *str1) {
 #define editFn(...) assert(0 == editFn(__VA_ARGS__))
 
 int main(void) {
-	struct Edit e = { .mode = EditEmacs };
+	struct Edit cut = {0};
+	struct Edit e = { .cut = &cut };
 
 	fix(&e, "foo bar");
 	editFn(&e, EditHead);

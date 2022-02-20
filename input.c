@@ -89,9 +89,14 @@ enum {
 #undef X
 };
 
+static struct Edit cut;
 static struct Edit edits[IDCap];
 
 void inputInit(void) {
+	for (size_t i = 0; i < ARRAY_LEN(edits); ++i) {
+		edits[i].cut = &cut;
+	}
+
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
 	if (error) err(EX_OSERR, "tcgetattr");
