@@ -158,6 +158,7 @@ static char *inputStop(
 void inputUpdate(void) {
 	uint id = windowID();
 	char *buf = editString(&edit);
+	if (!buf) err(EX_OSERR, "editString");
 
 	const char *prefix = "";
 	const char *prompt = self.nick;
@@ -272,17 +273,21 @@ static int macroExpand(struct Edit *e) {
 }
 
 static void inputEnter(void) {
-	command(windowID(), editString(&edit));
+	char *cmd = editString(&edit);
+	if (!cmd) err(EX_OSERR, "editString");
+
+	command(windowID(), cmd);
 	editFn(&edit, EditClear);
 }
 
 static void keyCode(int code) {
+	int error = 0;
 	switch (code) {
 		break; case KEY_RESIZE:  uiResize();
 		break; case KeyFocusIn:  windowUnmark();
 		break; case KeyFocusOut: windowMark();
 
-		break; case KeyMetaEnter: editInsert(&edit, L'\n');
+		break; case KeyMetaEnter: error = editInsert(&edit, L'\n');
 		break; case KeyMetaEqual: windowToggleMute();
 		break; case KeyMetaMinus: windowToggleThresh(-1);
 		break; case KeyMetaPlus:  windowToggleThresh(+1);
@@ -293,62 +298,65 @@ static void keyCode(int code) {
 
 		break; case KeyMeta0 ... KeyMeta9: windowShow(code - KeyMeta0);
 		break; case KeyMetaA: windowAuto();
-		break; case KeyMetaB: editFn(&edit, EditPrevWord);
-		break; case KeyMetaD: editFn(&edit, EditDeleteNextWord);
-		break; case KeyMetaF: editFn(&edit, EditNextWord);
+		break; case KeyMetaB: error = editFn(&edit, EditPrevWord);
+		break; case KeyMetaD: error = editFn(&edit, EditDeleteNextWord);
+		break; case KeyMetaF: error = editFn(&edit, EditNextWord);
 		break; case KeyMetaL: windowBare();
 		break; case KeyMetaM: uiWrite(windowID(), Warm, NULL, "");
 		break; case KeyMetaN: windowScroll(ScrollHot, +1);
 		break; case KeyMetaP: windowScroll(ScrollHot, -1);
-		break; case KeyMetaQ: editFn(&edit, EditCollapse);
+		break; case KeyMetaQ: error = editFn(&edit, EditCollapse);
 		break; case KeyMetaS: uiSpoilerReveal ^= true; windowUpdate();
 		break; case KeyMetaT: windowToggleTime();
 		break; case KeyMetaU: windowScroll(ScrollUnread, 0);
 		break; case KeyMetaV: windowScroll(ScrollPage, +1);
 
-		break; case KeyCtrlLeft: editFn(&edit, EditPrevWord);
-		break; case KeyCtrlRight: editFn(&edit, EditNextWord);
+		break; case KeyCtrlLeft: error = editFn(&edit, EditPrevWord);
+		break; case KeyCtrlRight: error = editFn(&edit, EditNextWord);
 
-		break; case KEY_BACKSPACE: editFn(&edit, EditDeletePrev);
-		break; case KEY_DC: editFn(&edit, EditDeleteNext);
+		break; case KEY_BACKSPACE: error = editFn(&edit, EditDeletePrev);
+		break; case KEY_DC: error = editFn(&edit, EditDeleteNext);
 		break; case KEY_DOWN: windowScroll(ScrollOne, -1);
-		break; case KEY_END: editFn(&edit, EditTail);
+		break; case KEY_END: error = editFn(&edit, EditTail);
 		break; case KEY_ENTER: inputEnter();
-		break; case KEY_HOME: editFn(&edit, EditHead);
-		break; case KEY_LEFT: editFn(&edit, EditPrev);
+		break; case KEY_HOME: error = editFn(&edit, EditHead);
+		break; case KEY_LEFT: error = editFn(&edit, EditPrev);
 		break; case KEY_NPAGE: windowScroll(ScrollPage, -1);
 		break; case KEY_PPAGE: windowScroll(ScrollPage, +1);
-		break; case KEY_RIGHT: editFn(&edit, EditNext);
+		break; case KEY_RIGHT: error = editFn(&edit, EditNext);
 		break; case KEY_SEND: windowScroll(ScrollAll, -1);
 		break; case KEY_SHOME: windowScroll(ScrollAll, +1);
 		break; case KEY_UP: windowScroll(ScrollOne, +1);
 	}
+	if (error) err(EX_OSERR, "editFn");
 }
 
 static void keyCtrl(wchar_t ch) {
+	int error = 0;
 	switch (ch ^ L'@') {
-		break; case L'?': editFn(&edit, EditDeletePrev);
-		break; case L'A': editFn(&edit, EditHead);
-		break; case L'B': editFn(&edit, EditPrev);
+		break; case L'?': error = editFn(&edit, EditDeletePrev);
+		break; case L'A': error = editFn(&edit, EditHead);
+		break; case L'B': error = editFn(&edit, EditPrev);
 		break; case L'C': raise(SIGINT);
-		break; case L'D': editFn(&edit, EditDeleteNext);
-		break; case L'E': editFn(&edit, EditTail);
-		break; case L'F': editFn(&edit, EditNext);
-		break; case L'H': editFn(&edit, EditDeletePrev);
+		break; case L'D': error = editFn(&edit, EditDeleteNext);
+		break; case L'E': error = editFn(&edit, EditTail);
+		break; case L'F': error = editFn(&edit, EditNext);
+		break; case L'H': error = editFn(&edit, EditDeletePrev);
 		break; case L'J': inputEnter();
-		break; case L'K': editFn(&edit, EditDeleteTail);
+		break; case L'K': error = editFn(&edit, EditDeleteTail);
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': windowShow(windowNum() + 1);
 		break; case L'P': windowShow(windowNum() - 1);
 		break; case L'R': windowSearch(editString(&edit), -1);
 		break; case L'S': windowSearch(editString(&edit), +1);
-		break; case L'T': editFn(&edit, EditTranspose);
-		break; case L'U': editFn(&edit, EditDeleteHead);
+		break; case L'T': error = editFn(&edit, EditTranspose);
+		break; case L'U': error = editFn(&edit, EditDeleteHead);
 		break; case L'V': windowScroll(ScrollPage, -1);
-		break; case L'W': editFn(&edit, EditDeletePrevWord);
-		break; case L'X': macroExpand(&edit);
-		break; case L'Y': editFn(&edit, EditPaste);
+		break; case L'W': error = editFn(&edit, EditDeletePrevWord);
+		break; case L'X': error = macroExpand(&edit);
+		break; case L'Y': error = editFn(&edit, EditPaste);
 	}
+	if (error) err(EX_OSERR, "editFn");
 }
 
 static void keyStyle(wchar_t ch) {
@@ -382,7 +390,8 @@ static void keyStyle(wchar_t ch) {
 		snprintf(buf, sizeof(buf), "%c%02d", C, color);
 	}
 	for (char *ch = buf; *ch; ++ch) {
-		editInsert(&edit, *ch);
+		int error = editInsert(&edit, *ch);
+		if (error) err(EX_OSERR, "editInsert");
 	}
 }
 
@@ -414,7 +423,8 @@ void inputRead(void) {
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteManual) {
 			paste ^= true;
 		} else if (paste || literal) {
-			editInsert(&edit, ch);
+			int error = editInsert(&edit, ch);
+			if (error) err(EX_OSERR, "editInsert");
 		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
@@ -428,7 +438,8 @@ void inputRead(void) {
 		} else if (iswcntrl(ch)) {
 			keyCtrl(ch);
 		} else {
-			editInsert(&edit, ch);
+			int error = editInsert(&edit, ch);
+			if (error) err(EX_OSERR, "editInsert");
 		}
 		style = false;
 		literal = false;
