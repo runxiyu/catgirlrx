@@ -227,6 +227,10 @@ void inputUpdate(void) {
 	wmove(uiInput, y, pos);
 }
 
+bool inputPending(uint id) {
+	return edits[id].len;
+}
+
 static const struct {
 	const wchar_t *name;
 	const wchar_t *string;

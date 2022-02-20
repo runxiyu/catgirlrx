@@ -164,7 +164,7 @@ static void statusUpdate(void) {
 	wmove(uiStatus, 0, 0);
 	for (uint num = 0; num < count; ++num) {
 		const struct Window *window = windows[num];
-		if (num != show && !window->scroll) {
+		if (num != show && !window->scroll && !inputPending(window->id)) {
 			if (window->heat < Warm) continue;
 			if (window->mute && window->heat < Hot) continue;
 		}
@@ -181,14 +181,16 @@ static void statusUpdate(void) {
 		);
 		if (window->mark && window->unreadWarm) {
 			ptr = seprintf(
-				ptr, end, "\3%d+%d\3%d%s",
+				ptr, end, "\3%d+%d\3%d ",
 				(window->heat > Warm ? White : idColors[window->id]),
-				window->unreadWarm, idColors[window->id],
-				(window->scroll ? "" : " ")
+				window->unreadWarm, idColors[window->id]
 			);
 		}
 		if (window->scroll) {
 			ptr = seprintf(ptr, end, "~%d ", window->scroll);
+		}
+		if (num != show && inputPending(window->id)) {
+			ptr = seprintf(ptr, end, "@ ");
 		}
 		if (styleAdd(uiStatus, StyleDefault, buf) < 0) break;
 	}

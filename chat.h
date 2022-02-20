@@ -331,6 +331,7 @@ int uiSave(void);
 void inputInit(void);
 void inputWait(void);
 void inputUpdate(void);
+bool inputPending(uint id);
 void inputRead(void);
 void inputCompleteAdd(void);
 
