@@ -44,7 +44,7 @@ void editFree(struct Edit *e) {
 	free(e->mbs.buf);
 	e->pos = e->len = e->cap = 0;
 	e->cut.len = 0;
-	e->mbs.pos = e->mbs.len = 0;
+	e->mbs.pos = 0;
 }
 
 char *editString(struct Edit *e) {
@@ -54,19 +54,18 @@ char *editString(struct Edit *e) {
 	e->mbs.buf = buf;
 
 	const wchar_t *ptr = e->buf;
-	e->mbs.len = wcsnrtombs(e->mbs.buf, &ptr, e->pos, cap-1, NULL);
-	if (e->mbs.len == (size_t)-1) return NULL;
-	e->mbs.pos = e->mbs.len;
+	size_t len = wcsnrtombs(e->mbs.buf, &ptr, e->pos, cap-1, NULL);
+	if (len == (size_t)-1) return NULL;
+	e->mbs.pos = len;
 
 	ptr = &e->buf[e->pos];
 	size_t n = wcsnrtombs(
-		&e->mbs.buf[e->mbs.len], &ptr, e->len - e->pos,
-		cap-1 - e->mbs.len, NULL
+		&e->mbs.buf[len], &ptr, e->len - e->pos, cap-1 - len, NULL
 	);
 	if (n == (size_t)-1) return NULL;
-	e->mbs.len += n;
+	len += n;
 
-	e->mbs.buf[e->mbs.len] = '\0';
+	e->mbs.buf[len] = '\0';
 	return e->mbs.buf;
 }
 

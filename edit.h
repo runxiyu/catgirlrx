@@ -45,7 +45,6 @@ struct Edit {
 	struct {
 		char *buf;
 		size_t pos;
-		size_t len;
 	} mbs;
 };
 
