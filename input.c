@@ -31,11 +31,14 @@
 #include <curses.h>
 #include <err.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sysexits.h>
 #include <termios.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #include "chat.h"
 #include "edit.h"
@@ -272,10 +275,105 @@ static int macroExpand(struct Edit *e) {
 	return 0;
 }
 
+static struct {
+	char *pre;
+	size_t pos;
+	size_t len;
+	bool suffix;
+} tab;
+
+static int tabComplete(struct Edit *e, uint id) {
+	if (!tab.len) {
+		tab.pos = e->pos;
+		while (tab.pos && !iswspace(e->buf[tab.pos-1])) tab.pos--;
+		tab.len = e->pos - tab.pos;
+		if (!tab.len) return 0;
+
+		size_t cap = tab.len * MB_CUR_MAX + 1;
+		char *buf = realloc(tab.pre, cap);
+		if (!buf) return -1;
+		tab.pre = buf;
+
+		const wchar_t *ptr = &e->buf[tab.pos];
+		size_t n = wcsnrtombs(tab.pre, &ptr, tab.len, cap-1, NULL);
+		if (n == (size_t)-1) return -1;
+		tab.pre[n] = '\0';
+		tab.suffix = true;
+	}
+
+	const char *comp = complete(id, tab.pre);
+	if (!comp) {
+		comp = complete(id, tab.pre);
+		tab.suffix ^= true;
+	}
+	if (!comp) {
+		tab.len = 0;
+		return 0;
+	}
+
+	size_t cap = strlen(comp) + 1;
+	wchar_t *wcs = malloc(sizeof(*wcs) * cap);
+	if (!wcs) return -1;
+
+	size_t n = mbstowcs(wcs, comp, cap);
+	assert(n != (size_t)-1);
+
+	bool colon = (tab.len >= 2 && e->buf[tab.pos + tab.len - 2] == L':');
+
+	int error = editDelete(e, false, tab.pos, tab.len);
+	if (error) goto fail;
+
+	tab.len = n;
+	if (wcs[0] == L'\\' || wcschr(wcs, L' ')) {
+		error = editReserve(e, tab.pos, tab.len);
+		if (error) goto fail;
+	} else if (wcs[0] != L'/' && tab.suffix && (!tab.pos || colon)) {
+		tab.len += 2;
+		error = editReserve(e, tab.pos, tab.len);
+		if (error) goto fail;
+		e->buf[tab.pos + n + 0] = L':';
+		e->buf[tab.pos + n + 1] = L' ';
+	} else if (tab.suffix && tab.pos >= 2 && e->buf[tab.pos - 2] == L':') {
+		tab.len += 2;
+		error = editReserve(e, tab.pos, tab.len);
+		if (error) goto fail;
+		e->buf[tab.pos - 2] = L',';
+		e->buf[tab.pos + n + 0] = L':';
+		e->buf[tab.pos + n + 1] = L' ';
+	} else {
+		tab.len++;
+		error = editReserve(e, tab.pos, tab.len);
+		if (error) goto fail;
+		if (!tab.suffix && tab.pos >= 2 && e->buf[tab.pos - 2] == L',') {
+			e->buf[tab.pos - 2] = L':';
+		}
+		e->buf[tab.pos + n] = L' ';
+	}
+	wmemcpy(&e->buf[tab.pos], wcs, n);
+	e->pos = tab.pos + tab.len;
+	free(wcs);
+	return 0;
+
+fail:
+	free(wcs);
+	return -1;
+}
+
+static void tabAccept(void) {
+	completeAccept();
+	tab.len = 0;
+}
+
+static void tabReject(void) {
+	completeReject();
+	tab.len = 0;
+}
+
 static void inputEnter(void) {
 	char *cmd = editString(&edit);
 	if (!cmd) err(EX_OSERR, "editString");
 
+	tabAccept();
 	command(windowID(), cmd);
 	editFn(&edit, EditClear);
 }
@@ -342,6 +440,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'E': error = editFn(&edit, EditTail);
 		break; case L'F': error = editFn(&edit, EditNext);
 		break; case L'H': error = editFn(&edit, EditDeletePrev);
+		break; case L'I': error = tabComplete(&edit, windowID());
 		break; case L'J': inputEnter();
 		break; case L'K': error = editFn(&edit, EditDeleteTail);
 		break; case L'L': clearok(curscr, true);
@@ -353,7 +452,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'U': error = editFn(&edit, EditDeleteHead);
 		break; case L'V': windowScroll(ScrollPage, -1);
 		break; case L'W': error = editFn(&edit, EditDeletePrevWord);
-		break; case L'X': error = macroExpand(&edit);
+		break; case L'X': error = macroExpand(&edit); tabAccept();
 		break; case L'Y': error = editFn(&edit, EditPaste);
 	}
 	if (error) err(EX_OSERR, "editFn");
@@ -415,7 +514,10 @@ void inputRead(void) {
 	wint_t ch;
 	static bool paste, style, literal;
 	for (int ret; ERR != (ret = wget_wch(uiInput, &ch));) {
+		bool tab = false;
+		size_t pos = edit.pos;
 		bool spr = uiSpoilerReveal;
+
 		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
 			paste = true;
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
@@ -436,6 +538,7 @@ void inputRead(void) {
 		} else if (style) {
 			keyStyle(ch);
 		} else if (iswcntrl(ch)) {
+			tab = (ch == (L'I' ^ L'@'));
 			keyCtrl(ch);
 		} else {
 			int error = editInsert(&edit, ch);
@@ -443,6 +546,15 @@ void inputRead(void) {
 		}
 		style = false;
 		literal = false;
+
+		if (!tab) {
+			if (edit.pos > pos) {
+				tabAccept();
+			} else if (edit.pos < pos) {
+				tabReject();
+			}
+		}
+
 		if (spr) {
 			uiSpoilerReveal = false;
 			windowUpdate();
