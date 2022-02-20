@@ -372,6 +372,7 @@ int main(int argc, char *argv[]) {
 	set(&self.nick, "*");
 
 	commandCompleteAdd();
+	inputCompleteAdd();
 
 	ircConfig(insecure, trust, cert, priv);
 

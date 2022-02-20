@@ -332,6 +332,7 @@ void inputInit(void);
 void inputWait(void);
 void inputUpdate(void);
 void inputRead(void);
+void inputCompleteAdd(void);
 
 enum Scroll {
 	ScrollOne,

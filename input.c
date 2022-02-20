@@ -27,6 +27,7 @@
 
 #define _XOPEN_SOURCE_EXTENDED
 
+#include <assert.h>
 #include <curses.h>
 #include <err.h>
 #include <signal.h>
@@ -34,6 +35,7 @@
 #include <stdlib.h>
 #include <sysexits.h>
 #include <termios.h>
+#include <wchar.h>
 
 #include "chat.h"
 #include "edit.h"
@@ -221,6 +223,54 @@ void inputUpdate(void) {
 	wmove(uiInput, y, pos);
 }
 
+static const struct {
+	const wchar_t *name;
+	const wchar_t *string;
+} Macros[] = {
+	{ L"\\banhammer", L"▬▬▬▬▬▬▬▋ Ò╭╮Ó" },
+	{ L"\\bear", L"ʕっ•ᴥ•ʔっ" },
+	{ L"\\blush", L"（˶′◡‵˶）" },
+	{ L"\\com", L"\0038,4\2 ☭ " },
+	{ L"\\cool", L"(⌐■_■)" },
+	{ L"\\flip", L"(╯°□°）╯︵ ┻━┻" },
+	{ L"\\gary", L"ᕕ( ᐛ )ᕗ" },
+	{ L"\\hug", L"（っ・∀・）っ" },
+	{ L"\\lenny", L"( ͡° ͜ʖ ͡°)" },
+	{ L"\\look", L"ಠ_ಠ" },
+	{ L"\\shrug", L"¯\\_(ツ)_/¯" },
+	{ L"\\unflip", L"┬─┬ノ(º_ºノ)" },
+	{ L"\\wave", L"ヾ(＾∇＾)" },
+};
+
+void inputCompleteAdd(void) {
+	char mbs[256];
+	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
+		size_t n = wcstombs(mbs, Macros[i].name, sizeof(mbs));
+		assert(n != (size_t)-1);
+		completeAdd(None, mbs, Default);
+	}
+}
+
+static int macroExpand(struct Edit *e) {
+	size_t macro = e->pos;
+	while (macro && e->buf[macro] != L'\\') macro--;
+	if (macro == e->pos) return 0;
+	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
+		if (wcslen(Macros[i].name) != e->pos - macro) continue;
+		if (wcsncmp(Macros[i].name, &e->buf[macro], e->pos - macro)) continue;
+		if (wcstombs(NULL, Macros[i].string, 0) == (size_t)-1) continue;
+		size_t expand = wcslen(Macros[i].string);
+		int error = 0
+			|| editDelete(e, false, macro, e->pos - macro)
+			|| editReserve(e, macro, expand);
+		if (error) return error;
+		wcsncpy(&e->buf[macro], Macros[i].string, expand);
+		e->pos = macro + expand;
+		break;
+	}
+	return 0;
+}
+
 static void inputEnter(void) {
 	command(windowID(), editString(&edit));
 	editFn(&edit, EditClear);
@@ -296,6 +346,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'U': editFn(&edit, EditDeleteHead);
 		break; case L'V': windowScroll(ScrollPage, -1);
 		break; case L'W': editFn(&edit, EditDeletePrevWord);
+		break; case L'X': macroExpand(&edit);
 		break; case L'Y': editFn(&edit, EditPaste);
 	}
 }
