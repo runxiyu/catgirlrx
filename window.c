@@ -273,7 +273,7 @@ void windowUpdate(void) {
 
 void windowBare(void) {
 	uiHide();
-	uiWait();
+	inputWait();
 
 	const struct Window *window = windows[show];
 	const struct Line *line = bufferHard(window->buffer, windowBottom(window));
@@ -426,7 +426,7 @@ void windowShow(uint num) {
 	user = num;
 	unmark(windows[show]);
 	mainUpdate();
-	uiUpdate();
+	inputUpdate();
 }
 
 void windowAuto(void) {
@@ -515,7 +515,7 @@ void windowToggleTime(void) {
 	windows[show]->time ^= true;
 	reflow(windows[show]);
 	windowUpdate();
-	uiUpdate();
+	inputUpdate();
 }
 
 void windowToggleThresh(int n) {

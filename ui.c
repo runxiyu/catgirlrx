@@ -54,7 +54,6 @@
 #endif
 
 #include "chat.h"
-#include "edit.h"
 
 // Annoying stuff from <term.h>:
 #undef lines
@@ -66,7 +65,7 @@
 
 WINDOW *uiStatus;
 WINDOW *uiMain;
-static WINDOW *input;
+WINDOW *uiInput;
 
 static short colorPairs;
 
@@ -101,52 +100,6 @@ static short colorPair(short fg, short bg) {
 	return colorPairs++;
 }
 
-#define ENUM_KEY \
-	X(KeyCtrlLeft, "\33[1;5D", NULL) \
-	X(KeyCtrlRight, "\33[1;5C", NULL) \
-	X(KeyMeta0, "\0330", "\33)") \
-	X(KeyMeta1, "\0331", "\33!") \
-	X(KeyMeta2, "\0332", "\33@") \
-	X(KeyMeta3, "\0333", "\33#") \
-	X(KeyMeta4, "\0334", "\33$") \
-	X(KeyMeta5, "\0335", "\33%") \
-	X(KeyMeta6, "\0336", "\33^") \
-	X(KeyMeta7, "\0337", "\33&") \
-	X(KeyMeta8, "\0338", "\33*") \
-	X(KeyMeta9, "\0339", "\33(") \
-	X(KeyMetaA, "\33a", NULL) \
-	X(KeyMetaB, "\33b", NULL) \
-	X(KeyMetaD, "\33d", NULL) \
-	X(KeyMetaF, "\33f", NULL) \
-	X(KeyMetaL, "\33l", NULL) \
-	X(KeyMetaM, "\33m", NULL) \
-	X(KeyMetaN, "\33n", NULL) \
-	X(KeyMetaP, "\33p", NULL) \
-	X(KeyMetaQ, "\33q", NULL) \
-	X(KeyMetaS, "\33s", NULL) \
-	X(KeyMetaT, "\33t", NULL) \
-	X(KeyMetaU, "\33u", NULL) \
-	X(KeyMetaV, "\33v", NULL) \
-	X(KeyMetaEnter, "\33\r", "\33\n") \
-	X(KeyMetaGt, "\33>", "\33.") \
-	X(KeyMetaLt, "\33<", "\33,") \
-	X(KeyMetaEqual, "\33=", NULL) \
-	X(KeyMetaMinus, "\33-", "\33_") \
-	X(KeyMetaPlus, "\33+", NULL) \
-	X(KeyMetaSlash, "\33/", "\33?") \
-	X(KeyFocusIn, "\33[I", NULL) \
-	X(KeyFocusOut, "\33[O", NULL) \
-	X(KeyPasteOn, "\33[200~", NULL) \
-	X(KeyPasteOff, "\33[201~", NULL) \
-	X(KeyPasteManual, "\32p", "\32\20")
-
-enum {
-	KeyMax = KEY_MAX,
-#define X(id, seq, alt) id,
-	ENUM_KEY
-#undef X
-};
-
 // XXX: Assuming terminals will be fine with these even if they're unsupported,
 // since they're "private" modes.
 static const char *FocusMode[2] = { "\33[?1004l", "\33[?1004h" };
@@ -158,7 +111,7 @@ static void errExit(void) {
 	reset_shell_mode();
 }
 
-void uiInitEarly(void) {
+void uiInit(void) {
 	initscr();
 	cbreak();
 	noecho();
@@ -177,49 +130,20 @@ void uiInitEarly(void) {
 		from_status_line = "\7";
 	}
 
-#define X(id, seq, alt) define_key(seq, id); if (alt) define_key(alt, id);
-	ENUM_KEY
-#undef X
-
 	uiStatus = newwin(StatusLines, COLS, 0, 0);
 	if (!uiStatus) err(EX_OSERR, "newwin");
 
 	uiMain = newwin(MAIN_LINES, COLS, StatusLines, 0);
 	if (!uiMain) err(EX_OSERR, "newwin");
 
-	input = newpad(InputLines, InputCols);
-	if (!input) err(EX_OSERR, "newpad");
-	keypad(input, true);
-	nodelay(input, true);
+	uiInput = newpad(InputLines, InputCols);
+	if (!uiInput) err(EX_OSERR, "newpad");
 
 	windowInit();
 	uiShow();
 }
 
-// Avoid disabling VINTR until main loop.
-void uiInitLate(void) {
-	struct termios term;
-	int error = tcgetattr(STDOUT_FILENO, &term);
-	if (error) err(EX_OSERR, "tcgetattr");
-
-	// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
-	term.c_iflag &= ~IXON;
-	term.c_cc[VINTR] = _POSIX_VDISABLE;
-	term.c_cc[VSUSP] = _POSIX_VDISABLE;
-#ifdef VDSUSP
-	term.c_cc[VDSUSP] = _POSIX_VDISABLE;
-#endif
-	term.c_cc[VLNEXT] = _POSIX_VDISABLE;
-	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
-
-	error = tcsetattr(STDOUT_FILENO, TCSANOW, &term);
-	if (error) err(EX_OSERR, "tcsetattr");
-
-	def_prog_mode();
-}
-
 static bool hidden = true;
-static bool waiting;
 
 char uiTitle[TitleCap];
 static char prevTitle[TitleCap];
@@ -229,9 +153,9 @@ void uiDraw(void) {
 	wnoutrefresh(uiStatus);
 	wnoutrefresh(uiMain);
 	int y, x;
-	getyx(input, y, x);
+	getyx(uiInput, y, x);
 	pnoutrefresh(
-		input,
+		uiInput,
 		0, (x + 1 > RIGHT ? x + 1 - RIGHT : 0),
 		LINES - InputLines, 0,
 		BOTTOM, RIGHT
@@ -284,10 +208,10 @@ uint uiAttr(struct Style style) {
 	return attr | colorAttr(Colors[style.fg]);
 }
 
-static bool spoilerReveal;
+bool uiSpoilerReveal;
 
 short uiPair(struct Style style) {
-	if (spoilerReveal && style.fg == style.bg) {
+	if (uiSpoilerReveal && style.fg == style.bg) {
 		return colorPair(Colors[Default], Colors[style.bg]);
 	}
 	return colorPair(Colors[style.fg], Colors[style.bg]);
@@ -310,10 +234,6 @@ void uiHide(void) {
 	putp(FocusMode[false]);
 	putp(PasteMode[false]);
 	endwin();
-}
-
-void uiWait(void) {
-	waiting = true;
 }
 
 struct Util uiNotifyUtil;
@@ -361,281 +281,10 @@ void uiFormat(
 	uiWrite(id, heat, time, buf);
 }
 
-static void resize(void) {
+void uiResize(void) {
 	wclear(uiMain);
 	wresize(uiMain, MAIN_LINES, COLS);
 	windowResize();
-}
-
-static void inputAdd(struct Style reset, struct Style *style, const char *str) {
-	while (*str) {
-		const char *code = str;
-		size_t len = styleParse(style, &str);
-		wattr_set(input, A_BOLD | A_REVERSE, 0, NULL);
-		switch (*code) {
-			break; case B: waddch(input, 'B');
-			break; case C: waddch(input, 'C');
-			break; case O: waddch(input, 'O');
-			break; case R: waddch(input, 'R');
-			break; case I: waddch(input, 'I');
-			break; case U: waddch(input, 'U');
-			break; case '\n': waddch(input, 'N');
-		}
-		if (str - code > 1) waddnstr(input, &code[1], str - &code[1]);
-		if (str[0] == '\n') {
-			*style = reset;
-			str++;
-			len--;
-		}
-		size_t nl = strcspn(str, "\n");
-		if (nl < len) len = nl;
-		wattr_set(input, uiAttr(*style), uiPair(*style), NULL);
-		waddnstr(input, str, len);
-		str += len;
-	}
-}
-
-static char *inputStop(
-	struct Style reset, struct Style *style,
-	const char *str, char *stop
-) {
-	char ch = *stop;
-	*stop = '\0';
-	inputAdd(reset, style, str);
-	*stop = ch;
-	return stop;
-}
-
-static struct Edit edit;
-
-void uiUpdate(void) {
-	char *buf = editString(&edit);
-	uint id = windowID();
-
-	const char *prefix = "";
-	const char *prompt = self.nick;
-	const char *suffix = "";
-	const char *skip = buf;
-	struct Style stylePrompt = { .fg = self.color, .bg = Default };
-	struct Style styleInput = StyleDefault;
-
-	size_t split = commandWillSplit(id, buf);
-	const char *privmsg = commandIsPrivmsg(id, buf);
-	const char *notice = commandIsNotice(id, buf);
-	const char *action = commandIsAction(id, buf);
-	if (privmsg) {
-		prefix = "<"; suffix = "> ";
-		skip = privmsg;
-	} else if (notice) {
-		prefix = "-"; suffix = "- ";
-		styleInput.fg = LightGray;
-		skip = notice;
-	} else if (action) {
-		prefix = "* "; suffix = " ";
-		stylePrompt.attr |= Italic;
-		styleInput.attr |= Italic;
-		skip = action;
-	} else if (id == Debug && buf[0] != '/') {
-		prompt = "<< ";
-		stylePrompt.fg = Gray;
-	} else {
-		prompt = "";
-	}
-	if (skip > &buf[edit.mbs.pos]) {
-		prefix = prompt = suffix = "";
-		skip = buf;
-	}
-
-	int y, x;
-	wmove(input, 0, 0);
-	if (windowTimeEnable() && id != Network) {
-		whline(input, ' ', windowTime.width);
-		wmove(input, 0, windowTime.width);
-	}
-	wattr_set(input, uiAttr(stylePrompt), uiPair(stylePrompt), NULL);
-	waddstr(input, prefix);
-	waddstr(input, prompt);
-	waddstr(input, suffix);
-	getyx(input, y, x);
-
-	int pos;
-	struct Style style = styleInput;
-	inputStop(styleInput, &style, skip, &buf[edit.mbs.pos]);
-	getyx(input, y, pos);
-	wmove(input, y, x);
-
-	style = styleInput;
-	const char *ptr = skip;
-	if (split) {
-		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
-		style = styleInput;
-		style.bg = Red;
-	}
-	inputAdd(styleInput, &style, ptr);
-	wclrtoeol(input);
-	wmove(input, y, pos);
-}
-
-static void inputEnter(void) {
-	command(windowID(), editString(&edit));
-	editFn(&edit, EditClear);
-}
-
-static void keyCode(int code) {
-	switch (code) {
-		break; case KEY_RESIZE:  resize();
-		break; case KeyFocusIn:  windowUnmark();
-		break; case KeyFocusOut: windowMark();
-
-		break; case KeyMetaEnter: editInsert(&edit, L'\n');
-		break; case KeyMetaEqual: windowToggleMute();
-		break; case KeyMetaMinus: windowToggleThresh(-1);
-		break; case KeyMetaPlus:  windowToggleThresh(+1);
-		break; case KeyMetaSlash: windowSwap();
-
-		break; case KeyMetaGt: windowScroll(ScrollAll, -1);
-		break; case KeyMetaLt: windowScroll(ScrollAll, +1);
-
-		break; case KeyMeta0 ... KeyMeta9: windowShow(code - KeyMeta0);
-		break; case KeyMetaA: windowAuto();
-		break; case KeyMetaB: editFn(&edit, EditPrevWord);
-		break; case KeyMetaD: editFn(&edit, EditDeleteNextWord);
-		break; case KeyMetaF: editFn(&edit, EditNextWord);
-		break; case KeyMetaL: windowBare();
-		break; case KeyMetaM: uiWrite(windowID(), Warm, NULL, "");
-		break; case KeyMetaN: windowScroll(ScrollHot, +1);
-		break; case KeyMetaP: windowScroll(ScrollHot, -1);
-		break; case KeyMetaQ: editFn(&edit, EditCollapse);
-		break; case KeyMetaS: spoilerReveal ^= true; windowUpdate();
-		break; case KeyMetaT: windowToggleTime();
-		break; case KeyMetaU: windowScroll(ScrollUnread, 0);
-		break; case KeyMetaV: windowScroll(ScrollPage, +1);
-
-		break; case KeyCtrlLeft: editFn(&edit, EditPrevWord);
-		break; case KeyCtrlRight: editFn(&edit, EditNextWord);
-
-		break; case KEY_BACKSPACE: editFn(&edit, EditDeletePrev);
-		break; case KEY_DC: editFn(&edit, EditDeleteNext);
-		break; case KEY_DOWN: windowScroll(ScrollOne, -1);
-		break; case KEY_END: editFn(&edit, EditTail);
-		break; case KEY_ENTER: inputEnter();
-		break; case KEY_HOME: editFn(&edit, EditHead);
-		break; case KEY_LEFT: editFn(&edit, EditPrev);
-		break; case KEY_NPAGE: windowScroll(ScrollPage, -1);
-		break; case KEY_PPAGE: windowScroll(ScrollPage, +1);
-		break; case KEY_RIGHT: editFn(&edit, EditNext);
-		break; case KEY_SEND: windowScroll(ScrollAll, -1);
-		break; case KEY_SHOME: windowScroll(ScrollAll, +1);
-		break; case KEY_UP: windowScroll(ScrollOne, +1);
-	}
-}
-
-static void keyCtrl(wchar_t ch) {
-	switch (ch ^ L'@') {
-		break; case L'?': editFn(&edit, EditDeletePrev);
-		break; case L'A': editFn(&edit, EditHead);
-		break; case L'B': editFn(&edit, EditPrev);
-		break; case L'C': raise(SIGINT);
-		break; case L'D': editFn(&edit, EditDeleteNext);
-		break; case L'E': editFn(&edit, EditTail);
-		break; case L'F': editFn(&edit, EditNext);
-		break; case L'H': editFn(&edit, EditDeletePrev);
-		break; case L'J': inputEnter();
-		break; case L'K': editFn(&edit, EditDeleteTail);
-		break; case L'L': clearok(curscr, true);
-		break; case L'N': windowShow(windowNum() + 1);
-		break; case L'P': windowShow(windowNum() - 1);
-		break; case L'R': windowSearch(editString(&edit), -1);
-		break; case L'S': windowSearch(editString(&edit), +1);
-		break; case L'T': editFn(&edit, EditTranspose);
-		break; case L'U': editFn(&edit, EditDeleteHead);
-		break; case L'V': windowScroll(ScrollPage, -1);
-		break; case L'W': editFn(&edit, EditDeletePrevWord);
-		break; case L'Y': editFn(&edit, EditPaste);
-	}
-}
-
-static void keyStyle(wchar_t ch) {
-	if (iswcntrl(ch)) ch = towlower(ch ^ L'@');
-	char buf[8] = {0};
-	enum Color color = Default;
-	switch (ch) {
-		break; case L'A': color = Gray;
-		break; case L'B': color = Blue;
-		break; case L'C': color = Cyan;
-		break; case L'G': color = Green;
-		break; case L'K': color = Black;
-		break; case L'M': color = Magenta;
-		break; case L'N': color = Brown;
-		break; case L'O': color = Orange;
-		break; case L'P': color = Pink;
-		break; case L'R': color = Red;
-		break; case L'W': color = White;
-		break; case L'Y': color = Yellow;
-		break; case L'b': buf[0] = B;
-		break; case L'c': buf[0] = C;
-		break; case L'i': buf[0] = I;
-		break; case L'o': buf[0] = O;
-		break; case L'r': buf[0] = R;
-		break; case L's': {
-			snprintf(buf, sizeof(buf), "%c%02d,%02d", C, Black, Black);
-		}
-		break; case L'u': buf[0] = U;
-	}
-	if (color != Default) {
-		snprintf(buf, sizeof(buf), "%c%02d", C, color);
-	}
-	for (char *ch = buf; *ch; ++ch) {
-		editInsert(&edit, *ch);
-	}
-}
-
-void uiRead(void) {
-	if (hidden) {
-		if (waiting) {
-			uiShow();
-			flushinp();
-			waiting = false;
-		} else {
-			return;
-		}
-	}
-
-	wint_t ch;
-	static bool paste, style, literal;
-	for (int ret; ERR != (ret = wget_wch(input, &ch));) {
-		bool spr = spoilerReveal;
-		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
-			paste = true;
-		} else if (ret == KEY_CODE_YES && ch == KeyPasteOff) {
-			paste = false;
-		} else if (ret == KEY_CODE_YES && ch == KeyPasteManual) {
-			paste ^= true;
-		} else if (paste || literal) {
-			editInsert(&edit, ch);
-		} else if (ret == KEY_CODE_YES) {
-			keyCode(ch);
-		} else if (ch == (L'Z' ^ L'@')) {
-			style = true;
-			continue;
-		} else if (style && ch == (L'V' ^ L'@')) {
-			literal = true;
-			continue;
-		} else if (style) {
-			keyStyle(ch);
-		} else if (iswcntrl(ch)) {
-			keyCtrl(ch);
-		} else {
-			editInsert(&edit, ch);
-		}
-		style = false;
-		literal = false;
-		if (spr) {
-			spoilerReveal = false;
-			windowUpdate();
-		}
-	}
-	uiUpdate();
 }
 
 static FILE *saveFile;

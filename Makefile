@@ -20,6 +20,7 @@ OBJS += config.o
 OBJS += edit.o
 OBJS += filter.o
 OBJS += handle.o
+OBJS += input.o
 OBJS += irc.o
 OBJS += log.o
 OBJS += ui.o
@@ -36,7 +37,9 @@ all: catgirl
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@
 
-${OBJS} ${TESTS}: chat.h edit.h
+${OBJS}: chat.h
+
+edit.o edit.t input.o: edit.h
 
 check: ${TESTS}
 

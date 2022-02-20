@@ -311,23 +311,27 @@ enum {
 extern char uiTitle[TitleCap];
 extern struct _win_st *uiStatus;
 extern struct _win_st *uiMain;
+extern struct _win_st *uiInput;
+extern bool uiSpoilerReveal;
 extern struct Util uiNotifyUtil;
-void uiInitEarly(void);
-void uiInitLate(void);
+void uiInit(void);
 uint uiAttr(struct Style style);
 short uiPair(struct Style style);
-void uiUpdate(void);
 void uiShow(void);
 void uiHide(void);
-void uiWait(void);
 void uiDraw(void);
-void uiRead(void);
+void uiResize(void);
 void uiWrite(uint id, enum Heat heat, const time_t *time, const char *str);
 void uiFormat(
 	uint id, enum Heat heat, const time_t *time, const char *format, ...
 ) __attribute__((format(printf, 4, 5)));
 void uiLoad(const char *name);
 int uiSave(void);
+
+void inputInit(void);
+void inputWait(void);
+void inputUpdate(void);
+void inputRead(void);
 
 enum Scroll {
 	ScrollOne,

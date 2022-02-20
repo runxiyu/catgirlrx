@@ -425,7 +425,7 @@ static void handleNick(struct Message *msg) {
 	require(msg, true, 1);
 	if (!strcmp(msg->nick, self.nick)) {
 		set(&self.nick, msg->params[0]);
-		uiRead(); // Update prompt.
+		inputUpdate();
 	}
 	for (uint id; (id = completeID(msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {

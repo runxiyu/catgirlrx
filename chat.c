@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
 
 	ircConfig(insecure, trust, cert, priv);
 
-	uiInitEarly();
+	uiInit();
 	sig_t cursesWinch = signal(SIGWINCH, signalHandler);
 	if (save) {
 		uiLoad(save);
@@ -407,7 +407,8 @@ int main(int argc, char *argv[]) {
 	ircFormat("NICK :%s\r\n", nick);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
-	uiInitLate();
+	// Avoid disabling VINTR until main loop.
+	inputInit();
 	signal(SIGHUP, signalHandler);
 	signal(SIGINT, signalHandler);
 	signal(SIGALRM, signalHandler);
@@ -436,7 +437,7 @@ int main(int argc, char *argv[]) {
 		int nfds = poll(fds, (pipes ? ARRAY_LEN(fds) : 2), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 		if (nfds > 0) {
-			if (fds[0].revents) uiRead();
+			if (fds[0].revents) inputRead();
 			if (fds[1].revents) ircRecv();
 			if (fds[2].revents) utilRead();
 			if (fds[3].revents) execRead();
@@ -488,7 +489,7 @@ int main(int argc, char *argv[]) {
 			cursesWinch(SIGWINCH);
 			// doupdate(3) needs to be called for KEY_RESIZE to be picked up.
 			uiDraw();
-			uiRead();
+			inputRead();
 		}
 
 		uiDraw();
