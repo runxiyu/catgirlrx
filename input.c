@@ -385,8 +385,8 @@ static void inputEnter(void) {
 	if (!cmd) err(EX_OSERR, "editString");
 
 	tabAccept();
-	command(id, cmd);
 	editFn(&edits[id], EditClear);
+	command(id, cmd);
 }
 
 static void keyCode(int code) {
