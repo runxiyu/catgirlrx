@@ -75,7 +75,8 @@ int editReserve(struct Edit *e, size_t index, size_t count) {
 		return -1;
 	}
 	if (e->len + count > e->cap) {
-		size_t cap = (e->cap ? e->cap * 2 : 256);
+		size_t cap = (e->cap ?: 256);
+		while (cap < e->len + count) cap *= 2;
 		wchar_t *buf = realloc(e->buf, sizeof(*buf) * cap);
 		if (!buf) return -1;
 		e->buf = buf;
