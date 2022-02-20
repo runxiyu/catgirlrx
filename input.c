@@ -586,3 +586,42 @@ void inputRead(void) {
 	}
 	inputUpdate();
 }
+
+static int writeString(FILE *file, const char *str) {
+	return (fwrite(str, strlen(str) + 1, 1, file) ? 0 : -1);
+}
+
+int inputSave(FILE *file) {
+	int error;
+	for (uint id = 0; id < IDCap; ++id) {
+		if (!edits[id].len) continue;
+		char *ptr = editString(&edits[id], &buf, &cap, NULL);
+		if (!ptr) return -1;
+		error = 0
+			|| writeString(file, idNames[id])
+			|| writeString(file, ptr);
+		if (error) return error;
+	}
+	return writeString(file, "");
+}
+
+static ssize_t readString(FILE *file, char **buf, size_t *cap) {
+	ssize_t len = getdelim(buf, cap, '\0', file);
+	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	return len;
+}
+
+void inputLoad(FILE *file, size_t version) {
+	if (version < 8) return;
+	while (0 < readString(file, &buf, &cap) && buf[0]) {
+		uint id = idFor(buf);
+		readString(file, &buf, &cap);
+		size_t max = strlen(buf);
+		int error = editReserve(&edits[id], 0, max);
+		if (error) err(EX_OSERR, "editReserve");
+		size_t len = mbstowcs(edits[id].buf, buf, max);
+		assert(len != (size_t)-1);
+		edits[id].len = len;
+		edits[id].pos = len;
+	}
+}

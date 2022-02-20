@@ -334,6 +334,8 @@ void inputUpdate(void);
 bool inputPending(uint id);
 void inputRead(void);
 void inputCompleteAdd(void);
+int inputSave(FILE *file);
+void inputLoad(FILE *file, size_t version);
 
 enum Scroll {
 	ScrollOne,

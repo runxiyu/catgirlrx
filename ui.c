@@ -288,7 +288,8 @@ static const uint64_t Signatures[] = {
 	0x6C72696774616305, // no URLs
 	0x6C72696774616306, // no thresh
 	0x6C72696774616307, // no window time
-	0x6C72696774616308,
+	0x6C72696774616308, // no input
+	0x6C72696774616309,
 };
 
 static size_t signatureVersion(uint64_t signature) {
@@ -305,9 +306,10 @@ static int writeUint64(FILE *file, uint64_t u) {
 int uiSave(void) {
 	return 0
 		|| ftruncate(fileno(saveFile), 0)
-		|| writeUint64(saveFile, Signatures[7])
+		|| writeUint64(saveFile, Signatures[8])
 		|| writeUint64(saveFile, self.pos)
 		|| windowSave(saveFile)
+		|| inputSave(saveFile)
 		|| urlSave(saveFile)
 		|| fclose(saveFile);
 }
@@ -350,5 +352,6 @@ void uiLoad(const char *name) {
 		self.pos = readUint64(saveFile);
 	}
 	windowLoad(saveFile, version);
+	inputLoad(saveFile, version);
 	urlLoad(saveFile, version);
 }
