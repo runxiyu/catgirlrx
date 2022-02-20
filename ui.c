@@ -28,13 +28,11 @@
 #define _XOPEN_SOURCE_EXTENDED
 
 #include <assert.h>
-#include <ctype.h>
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <signal.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -43,21 +41,14 @@
 #include <sys/file.h>
 #include <sysexits.h>
 #include <term.h>
-#include <termios.h>
 #include <time.h>
 #include <unistd.h>
-#include <wchar.h>
-#include <wctype.h>
 
 #ifdef __FreeBSD__
 #include <capsicum_helpers.h>
 #endif
 
 #include "chat.h"
-
-// Annoying stuff from <term.h>:
-#undef lines
-#undef tab
 
 #define BOTTOM (LINES - 1)
 #define RIGHT (COLS - 1)
