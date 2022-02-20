@@ -158,10 +158,15 @@ static char *inputStop(
 	return stop;
 }
 
+static size_t cap;
+static char *buf;
+
 void inputUpdate(void) {
 	uint id = windowID();
-	char *buf = editString(&edits[id]);
-	if (!buf) err(EX_OSERR, "editString");
+
+	size_t pos = 0;
+	const char *ptr = editString(&edits[id], &buf, &cap, &pos);
+	if (!ptr) err(EX_OSERR, "editString");
 
 	const char *prefix = "";
 	const char *prompt = self.nick;
@@ -192,7 +197,7 @@ void inputUpdate(void) {
 	} else {
 		prompt = "";
 	}
-	if (skip > &buf[edits[id].mbs.pos]) {
+	if (skip > &buf[pos]) {
 		prefix = prompt = suffix = "";
 		skip = buf;
 	}
@@ -209,14 +214,14 @@ void inputUpdate(void) {
 	waddstr(uiInput, suffix);
 	getyx(uiInput, y, x);
 
-	int pos;
+	int posx;
 	struct Style style = styleInput;
-	inputStop(styleInput, &style, skip, &buf[edits[id].mbs.pos]);
-	getyx(uiInput, y, pos);
+	inputStop(styleInput, &style, skip, &buf[pos]);
+	getyx(uiInput, y, posx);
 	wmove(uiInput, y, x);
 
+	ptr = skip;
 	style = styleInput;
-	const char *ptr = skip;
 	if (split) {
 		ptr = inputStop(styleInput, &style, ptr, &buf[split]);
 		style = styleInput;
@@ -224,7 +229,7 @@ void inputUpdate(void) {
 	}
 	inputAdd(styleInput, &style, ptr);
 	wclrtoeol(uiInput);
-	wmove(uiInput, y, pos);
+	wmove(uiInput, y, posx);
 }
 
 bool inputPending(uint id) {
@@ -381,7 +386,7 @@ fail:
 
 static void inputEnter(void) {
 	uint id = windowID();
-	char *cmd = editString(&edits[id]);
+	char *cmd = editString(&edits[id], &buf, &cap, NULL);
 	if (!cmd) err(EX_OSERR, "editString");
 
 	tabAccept();
@@ -459,8 +464,8 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': windowShow(windowNum() + 1);
 		break; case L'P': windowShow(windowNum() - 1);
-		break; case L'R': windowSearch(editString(edit), -1);
-		break; case L'S': windowSearch(editString(edit), +1);
+		break; case L'R': windowSearch(editString(edit, &buf, &cap, NULL), -1);
+		break; case L'S': windowSearch(editString(edit, &buf, &cap, NULL), +1);
 		break; case L'T': error = editFn(edit, EditTranspose);
 		break; case L'U': error = editFn(edit, EditDeleteHead);
 		break; case L'V': windowScroll(ScrollPage, -1);

@@ -41,32 +41,33 @@ static bool isword(wchar_t ch) {
 void editFree(struct Edit *e) {
 	free(e->buf);
 	free(e->cut.buf);
-	free(e->mbs.buf);
 	e->pos = e->len = e->cap = 0;
 	e->cut.len = 0;
-	e->mbs.pos = 0;
 }
 
-char *editString(struct Edit *e) {
-	size_t cap = e->len * MB_CUR_MAX + 1;
-	char *buf = realloc(e->mbs.buf, cap);
-	if (!buf) return NULL;
-	e->mbs.buf = buf;
+char *editString(const struct Edit *e, char **buf, size_t *cap, size_t *pos) {
+	size_t req = e->len * MB_CUR_MAX + 1;
+	if (req > *cap) {
+		char *new = realloc(*buf, req);
+		if (!new) return NULL;
+		*buf = new;
+		*cap = req;
+	}
 
 	const wchar_t *ptr = e->buf;
-	size_t len = wcsnrtombs(e->mbs.buf, &ptr, e->pos, cap-1, NULL);
+	size_t len = wcsnrtombs(*buf, &ptr, e->pos, *cap-1, NULL);
 	if (len == (size_t)-1) return NULL;
-	e->mbs.pos = len;
+	if (pos) *pos = len;
 
 	ptr = &e->buf[e->pos];
 	size_t n = wcsnrtombs(
-		&e->mbs.buf[len], &ptr, e->len - e->pos, cap-1 - len, NULL
+		*buf + len, &ptr, e->len - e->pos, *cap-1 - len, NULL
 	);
 	if (n == (size_t)-1) return NULL;
 	len += n;
 
-	e->mbs.buf[len] = '\0';
-	return e->mbs.buf;
+	(*buf)[len] = '\0';
+	return *buf;
 }
 
 int editReserve(struct Edit *e, size_t index, size_t count) {
@@ -212,11 +213,14 @@ static void fix(struct Edit *e, const char *str) {
 }
 
 static bool eq(struct Edit *e, const char *str1) {
+	size_t pos;
+	static size_t cap;
+	static char *buf;
+	editString(e, &buf, &cap, &pos);
 	const char *str2 = &str1[strlen(str1) + 1];
-	const char *buf = editString(e);
-	return e->mbs.pos == strlen(str1)
-		&& !strncmp(buf, str1, e->mbs.pos)
-		&& !strcmp(&buf[e->mbs.pos], str2);
+	return pos == strlen(str1)
+		&& !strncmp(buf, str1, pos)
+		&& !strcmp(&buf[pos], str2);
 }
 
 int main(void) {

@@ -42,10 +42,6 @@ struct Edit {
 		wchar_t *buf;
 		size_t len;
 	} cut;
-	struct {
-		char *buf;
-		size_t pos;
-	} mbs;
 };
 
 enum EditFn {
@@ -76,8 +72,8 @@ int editVi(struct Edit *e, wchar_t ch);
 // Insert a character at the cursor.
 int editInsert(struct Edit *e, wchar_t ch);
 
-// Convert the buffer to a multi-byte string stored in e->mbs.
-char *editString(struct Edit *e);
+// Convert the buffer to a multi-byte string.
+char *editString(const struct Edit *e, char **buf, size_t *cap, size_t *pos);
 
 // Free all buffers.
 void editFree(struct Edit *e);
