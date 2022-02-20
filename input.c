@@ -89,7 +89,7 @@ enum {
 #undef X
 };
 
-static struct Edit edit;
+static struct Edit edits[IDCap];
 
 void inputInit(void) {
 	struct termios term;
@@ -160,7 +160,7 @@ static char *inputStop(
 
 void inputUpdate(void) {
 	uint id = windowID();
-	char *buf = editString(&edit);
+	char *buf = editString(&edits[id]);
 	if (!buf) err(EX_OSERR, "editString");
 
 	const char *prefix = "";
@@ -192,7 +192,7 @@ void inputUpdate(void) {
 	} else {
 		prompt = "";
 	}
-	if (skip > &buf[edit.mbs.pos]) {
+	if (skip > &buf[edits[id].mbs.pos]) {
 		prefix = prompt = suffix = "";
 		skip = buf;
 	}
@@ -211,7 +211,7 @@ void inputUpdate(void) {
 
 	int pos;
 	struct Style style = styleInput;
-	inputStop(styleInput, &style, skip, &buf[edit.mbs.pos]);
+	inputStop(styleInput, &style, skip, &buf[edits[id].mbs.pos]);
 	getyx(uiInput, y, pos);
 	wmove(uiInput, y, x);
 
@@ -276,14 +276,30 @@ static int macroExpand(struct Edit *e) {
 }
 
 static struct {
+	uint id;
 	char *pre;
 	size_t pos;
 	size_t len;
 	bool suffix;
 } tab;
 
+static void tabAccept(void) {
+	completeAccept();
+	tab.len = 0;
+}
+
+static void tabReject(void) {
+	completeReject();
+	tab.len = 0;
+}
+
 static int tabComplete(struct Edit *e, uint id) {
+	if (tab.len && id != tab.id) {
+		tabAccept();
+	}
+
 	if (!tab.len) {
+		tab.id = id;
 		tab.pos = e->pos;
 		while (tab.pos && !iswspace(e->buf[tab.pos-1])) tab.pos--;
 		tab.len = e->pos - tab.pos;
@@ -359,33 +375,25 @@ fail:
 	return -1;
 }
 
-static void tabAccept(void) {
-	completeAccept();
-	tab.len = 0;
-}
-
-static void tabReject(void) {
-	completeReject();
-	tab.len = 0;
-}
-
 static void inputEnter(void) {
-	char *cmd = editString(&edit);
+	uint id = windowID();
+	char *cmd = editString(&edits[id]);
 	if (!cmd) err(EX_OSERR, "editString");
 
 	tabAccept();
-	command(windowID(), cmd);
-	editFn(&edit, EditClear);
+	command(id, cmd);
+	editFn(&edits[id], EditClear);
 }
 
 static void keyCode(int code) {
 	int error = 0;
+	struct Edit *edit = &edits[windowID()];
 	switch (code) {
 		break; case KEY_RESIZE:  uiResize();
 		break; case KeyFocusIn:  windowUnmark();
 		break; case KeyFocusOut: windowMark();
 
-		break; case KeyMetaEnter: error = editInsert(&edit, L'\n');
+		break; case KeyMetaEnter: error = editInsert(edit, L'\n');
 		break; case KeyMetaEqual: windowToggleMute();
 		break; case KeyMetaMinus: windowToggleThresh(-1);
 		break; case KeyMetaPlus:  windowToggleThresh(+1);
@@ -396,32 +404,32 @@ static void keyCode(int code) {
 
 		break; case KeyMeta0 ... KeyMeta9: windowShow(code - KeyMeta0);
 		break; case KeyMetaA: windowAuto();
-		break; case KeyMetaB: error = editFn(&edit, EditPrevWord);
-		break; case KeyMetaD: error = editFn(&edit, EditDeleteNextWord);
-		break; case KeyMetaF: error = editFn(&edit, EditNextWord);
+		break; case KeyMetaB: error = editFn(edit, EditPrevWord);
+		break; case KeyMetaD: error = editFn(edit, EditDeleteNextWord);
+		break; case KeyMetaF: error = editFn(edit, EditNextWord);
 		break; case KeyMetaL: windowBare();
 		break; case KeyMetaM: uiWrite(windowID(), Warm, NULL, "");
 		break; case KeyMetaN: windowScroll(ScrollHot, +1);
 		break; case KeyMetaP: windowScroll(ScrollHot, -1);
-		break; case KeyMetaQ: error = editFn(&edit, EditCollapse);
+		break; case KeyMetaQ: error = editFn(edit, EditCollapse);
 		break; case KeyMetaS: uiSpoilerReveal ^= true; windowUpdate();
 		break; case KeyMetaT: windowToggleTime();
 		break; case KeyMetaU: windowScroll(ScrollUnread, 0);
 		break; case KeyMetaV: windowScroll(ScrollPage, +1);
 
-		break; case KeyCtrlLeft: error = editFn(&edit, EditPrevWord);
-		break; case KeyCtrlRight: error = editFn(&edit, EditNextWord);
+		break; case KeyCtrlLeft: error = editFn(edit, EditPrevWord);
+		break; case KeyCtrlRight: error = editFn(edit, EditNextWord);
 
-		break; case KEY_BACKSPACE: error = editFn(&edit, EditDeletePrev);
-		break; case KEY_DC: error = editFn(&edit, EditDeleteNext);
+		break; case KEY_BACKSPACE: error = editFn(edit, EditDeletePrev);
+		break; case KEY_DC: error = editFn(edit, EditDeleteNext);
 		break; case KEY_DOWN: windowScroll(ScrollOne, -1);
-		break; case KEY_END: error = editFn(&edit, EditTail);
+		break; case KEY_END: error = editFn(edit, EditTail);
 		break; case KEY_ENTER: inputEnter();
-		break; case KEY_HOME: error = editFn(&edit, EditHead);
-		break; case KEY_LEFT: error = editFn(&edit, EditPrev);
+		break; case KEY_HOME: error = editFn(edit, EditHead);
+		break; case KEY_LEFT: error = editFn(edit, EditPrev);
 		break; case KEY_NPAGE: windowScroll(ScrollPage, -1);
 		break; case KEY_PPAGE: windowScroll(ScrollPage, +1);
-		break; case KEY_RIGHT: error = editFn(&edit, EditNext);
+		break; case KEY_RIGHT: error = editFn(edit, EditNext);
 		break; case KEY_SEND: windowScroll(ScrollAll, -1);
 		break; case KEY_SHOME: windowScroll(ScrollAll, +1);
 		break; case KEY_UP: windowScroll(ScrollOne, +1);
@@ -431,29 +439,30 @@ static void keyCode(int code) {
 
 static void keyCtrl(wchar_t ch) {
 	int error = 0;
+	struct Edit *edit = &edits[windowID()];
 	switch (ch ^ L'@') {
-		break; case L'?': error = editFn(&edit, EditDeletePrev);
-		break; case L'A': error = editFn(&edit, EditHead);
-		break; case L'B': error = editFn(&edit, EditPrev);
+		break; case L'?': error = editFn(edit, EditDeletePrev);
+		break; case L'A': error = editFn(edit, EditHead);
+		break; case L'B': error = editFn(edit, EditPrev);
 		break; case L'C': raise(SIGINT);
-		break; case L'D': error = editFn(&edit, EditDeleteNext);
-		break; case L'E': error = editFn(&edit, EditTail);
-		break; case L'F': error = editFn(&edit, EditNext);
-		break; case L'H': error = editFn(&edit, EditDeletePrev);
-		break; case L'I': error = tabComplete(&edit, windowID());
+		break; case L'D': error = editFn(edit, EditDeleteNext);
+		break; case L'E': error = editFn(edit, EditTail);
+		break; case L'F': error = editFn(edit, EditNext);
+		break; case L'H': error = editFn(edit, EditDeletePrev);
+		break; case L'I': error = tabComplete(edit, windowID());
 		break; case L'J': inputEnter();
-		break; case L'K': error = editFn(&edit, EditDeleteTail);
+		break; case L'K': error = editFn(edit, EditDeleteTail);
 		break; case L'L': clearok(curscr, true);
 		break; case L'N': windowShow(windowNum() + 1);
 		break; case L'P': windowShow(windowNum() - 1);
-		break; case L'R': windowSearch(editString(&edit), -1);
-		break; case L'S': windowSearch(editString(&edit), +1);
-		break; case L'T': error = editFn(&edit, EditTranspose);
-		break; case L'U': error = editFn(&edit, EditDeleteHead);
+		break; case L'R': windowSearch(editString(edit), -1);
+		break; case L'S': windowSearch(editString(edit), +1);
+		break; case L'T': error = editFn(edit, EditTranspose);
+		break; case L'U': error = editFn(edit, EditDeleteHead);
 		break; case L'V': windowScroll(ScrollPage, -1);
-		break; case L'W': error = editFn(&edit, EditDeletePrevWord);
-		break; case L'X': error = macroExpand(&edit); tabAccept();
-		break; case L'Y': error = editFn(&edit, EditPaste);
+		break; case L'W': error = editFn(edit, EditDeletePrevWord);
+		break; case L'X': error = macroExpand(edit); tabAccept();
+		break; case L'Y': error = editFn(edit, EditPaste);
 	}
 	if (error) err(EX_OSERR, "editFn");
 }
@@ -488,8 +497,9 @@ static void keyStyle(wchar_t ch) {
 	if (color != Default) {
 		snprintf(buf, sizeof(buf), "%c%02d", C, color);
 	}
+	struct Edit *edit = &edits[windowID()];
 	for (char *ch = buf; *ch; ++ch) {
-		int error = editInsert(&edit, *ch);
+		int error = editInsert(edit, *ch);
 		if (error) err(EX_OSERR, "editInsert");
 	}
 }
@@ -514,8 +524,8 @@ void inputRead(void) {
 	wint_t ch;
 	static bool paste, style, literal;
 	for (int ret; ERR != (ret = wget_wch(uiInput, &ch));) {
-		bool tab = false;
-		size_t pos = edit.pos;
+		bool tabbing = false;
+		size_t pos = edits[tab.id].pos;
 		bool spr = uiSpoilerReveal;
 
 		if (ret == KEY_CODE_YES && ch == KeyPasteOn) {
@@ -525,7 +535,7 @@ void inputRead(void) {
 		} else if (ret == KEY_CODE_YES && ch == KeyPasteManual) {
 			paste ^= true;
 		} else if (paste || literal) {
-			int error = editInsert(&edit, ch);
+			int error = editInsert(&edits[windowID()], ch);
 			if (error) err(EX_OSERR, "editInsert");
 		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
@@ -538,19 +548,19 @@ void inputRead(void) {
 		} else if (style) {
 			keyStyle(ch);
 		} else if (iswcntrl(ch)) {
-			tab = (ch == (L'I' ^ L'@'));
+			tabbing = (ch == (L'I' ^ L'@'));
 			keyCtrl(ch);
 		} else {
-			int error = editInsert(&edit, ch);
+			int error = editInsert(&edits[windowID()], ch);
 			if (error) err(EX_OSERR, "editInsert");
 		}
 		style = false;
 		literal = false;
 
-		if (!tab) {
-			if (edit.pos > pos) {
+		if (!tabbing) {
+			if (edits[tab.id].pos > pos) {
 				tabAccept();
-			} else if (edit.pos < pos) {
+			} else if (edits[tab.id].pos < pos) {
 				tabReject();
 			}
 		}
