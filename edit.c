@@ -206,9 +206,9 @@ int editInsert(struct Edit *e, wchar_t ch) {
 #include <string.h>
 
 static void fix(struct Edit *e, const char *str) {
-	editFn(e, EditClear);
+	assert(0 == editFn(e, EditClear));
 	for (const char *ch = str; *ch; ++ch) {
-		editInsert(e, (wchar_t)*ch);
+		assert(0 == editInsert(e, (wchar_t)*ch));
 	}
 }
 
@@ -216,12 +216,14 @@ static bool eq(struct Edit *e, const char *str1) {
 	size_t pos;
 	static size_t cap;
 	static char *buf;
-	editString(e, &buf, &cap, &pos);
+	assert(NULL != editString(e, &buf, &cap, &pos));
 	const char *str2 = &str1[strlen(str1) + 1];
 	return pos == strlen(str1)
 		&& !strncmp(buf, str1, pos)
 		&& !strcmp(&buf[pos], str2);
 }
+
+#define editFn(...) assert(0 == editFn(__VA_ARGS__))
 
 int main(void) {
 	struct Edit e = { .mode = EditEmacs };
