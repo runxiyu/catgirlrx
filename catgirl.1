@@ -1,4 +1,4 @@
-.Dd February 12, 2022
+.Dd February 22, 2022
 .Dt CATGIRL 1
 .Os
 .
@@ -428,6 +428,104 @@ trust = example.pem
 # or: $ catgirl -t example.pem
 .Ed
 .El
+.
+.Sh INTERFACE
+The
+.Nm
+interface is split
+into three areas.
+.
+.Ss Status Line
+The top line of the terminal
+shows window statuses.
+Only the currently active window
+and windows with activity are listed.
+The status line for a window
+might look like this:
+.Bd -literal -offset indent
+1+ #ascii.town +3 ~7 @
+.Ed
+.Pp
+The number on the left
+is the window number.
+Following it may be one of
+.Ql - ,
+.Ql + ,
+.Ql ++ ,
+as well as
+.Ql = .
+These indicate
+the message visibility threshold
+and mute status
+of the window.
+.Pp
+On the right side,
+the number following
+.Ql +
+indicates the number of unread messages.
+The number following
+.Ql ~
+indicates how many lines
+are below the scroll position.
+An
+.Ql @
+indicates that there is unsent input
+in the window's
+.Sx Input Line .
+.Pp
+.Nm
+will also set the terminal title,
+if possible,
+to the name of the network
+and active window,
+followed by the unread count
+for that window,
+and the unread count
+for all other windows
+in parentheses.
+.
+.Ss Chat Area
+The chat area shows
+messages and events.
+Regular messages are shown
+with the nick between
+.Ql <>
+angle brackets.
+Actions are shown
+with the nick preceded by
+.Ql * .
+Notices are shown
+with the nick between
+.Ql -
+hyphens.
+.Pp
+Blank lines are inserted into the chat
+as unread markers.
+.Pp
+While scrolling,
+the most recent 5 lines of chat
+are kept visible below a marker line.
+.
+.Ss Input Line
+The bottom line of the terminal
+is where messages and commands are entered.
+When entering a message, action or notice,
+your nick appears on the left,
+as it would in the
+.Sx Chat Area .
+When entering a command,
+no nick is shown.
+.Pp
+Formatting codes are shown
+in the input line
+as reverse-video uppercase letters.
+These will not appear in the sent message.
+.Pp
+Input that is too long
+to send as a single message
+will have a red background
+starting at the point where it will be split
+into a second message.
 .
 .Sh COMMANDS
 Any unique prefix can be used to abbreviate a command.
