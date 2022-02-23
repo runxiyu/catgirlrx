@@ -37,6 +37,7 @@
 #include <string.h>
 #include <sysexits.h>
 #include <termios.h>
+#include <unistd.h>
 #include <wchar.h>
 #include <wctype.h>
 
