@@ -1,4 +1,4 @@
-/* Copyright (C) 2020  C. McEnroe <june@causal.agency>
+/* Copyright (C) 2020  June McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -371,7 +371,6 @@ int main(int argc, char *argv[]) {
 	set(&network.name, host);
 	set(&self.nick, "*");
 
-	commandCompleteAdd();
 	inputCompleteAdd();
 
 	ircConfig(insecure, trust, cert, priv);
