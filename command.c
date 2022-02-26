@@ -1,4 +1,4 @@
-/* Copyright (C) 2020  C. McEnroe <june@causal.agency>
+/* Copyright (C) 2020  June McEnroe <june@causal.agency>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -639,6 +639,12 @@ size_t commandWillSplit(uint id, const char *input) {
 	return 0;
 }
 
+static bool commandAvailable(const struct Handler *handler) {
+	if (handler->flags & Restrict && self.restricted) return false;
+	if (handler->flags & Kiosk && self.kiosk) return false;
+	return true;
+}
+
 void command(uint id, char *input) {
 	if (id == Debug && input[0] != '/' && !self.restricted) {
 		commandQuote(id, input);
@@ -667,10 +673,7 @@ void command(uint id, char *input) {
 		uiFormat(id, Warm, NULL, "No such command %s", cmd);
 		return;
 	}
-	if (
-		(self.restricted && handler->flags & Restrict) ||
-		(self.kiosk && handler->flags & Kiosk)
-	) {
+	if (!commandAvailable(handler)) {
 		uiFormat(id, Warm, NULL, "Command %s is unavailable", cmd);
 		return;
 	}
