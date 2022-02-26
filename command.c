@@ -692,6 +692,7 @@ void command(uint id, char *input) {
 
 void commandCompleteAdd(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
+		if (!commandAvailable(&Commands[i])) continue;
 		completeAdd(None, Commands[i].cmd, Default);
 	}
 }
