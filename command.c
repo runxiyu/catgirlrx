@@ -176,8 +176,14 @@ static void commandQuit(uint id, char *params) {
 
 static void commandNick(uint id, char *params) {
 	(void)id;
-	if (!params) return;
-	ircFormat("NICK :%s\r\n", params);
+	if (params) {
+		ircFormat("NICK :%s\r\n", params);
+	} else {
+		uiFormat(
+			Network, Warm, NULL, "You are \3%02d%s",
+			self.color, self.nick
+		);
+	}
 }
 
 static void commandAway(uint id, char *params) {
