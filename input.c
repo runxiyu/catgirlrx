@@ -467,7 +467,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'I': error = tabComplete(edit, windowID());
 		break; case L'J': inputEnter();
 		break; case L'K': error = editFn(edit, EditDeleteTail);
-		break; case L'L': clearok(curscr, true);
+		break; case L'L': clearok(curscr, true); wrefresh(curscr);
 		break; case L'N': windowShow(windowNum() + 1);
 		break; case L'P': windowShow(windowNum() - 1);
 		break; case L'R': windowSearch(editString(edit, &buf, &cap, NULL), -1);
