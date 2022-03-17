@@ -105,13 +105,29 @@ int editDelete(struct Edit *e, bool cut, size_t index, size_t count) {
 	return 0;
 }
 
+static size_t prevSpacing(const struct Edit *e, size_t pos) {
+	if (!pos) return 0;
+	do {
+		pos--;
+	} while (pos && !wcwidth(e->buf[pos]));
+	return pos;
+}
+
+static size_t nextSpacing(const struct Edit *e, size_t pos) {
+	if (pos == e->len) return e->len;
+	do {
+		pos++;
+	} while (pos < e->len && !wcwidth(e->buf[pos]));
+	return pos;
+}
+
 int editFn(struct Edit *e, enum EditFn fn) {
 	int ret = 0;
 	switch (fn) {
 		break; case EditHead: e->pos = 0;
 		break; case EditTail: e->pos = e->len;
-		break; case EditPrev: if (e->pos) e->pos--;
-		break; case EditNext: if (e->pos < e->len) e->pos++;
+		break; case EditPrev: e->pos = prevSpacing(e, e->pos);
+		break; case EditNext: e->pos = nextSpacing(e, e->pos);
 		break; case EditPrevWord: {
 			while (e->pos && !isword(e->buf[e->pos-1])) e->pos--;
 			while (e->pos && isword(e->buf[e->pos-1])) e->pos--;
@@ -129,10 +145,12 @@ int editFn(struct Edit *e, enum EditFn fn) {
 			ret = editDelete(e, true, e->pos, e->len - e->pos);
 		}
 		break; case EditDeletePrev: {
-			if (e->pos) editDelete(e, false, --e->pos, 1);
+			size_t prev = prevSpacing(e, e->pos);
+			editDelete(e, false, prev, e->pos - prev);
+			e->pos = prev;
 		}
 		break; case EditDeleteNext: {
-			editDelete(e, false, e->pos, 1);
+			editDelete(e, false, e->pos, nextSpacing(e, e->pos) - e->pos);
 		}
 		break; case EditDeletePrevWord: {
 			if (!e->pos) break;
