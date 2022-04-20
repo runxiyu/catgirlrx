@@ -73,6 +73,15 @@ static void logMkdir(const char *path) {
 	if (error && errno != EEXIST) err(EX_CANTCREAT, "log/%s", path);
 }
 
+static void sanitize(char *ptr, char *end) {
+	for (char *ch = ptr; ch < end && *ch == '.'; ++ch) {
+		*ch = '_';
+	}
+	for (char *ch = ptr; ch < end; ++ch) {
+		if (*ch == '/') *ch = '_';
+	}
+}
+
 static struct {
 	int year;
 	int month;
@@ -97,22 +106,21 @@ static FILE *logFile(uint id, const struct tm *tm) {
 	logs[id].month = tm->tm_mon;
 	logs[id].day = tm->tm_mday;
 
-	size_t len = 0;
 	char path[PATH_MAX];
-	for (const char *ch = network.name; *ch; ++ch) {
-		path[len++] = (*ch == '/' ? '_' : *ch);
-	}
-	path[len] = '\0';
+	char *ptr = path, *end = &path[sizeof(path)];
+
+	ptr = seprintf(ptr, end, "%s", network.name);
+	sanitize(path, ptr);
 	logMkdir(path);
 
-	path[len++] = '/';
-	for (const char *ch = idNames[id]; *ch; ++ch) {
-		path[len++] = (*ch == '/' ? '_' : *ch);
-	}
-	path[len] = '\0';
+	char *name = ptr;
+	ptr = seprintf(ptr, end, "/%s", idNames[id]);
+	sanitize(&name[1], ptr);
 	logMkdir(path);
 
-	strftime(&path[len], sizeof(path) - len, "/%F.log", tm);
+	size_t len = strftime(ptr, end - ptr, "/%F.log", tm);
+	if (!len) errx(EX_CANTCREAT, "log path too long");
+
 	int fd = openat(
 		logDir, path,
 		O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC,
