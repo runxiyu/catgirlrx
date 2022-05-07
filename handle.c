@@ -127,6 +127,15 @@ static void handleErrorGeneric(struct Message *msg) {
 	}
 }
 
+static void handleReplyGeneric(struct Message *msg) {
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
+	for (uint i = 1; i < ParamCap && msg->params[i]; ++i) {
+		ptr = seprintf(ptr, end, "%s%s", (i > 1 ? " " : ""), msg->params[i]);
+	}
+	if (ptr != buf) uiWrite(Network, Ice, tagTime(msg), buf);
+}
+
 static void handleErrorNicknameInUse(struct Message *msg) {
 	require(msg, false, 2);
 	if (!strcmp(self.nick, "*")) {
@@ -232,6 +241,7 @@ static void handleAuthenticate(struct Message *msg) {
 static void handleReplyLoggedIn(struct Message *msg) {
 	(void)msg;
 	ircFormat("CAP END\r\n");
+	handleReplyGeneric(msg);
 }
 
 static void handleErrorSASLFail(struct Message *msg) {
@@ -255,9 +265,11 @@ static void handleReplyWelcome(struct Message *msg) {
 		replies[ReplyNamesAuto] += count;
 	}
 	commandCompleteAdd();
+	handleReplyGeneric(msg);
 }
 
 static void handleReplyISupport(struct Message *msg) {
+	handleReplyGeneric(msg);
 	for (uint i = 1; i < ParamCap; ++i) {
 		if (!msg->params[i]) break;
 		char *key = strsep(&msg->params[i], "=");
@@ -1403,5 +1415,7 @@ void handle(struct Message *msg) {
 		if (handler->reply < 0) replies[abs(handler->reply)]--;
 	} else if (strcmp(msg->cmd, "400") >= 0 && strcmp(msg->cmd, "599") <= 0) {
 		handleErrorGeneric(msg);
+	} else if (isdigit(msg->cmd[0])) {
+		handleReplyGeneric(msg);
 	}
 }
