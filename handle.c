@@ -128,12 +128,21 @@ static void handleErrorGeneric(struct Message *msg) {
 }
 
 static void handleReplyGeneric(struct Message *msg) {
+	uint first = 1;
+	uint id = Network;
+	if (msg->params[1] && strchr(network.chanTypes, msg->params[1][0])) {
+		id = idFor(msg->params[1]);
+		first++;
+	}
 	char buf[1024];
 	char *ptr = buf, *end = &buf[sizeof(buf)];
-	for (uint i = 1; i < ParamCap && msg->params[i]; ++i) {
-		ptr = seprintf(ptr, end, "%s%s", (i > 1 ? " " : ""), msg->params[i]);
+	ptr = seprintf(ptr, end, "\3%02d%s\3\t", Gray, msg->cmd);
+	for (uint i = first; i < ParamCap && msg->params[i]; ++i) {
+		ptr = seprintf(
+			ptr, end, "%s%s", (i > first ? " " : ""), msg->params[i]
+		);
 	}
-	if (ptr != buf) uiWrite(Network, Ice, tagTime(msg), buf);
+	uiWrite(id, Ice, tagTime(msg), buf);
 }
 
 static void handleErrorNicknameInUse(struct Message *msg) {
