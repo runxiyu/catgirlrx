@@ -276,10 +276,14 @@ static void handleReplyISupport(struct Message *msg) {
 		if (!strcmp(key, "NETWORK")) {
 			if (!msg->params[i]) continue;
 			set(&network.name, msg->params[i]);
-			uiFormat(
-				Network, Cold, tagTime(msg),
-				"You arrive in %s", msg->params[i]
-			);
+			static bool arrived;
+			if (!arrived) {
+				uiFormat(
+					Network, Cold, tagTime(msg),
+					"You arrive in %s", msg->params[i]
+				);
+				arrived = true;
+			}
 		} else if (!strcmp(key, "USERLEN")) {
 			if (!msg->params[i]) continue;
 			network.userLen = strtoul(msg->params[i], NULL, 10);
