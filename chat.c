@@ -237,7 +237,6 @@ int main(int argc, char *argv[]) {
 	bool log = false;
 	bool sasl = false;
 	char *pass = NULL;
-	const char *nick = NULL;
 	const char *user = NULL;
 	const char *real = NULL;
 
@@ -306,7 +305,11 @@ int main(int argc, char *argv[]) {
 			break; case 'k': priv = optarg;
 			break; case 'l': log = true; logOpen();
 			break; case 'm': self.mode = optarg;
-			break; case 'n': nick = optarg;
+			break; case 'n': {
+				for (uint i = 0; i < ARRAY_LEN(self.nicks); ++i) {
+					self.nicks[i] = strsep(&optarg, " ");
+				}
+			}
 			break; case 'o': printCert = true;
 			break; case 'p': port = optarg;
 			break; case 'q': windowThreshold = Warm;
@@ -333,10 +336,10 @@ int main(int argc, char *argv[]) {
 		return EX_OK;
 	}
 
-	if (!nick) nick = getenv("USER");
-	if (!nick) errx(EX_CONFIG, "USER unset");
-	if (!user) user = nick;
-	if (!real) real = nick;
+	if (!self.nicks[0]) self.nicks[0] = getenv("USER");
+	if (!self.nicks[0]) errx(EX_CONFIG, "USER unset");
+	if (!user) user = self.nicks[0];
+	if (!real) real = self.nicks[0];
 
 	if (self.kiosk) {
 		char *hash;
@@ -404,7 +407,7 @@ int main(int argc, char *argv[]) {
 	}
 	if (sasl) ircFormat("CAP REQ :sasl\r\n");
 	ircFormat("CAP LS\r\n");
-	ircFormat("NICK :%s\r\n", nick);
+	ircFormat("NICK %s\r\n", self.nicks[0]);
 	ircFormat("USER %s 0 * :%s\r\n", user, real);
 
 	// Avoid disabling VINTR until main loop.

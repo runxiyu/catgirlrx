@@ -148,7 +148,12 @@ static void handleReplyGeneric(struct Message *msg) {
 static void handleErrorNicknameInUse(struct Message *msg) {
 	require(msg, false, 2);
 	if (!strcmp(self.nick, "*")) {
-		ircFormat("NICK :%s_\r\n", msg->params[1]);
+		static uint i = 1;
+		if (i < ARRAY_LEN(self.nicks) && self.nicks[i]) {
+			ircFormat("NICK %s\r\n", self.nicks[i++]);
+		} else {
+			ircFormat("NICK %s_\r\n", msg->params[1]);
+		}
 	} else {
 		handleErrorGeneric(msg);
 	}
@@ -1207,16 +1212,24 @@ static bool isAction(struct Message *msg) {
 	return true;
 }
 
-static bool isMention(const struct Message *msg) {
-	size_t len = strlen(self.nick);
-	const char *match = msg->params[1];
-	while (NULL != (match = strstr(match, self.nick))) {
-		char a = (match > msg->params[1] ? match[-1] : ' ');
+static bool matchWord(const char *str, const char *word) {
+	size_t len = strlen(word);
+	const char *match = str;
+	while (NULL != (match = strstr(match, word))) {
+		char a = (match > str ? match[-1] : ' ');
 		char b = (match[len] ?: ' ');
 		if ((isspace(a) || ispunct(a)) && (isspace(b) || ispunct(b))) {
 			return true;
 		}
 		match = &match[len];
+	}
+	return false;
+}
+
+static bool isMention(const struct Message *msg) {
+	if (matchWord(msg->params[1], self.nick)) return true;
+	for (uint i = 0; i < ARRAY_LEN(self.nicks) && self.nicks[i]; ++i) {
+		if (matchWord(msg->params[1], self.nicks[i])) return true;
 	}
 	return false;
 }
