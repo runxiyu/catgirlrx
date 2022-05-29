@@ -136,7 +136,7 @@ static void handleReplyGeneric(struct Message *msg) {
 	}
 	char buf[1024];
 	char *ptr = buf, *end = &buf[sizeof(buf)];
-	ptr = seprintf(ptr, end, "\3%02d%s\3\t", Gray, msg->cmd);
+	ptr = seprintf(ptr, end, "\3%d(%s)\3\t", Gray, msg->cmd);
 	for (uint i = first; i < ParamCap && msg->params[i]; ++i) {
 		ptr = seprintf(
 			ptr, end, "%s%s", (i > first ? " " : ""), msg->params[i]
