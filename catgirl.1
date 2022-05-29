@@ -1,4 +1,4 @@
-.Dd February 22, 2022
+.Dd May 29, 2022
 .Dt CATGIRL 1
 .Os
 .
@@ -577,10 +577,9 @@ Start a private conversation.
 Quit IRC.
 .It Ic /quote Ar command
 Send a raw IRC command.
-The
-.Ic /debug
-command is likely needed
-for command output.
+Use
+.Ic M--
+to show unknown replies.
 .It Ic /say Ar message
 Send a regular message.
 .It Ic /setname Ar name
@@ -777,7 +776,8 @@ general events
 or non-highlighted messages.
 .It Ic M--
 Lower message visibility threshold,
-showing ignored messages.
+showing ignored messages
+and unknown replies.
 .It Ic M-=
 Toggle mute.
 Muted windows do not appear in the status line
