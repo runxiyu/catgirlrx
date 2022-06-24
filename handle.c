@@ -676,6 +676,28 @@ static void swap(wchar_t *a, wchar_t *b) {
 	*b = x;
 }
 
+static char *highlightMiddle(
+	char *ptr, char *end, enum Color color,
+	wchar_t *str, size_t pre, size_t suf
+) {
+	wchar_t nul = L'\0';
+	swap(&str[pre], &nul);
+	ptr = seprintf(ptr, end, "%ls", str);
+	swap(&str[pre], &nul);
+	swap(&str[suf], &nul);
+	if (hashBound) {
+		ptr = seprintf(
+			ptr, end, "\3%02d,%02d%ls\3%02d,%02d",
+			Default, color, &str[pre], Default, Default
+		);
+	} else {
+		ptr = seprintf(ptr, end, "\26%ls\26", &str[pre]);
+	}
+	swap(&str[suf], &nul);
+	ptr = seprintf(ptr, end, "%ls", &str[suf]);
+	return ptr;
+}
+
 static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
@@ -693,8 +715,6 @@ static void handleTopic(struct Message *msg) {
 		return;
 	}
 
-	char buf[1024];
-	char *ptr = buf, *end = &buf[sizeof(buf)];
 	const char *prev = complete(id, "/topic ");
 	completeReject();
 	if (prev) {
@@ -708,45 +728,46 @@ static void handleTopic(struct Message *msg) {
 	if (swprintf(old, ARRAY_LEN(old), L"%s", prev) < 0) goto plain;
 	if (swprintf(new, ARRAY_LEN(new), L"%s", msg->params[1]) < 0) goto plain;
 
-	if (!hashBound) {
-		ptr = seprintf(ptr, end, "%c%ls%c -> %c%ls%c", R, old, O, R, new, O);
-		goto plain;
-	}
-
 	size_t pre;
 	for (pre = 0; old[pre] && new[pre] && old[pre] == new[pre]; ++pre);
-	wchar_t *osuf = &old[wcslen(old)];
-	wchar_t *nsuf = &new[wcslen(new)];
-	while (osuf > &old[pre] && nsuf > &new[pre] && osuf[-1] == nsuf[-1]) {
+	size_t osuf = wcslen(old);
+	size_t nsuf = wcslen(new);
+	while (osuf > pre && nsuf > pre && old[osuf-1] == new[nsuf-1]) {
 		osuf--;
 		nsuf--;
 	}
 
-	wchar_t nul = L'\0';
-	swap(&new[pre], &nul);
-	ptr = seprintf(ptr, end, "%ls", new);
-	swap(&new[pre], &nul);
-	swap(osuf, &nul);
-	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Brown, &old[pre]);
-	swap(osuf, &nul);
-	swap(nsuf, &nul);
-	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Green, &new[pre]);
-	swap(nsuf, &nul);
-	ptr = seprintf(ptr, end, "\3%02d,%02d%ls", Default, Default, nsuf);
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
+	ptr = seprintf(
+		ptr, end, "\3%02d%s\3\ttakes down the sign in \3%02d%s\3: ",
+		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+	);
+	ptr = highlightMiddle(ptr, end, Brown, old, pre, osuf);
+	uiWrite(id, Cold, tagTime(msg), buf);
+	ptr = buf;
+	ptr = seprintf(
+		ptr, end, "\3%02d%s\3\tplaces a new sign in \3%02d%s\3: ",
+		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+	);
+	ptr = highlightMiddle(ptr, end, Green, new, pre, nsuf);
+	uiWrite(id, Warm, tagTime(msg), buf);
+	goto log;
 
 plain:
-	topicComplete(id, msg->params[1]);
-	urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
 		id, Warm, tagTime(msg),
 		"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
-		(ptr > buf ? buf : msg->params[1])
+		msg->params[1]
 	);
+log:
 	logFormat(
 		id, tagTime(msg), "%s places a new sign in %s: %s",
 		msg->nick, msg->params[0], msg->params[1]
 	);
+	topicComplete(id, msg->params[1]);
+	urlScan(id, msg->nick, msg->params[1]);
 }
 
 static const char *UserModes[256] = {
