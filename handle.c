@@ -744,7 +744,7 @@ static void handleTopic(struct Message *msg) {
 		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
 	);
 	ptr = highlightMiddle(ptr, end, Brown, old, pre, osuf);
-	uiWrite(id, Cold, tagTime(msg), buf);
+	if (osuf != pre) uiWrite(id, Cold, tagTime(msg), buf);
 	ptr = buf;
 	ptr = seprintf(
 		ptr, end, "\3%02d%s\3\tplaces a new sign in \3%02d%s\3: ",
