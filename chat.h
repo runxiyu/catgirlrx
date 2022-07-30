@@ -396,6 +396,22 @@ int bufferReflow(
 	struct Buffer *buffer, int cols, enum Heat thresh, size_t tail
 );
 
+struct Cursor {
+	uint gen;
+	struct Node *node;
+};
+void cacheInsert(bool touch, uint id, const char *key);
+void cacheInsertColor(bool touch, uint id, const char *key, enum Color color);
+void cacheReplace(bool touch, const char *old, const char *new);
+enum Color cacheColor(uint id, const char *key);
+const char *cachePrefix(struct Cursor *curs, uint id, const char *prefix);
+const char *cacheSubstr(struct Cursor *curs, uint id, const char *substr);
+uint cacheID(struct Cursor *curs, const char *key);
+void cacheAccept(struct Cursor *curs);
+void cacheReject(struct Cursor *curs);
+void cacheRemove(uint id, const char *key);
+void cacheClear(uint id);
+
 const char *complete(uint id, const char *prefix);
 const char *completeSubstr(uint id, const char *substr);
 void completeAccept(void);
