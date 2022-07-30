@@ -1255,42 +1255,37 @@ static bool isMention(const struct Message *msg) {
 	return false;
 }
 
-static void colorMentions(char *buf, size_t cap, uint id, struct Message *msg) {
-	*buf = '\0';
-
-	char *split = strstr(msg->params[1], ": ");
+static char *colorMentions(char *ptr, char *end, uint id, const char *msg) {
+	// Consider words before a colon, or only the first two.
+	const char *split = strstr(msg, ": ");
 	if (!split) {
-		split = strchr(msg->params[1], ' ');
+		split = strchr(msg, ' ');
 		if (split) split = strchr(&split[1], ' ');
 	}
-	if (!split) split = &msg->params[1][strlen(msg->params[1])];
-	for (char *ch = msg->params[1]; ch < split; ++ch) {
-		if (iscntrl(*ch)) return;
+	if (!split) split = &msg[strlen(msg)];
+	// Bail if there is existing formatting.
+	for (const char *ch = msg; ch < split; ++ch) {
+		if (iscntrl(*ch)) goto rest;
 	}
-	char delimit = *split;
-	char *mention = msg->params[1];
-	msg->params[1] = (delimit ? &split[1] : split);
-	*split = '\0';
 
-	char *ptr = buf, *end = &buf[cap];
-	while (*mention) {
-		size_t skip = strspn(mention, ",<> ");
-		ptr = seprintf(ptr, end, "%.*s", (int)skip, mention);
-		mention += skip;
+	while (msg < split) {
+		size_t skip = strspn(msg, ",:<> ");
+		ptr = seprintf(ptr, end, "%.*s", (int)skip, msg);
+		msg += skip;
 
-		size_t len = strcspn(mention, ",<> ");
-		char punct = mention[len];
-		mention[len] = '\0';
-		enum Color color = completeColor(id, mention);
+		size_t len = strcspn(msg, ",:<> ");
+		char *p = seprintf(ptr, end, "%.*s", (int)len, msg);
+		enum Color color = completeColor(id, ptr);
 		if (color != Default) {
-			ptr = seprintf(ptr, end, "\3%02d%s\3", color, mention);
+			ptr = seprintf(ptr, end, "\3%02d%.*s\3", color, (int)len, msg);
 		} else {
-			ptr = seprintf(ptr, end, "%s", mention);
+			ptr = p;
 		}
-		mention[len] = punct;
-		mention += len;
+		msg += len;
 	}
-	seprintf(ptr, end, "%c", delimit);
+
+rest:
+	return seprintf(ptr, end, "%s", msg);
 }
 
 static void handlePrivmsg(struct Message *msg) {
@@ -1314,7 +1309,8 @@ static void handlePrivmsg(struct Message *msg) {
 	bool notice = (msg->cmd[0] == 'N');
 	bool action = !notice && isAction(msg);
 	bool highlight = !mine && isMention(msg);
-	enum Heat heat = filterCheck((highlight || query ? Hot : Warm), id, msg);
+	enum Heat heat = (!notice && (highlight || query) ? Hot : Warm);
+	heat = filterCheck(heat, id, msg);
 	if (heat > Warm && !mine && !query) highlight = true;
 	if (!notice && !mine && heat > Ice) {
 		completeTouch(id, msg->nick, hash(msg->user));
@@ -1322,34 +1318,34 @@ static void handlePrivmsg(struct Message *msg) {
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 
 	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
 		}
-		uiFormat(
-			id, filterCheck(Warm, id, msg), tagTime(msg),
-			"\3%d-%s-\3%d\t%s",
-			hash(msg->user), msg->nick, LightGray, msg->params[1]
+		ptr = seprintf(
+			ptr, end, "\3%d-%s-\3%d\t",
+			hash(msg->user), msg->nick, LightGray
 		);
 	} else if (action) {
 		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
-		colorMentions(buf, sizeof(buf), id, msg);
-		uiFormat(
-			id, heat, tagTime(msg),
-			"%s\35\3%d* %s\17\35\t%s%s",
-			(highlight ? "\26" : ""), hash(msg->user), msg->nick,
-			buf, msg->params[1]
+		ptr = seprintf(
+			ptr, end, "%s\35\3%d* %s\17\35\t",
+			(highlight ? "\26" : ""), hash(msg->user), msg->nick
 		);
 	} else {
 		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
-		colorMentions(buf, sizeof(buf), id, msg);
-		uiFormat(
-			id, heat, tagTime(msg),
-			"%s\3%d<%s>\17\t%s%s",
-			(highlight ? "\26" : ""), hash(msg->user), msg->nick,
-			buf, msg->params[1]
+		ptr = seprintf(
+			ptr, end, "%s\3%d<%s>\17\t",
+			(highlight ? "\26" : ""), hash(msg->user), msg->nick
 		);
 	}
+	if (notice) {
+		ptr = seprintf(ptr, end, "%s", msg->params[1]);
+	} else {
+		ptr = colorMentions(ptr, end, id, msg->params[1]);
+	}
+	uiWrite(id, heat, tagTime(msg), buf);
 }
 
 static void handlePing(struct Message *msg) {
