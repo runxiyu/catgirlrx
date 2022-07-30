@@ -130,7 +130,7 @@ enum Color cacheColor(uint id, const char *key) {
 	return (node ? node->color : Default);
 }
 
-const char *cachePrefix(struct Cursor *curs, uint id, const char *prefix) {
+const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix) {
 	size_t len = strlen(prefix);
 	if (curs->gen != gen) curs->node = NULL;
 	for (
@@ -145,7 +145,7 @@ const char *cachePrefix(struct Cursor *curs, uint id, const char *prefix) {
 	return NULL;
 }
 
-const char *cacheSubstr(struct Cursor *curs, uint id, const char *substr) {
+const char *cacheSearch(struct Cursor *curs, uint id, const char *substr) {
 	if (curs->gen != gen) curs->node = NULL;
 	for (
 		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);

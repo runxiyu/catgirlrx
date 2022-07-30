@@ -333,9 +333,9 @@ static int tabComplete(struct Edit *e, uint id) {
 		tab.suffix = true;
 	}
 
-	const char *comp = cachePrefix(&tab.curs, id, tab.pre);
+	const char *comp = cacheComplete(&tab.curs, id, tab.pre);
 	if (!comp) {
-		comp = cachePrefix(&tab.curs, id, tab.pre);
+		comp = cacheComplete(&tab.curs, id, tab.pre);
 		tab.suffix ^= true;
 	}
 	if (!comp) {

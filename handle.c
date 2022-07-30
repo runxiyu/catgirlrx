@@ -641,7 +641,7 @@ static void handleReplyNoTopic(struct Message *msg) {
 static void topicCache(uint id, const char *topic) {
 	char buf[512];
 	struct Cursor curs = {0};
-	const char *prev = cachePrefix(&curs, id, "/topic ");
+	const char *prev = cacheComplete(&curs, id, "/topic ");
 	if (prev) {
 		snprintf(buf, sizeof(buf), "%s", prev);
 		cacheRemove(id, buf);
@@ -720,7 +720,7 @@ static void handleTopic(struct Message *msg) {
 	}
 
 	struct Cursor curs = {0};
-	const char *prev = cachePrefix(&curs, id, "/topic ");
+	const char *prev = cacheComplete(&curs, id, "/topic ");
 	if (prev) {
 		prev += 7;
 	} else {

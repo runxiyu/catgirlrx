@@ -397,7 +397,7 @@ static void commandWindow(uint id, char *params) {
 			return;
 		}
 		struct Cursor curs = {0};
-		for (const char *match; (match = cacheSubstr(&curs, None, params));) {
+		for (const char *match; (match = cacheSearch(&curs, None, params));) {
 			id = idFind(match);
 			if (!id) continue;
 			cacheAccept(&curs);
@@ -672,8 +672,8 @@ void command(uint id, char *input) {
 
 	struct Cursor curs = {0};
 	const char *cmd = strsep(&input, " ");
-	const char *unique = cachePrefix(&curs, None, cmd);
-	if (unique && !cachePrefix(&curs, None, cmd)) {
+	const char *unique = cacheComplete(&curs, None, cmd);
+	if (unique && !cacheComplete(&curs, None, cmd)) {
 		cmd = unique;
 	}
 
