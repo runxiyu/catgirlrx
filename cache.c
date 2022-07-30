@@ -110,7 +110,8 @@ void cacheInsert(bool touch, uint id, const char *key) {
 }
 
 void cacheInsertColor(bool touch, uint id, const char *key, enum Color color) {
-	insert(touch, id, key)->color = color;
+	struct Node *node = insert(touch, id, key);
+	if (color != Default) node->color = color;
 }
 
 void cacheReplace(bool touch, const char *old, const char *new) {
