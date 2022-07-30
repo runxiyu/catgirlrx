@@ -28,12 +28,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-enum EditMode {
-	EditInsert,
-};
-
 struct Edit {
-	enum EditMode mode;
 	wchar_t *buf;
 	size_t pos;
 	size_t len;
