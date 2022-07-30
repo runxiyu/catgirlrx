@@ -261,12 +261,12 @@ static const struct {
 	{ L"\\wave", L"ヾ(＾∇＾)" },
 };
 
-void inputCompleteAdd(void) {
+void inputCache(void) {
 	char mbs[256];
 	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
 		size_t n = wcstombs(mbs, Macros[i].name, sizeof(mbs));
 		assert(n != (size_t)-1);
-		completeAdd(None, mbs, Default);
+		cacheInsert(false, None, mbs);
 	}
 }
 
@@ -296,15 +296,16 @@ static struct {
 	size_t pos;
 	size_t len;
 	bool suffix;
+	struct Cursor curs;
 } tab;
 
 static void tabAccept(void) {
-	completeAccept();
+	cacheAccept(&tab.curs);
 	tab.len = 0;
 }
 
 static void tabReject(void) {
-	completeReject();
+	cacheReject(&tab.curs);
 	tab.len = 0;
 }
 
@@ -332,9 +333,9 @@ static int tabComplete(struct Edit *e, uint id) {
 		tab.suffix = true;
 	}
 
-	const char *comp = complete(id, tab.pre);
+	const char *comp = cachePrefix(&tab.curs, id, tab.pre);
 	if (!comp) {
-		comp = complete(id, tab.pre);
+		comp = cachePrefix(&tab.curs, id, tab.pre);
 		tab.suffix ^= true;
 	}
 	if (!comp) {

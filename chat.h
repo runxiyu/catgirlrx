@@ -292,7 +292,7 @@ const char *commandIsPrivmsg(uint id, const char *input);
 const char *commandIsNotice(uint id, const char *input);
 const char *commandIsAction(uint id, const char *input);
 size_t commandWillSplit(uint id, const char *input);
-void commandCompleteAdd(void);
+void commandCache(void);
 
 enum Heat {
 	Ice,
@@ -334,7 +334,7 @@ void inputWait(void);
 void inputUpdate(void);
 bool inputPending(uint id);
 void inputRead(void);
-void inputCompleteAdd(void);
+void inputCache(void);
 int inputSave(FILE *file);
 void inputLoad(FILE *file, size_t version);
 
@@ -411,18 +411,6 @@ void cacheAccept(struct Cursor *curs);
 void cacheReject(struct Cursor *curs);
 void cacheRemove(uint id, const char *key);
 void cacheClear(uint id);
-
-const char *complete(uint id, const char *prefix);
-const char *completeSubstr(uint id, const char *substr);
-void completeAccept(void);
-void completeReject(void);
-void completeAdd(uint id, const char *str, enum Color color);
-void completeTouch(uint id, const char *str, enum Color color);
-void completeReplace(uint id, const char *old, const char *new);
-void completeRemove(uint id, const char *str);
-void completeClear(uint id);
-uint completeID(const char *str);
-enum Color completeColor(uint id, const char *str);
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;

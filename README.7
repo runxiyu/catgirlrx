@@ -1,5 +1,5 @@
-.\" To view this file, run: man ./README.7
-.Dd March 31, 2022
+.\" To view this file: $ man ./README.7
+.Dd July 30, 2022
 .Dt README 7
 .Os "Causal Agency"
 .
@@ -9,7 +9,7 @@
 .
 .Sh DESCRIPTION
 .Xr catgirl 1
-is a TLS-only terminal IRC client.
+is a terminal IRC client.
 .
 .Pp
 Screenshot:
@@ -180,7 +180,7 @@ $ make -C scripts sandman
 .Ed
 .
 .Sh FILES
-.Bl -tag -width "complete.c" -compact
+.Bl -tag -width "command.c" -compact
 .It Pa chat.h
 global state and declarations
 .It Pa chat.c
@@ -201,8 +201,8 @@ command handling
 line wrapping
 .It Pa edit.c
 line editing
-.It Pa complete.c
-tab complete
+.It Pa cache.c
+ordered cache
 .It Pa url.c
 URL detection
 .It Pa filter.c
@@ -270,4 +270,4 @@ IRC bouncer:
 .%D June 19, 2020
 .Re
 .
-.\" To view this file, run: man ./README.7
+.\" To view this file: $ man ./README.7

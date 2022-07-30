@@ -93,7 +93,7 @@ static struct Window *windowRemove(uint num) {
 }
 
 static void windowFree(struct Window *window) {
-	completeRemove(None, idNames[window->id]);
+	cacheRemove(None, idNames[window->id]);
 	bufferFree(window->buffer);
 	free(window);
 }
@@ -118,7 +118,7 @@ uint windowFor(uint id) {
 		window->thresh = windowThreshold;
 	}
 	window->buffer = bufferAlloc();
-	completeAdd(None, idNames[id], idColors[id]);
+	cacheInsertColor(false, None, idNames[id], idColors[id]);
 
 	return windowPush(window);
 }
@@ -477,7 +477,7 @@ void windowClose(uint num) {
 	if (num >= count) return;
 	if (windows[num]->id == Network) return;
 	struct Window *window = windowRemove(num);
-	completeClear(window->id);
+	cacheClear(window->id);
 	windowFree(window);
 	if (swap >= num) swap--;
 	if (show == num) {

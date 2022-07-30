@@ -139,7 +139,7 @@ static void commandMsg(uint id, char *params) {
 	char *nick = strsep(&params, " ");
 	uint msg = idFor(nick);
 	if (idColors[msg] == Default) {
-		idColors[msg] = completeColor(id, nick);
+		idColors[msg] = cacheColor(id, nick);
 	}
 	if (params) {
 		splitMessage("PRIVMSG", msg, params);
@@ -380,7 +380,7 @@ static void commandQuery(uint id, char *params) {
 	if (!params) return;
 	uint query = idFor(params);
 	if (idColors[query] == Default) {
-		idColors[query] = completeColor(id, params);
+		idColors[query] = cacheColor(id, params);
 	}
 	windowShow(windowFor(query));
 }
@@ -396,10 +396,11 @@ static void commandWindow(uint id, char *params) {
 			windowShow(windowFor(id));
 			return;
 		}
-		for (const char *match; (match = completeSubstr(None, params));) {
+		struct Cursor curs = {0};
+		for (const char *match; (match = cacheSubstr(&curs, None, params));) {
 			id = idFind(match);
 			if (!id) continue;
-			completeAccept();
+			cacheAccept(&curs);
 			windowShow(windowFor(id));
 			break;
 		}
@@ -669,11 +670,11 @@ void command(uint id, char *input) {
 		return;
 	}
 
+	struct Cursor curs = {0};
 	const char *cmd = strsep(&input, " ");
-	const char *unique = complete(None, cmd);
-	if (unique && !complete(None, cmd)) {
+	const char *unique = cachePrefix(&curs, None, cmd);
+	if (unique && !cachePrefix(&curs, None, cmd)) {
 		cmd = unique;
-		completeReject();
 	}
 
 	const struct Handler *handler = bsearch(
@@ -700,9 +701,9 @@ void command(uint id, char *input) {
 	handler->fn(id, input);
 }
 
-void commandCompleteAdd(void) {
+void commandCache(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
 		if (!commandAvailable(&Commands[i])) continue;
-		completeAdd(None, Commands[i].cmd, Default);
+		cacheInsert(false, None, Commands[i].cmd);
 	}
 }
