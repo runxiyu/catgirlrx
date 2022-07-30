@@ -1290,8 +1290,10 @@ rest:
 
 static void handlePrivmsg(struct Message *msg) {
 	require(msg, true, 2);
-	if (network.statusmsg) {
-		msg->params[0] += strspn(msg->params[0], network.statusmsg);
+	char statusmsg = '\0';
+	if (network.statusmsg && strchr(network.statusmsg, msg->params[0][0])) {
+		statusmsg = msg->params[0][0];
+		msg->params[0]++;
 	}
 	bool query = !strchr(network.chanTypes, msg->params[0][0]);
 	bool server = strchr(msg->nick, '.');
@@ -1319,6 +1321,11 @@ static void handlePrivmsg(struct Message *msg) {
 
 	char buf[1024];
 	char *ptr = buf, *end = &buf[sizeof(buf)];
+	if (statusmsg) {
+		ptr = seprintf(
+			ptr, end, "\3%d[%c]\3 ", hash(msg->params[0]), statusmsg
+		);
+	}
 	if (notice) {
 		if (id != Network) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
