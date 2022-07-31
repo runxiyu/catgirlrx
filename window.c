@@ -118,7 +118,7 @@ uint windowFor(uint id) {
 		window->thresh = windowThreshold;
 	}
 	window->buffer = bufferAlloc();
-	cacheInsertColor(false, None, idNames[id], idColors[id]);
+	cacheInsert(false, None, idNames[id])->color = idColors[id];
 
 	return windowPush(window);
 }

@@ -139,7 +139,7 @@ static void commandMsg(uint id, char *params) {
 	char *nick = strsep(&params, " ");
 	uint msg = idFor(nick);
 	if (idColors[msg] == Default) {
-		idColors[msg] = cacheColor(id, nick);
+		idColors[msg] = cacheGet(id, nick)->color;
 	}
 	if (params) {
 		splitMessage("PRIVMSG", msg, params);
@@ -380,7 +380,7 @@ static void commandQuery(uint id, char *params) {
 	if (!params) return;
 	uint query = idFor(params);
 	if (idColors[query] == Default) {
-		idColors[query] = cacheColor(id, params);
+		idColors[query] = cacheGet(id, params)->color;
 	}
 	windowShow(windowFor(query));
 }

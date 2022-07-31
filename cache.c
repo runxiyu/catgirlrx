@@ -36,10 +36,12 @@
 struct Node {
 	uint id;
 	char *key;
-	enum Color color;
+	struct Entry entry;
 	struct Node *prev;
 	struct Node *next;
 };
+
+static const struct Entry DefaultEntry = { .color = Default };
 
 static uint gen;
 static struct Node *head;
@@ -50,7 +52,7 @@ static struct Node *alloc(uint id, const char *key) {
 	if (!node) err(EX_OSERR, "calloc");
 	node->id = id;
 	node->key = strdup(key);
-	node->color = Default;
+	node->entry = DefaultEntry;
 	if (!node->key) err(EX_OSERR, "strdup");
 	return node;
 }
@@ -105,13 +107,13 @@ static struct Node *insert(bool touch, uint id, const char *key) {
 	}
 }
 
-void cacheInsert(bool touch, uint id, const char *key) {
-	insert(touch, id, key);
+struct Entry *cacheInsert(bool touch, uint id, const char *key) {
+	return &insert(touch, id, key)->entry;
 }
 
-void cacheInsertColor(bool touch, uint id, const char *key, enum Color color) {
-	struct Node *node = insert(touch, id, key);
-	if (color != Default) node->color = color;
+const struct Entry *cacheGet(uint id, const char *key) {
+	struct Node *node = find(id, key);
+	return (node ? &node->entry : &DefaultEntry);
 }
 
 void cacheReplace(bool touch, const char *old, const char *new) {
@@ -124,11 +126,6 @@ void cacheReplace(bool touch, const char *old, const char *new) {
 		if (!node->key) err(EX_OSERR, "strdup");
 		if (touch) prepend(detach(node));
 	}
-}
-
-enum Color cacheColor(uint id, const char *key) {
-	struct Node *node = find(id, key);
-	return (node ? node->color : Default);
 }
 
 const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix) {

@@ -372,13 +372,13 @@ static void handleJoin(struct Message *msg) {
 			set(&self.host, msg->host);
 		}
 		idColors[id] = hash(msg->params[0]);
-		cacheInsertColor(true, None, msg->params[0], idColors[id]);
+		cacheInsert(true, None, msg->params[0])->color = idColors[id];
 		if (replies[ReplyJoin]) {
 			windowShow(windowFor(id));
 			replies[ReplyJoin]--;
 		}
 	}
-	cacheInsertColor(true, id, msg->nick, hash(msg->user));
+	cacheInsert(true, id, msg->nick)->color = hash(msg->user);
 	if (msg->params[2] && !strcasecmp(msg->params[2], msg->nick)) {
 		msg->params[2] = NULL;
 	}
@@ -432,14 +432,14 @@ static void handleKick(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
 	bool kicked = !strcmp(msg->params[1], self.nick);
-	cacheInsertColor(true, id, msg->nick, hash(msg->user));
+	cacheInsert(true, id, msg->nick)->color = hash(msg->user);
 	urlScan(id, msg->nick, msg->params[2]);
 	uiFormat(
 		id, (kicked ? Hot : Cold), tagTime(msg),
 		"%s\3%02d%s\17\tkicks \3%02d%s\3 out of \3%02d%s\3%s%s",
 		(kicked ? "\26" : ""),
 		hash(msg->user), msg->nick,
-		cacheColor(id, msg->params[1]), msg->params[1],
+		cacheGet(id, msg->params[1])->color, msg->params[1],
 		hash(msg->params[0]), msg->params[0],
 		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
@@ -555,7 +555,7 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 	uiFormat(
 		id, Warm, tagTime(msg),
 		"\3%02d%s\3 is already in \3%02d%s\3",
-		cacheColor(id, msg->params[1]), msg->params[1],
+		cacheGet(id, msg->params[1])->color, msg->params[1],
 		hash(msg->params[2]), msg->params[2]
 	);
 }
@@ -571,7 +571,8 @@ static void handleReplyNames(struct Message *msg) {
 		char *nick = &prefixes[strspn(prefixes, network.prefixes)];
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
-		cacheInsertColor(false, id, nick, color);
+		struct Entry *entry = cacheInsert(false, id, nick);
+		if (user) entry->color = color;
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
@@ -897,7 +898,7 @@ static void handleMode(struct Message *msg) {
 				id, Cold, tagTime(msg),
 				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
 				hash(msg->user), msg->nick, verb,
-				cacheColor(id, nick), prefix, nick,
+				cacheGet(id, nick)->color, prefix, nick,
 				mode, name, hash(msg->params[0]), msg->params[0]
 			);
 			logFormat(
@@ -1035,7 +1036,7 @@ static void handleReplyBanList(struct Message *msg) {
 			id, Warm, tagTime(msg),
 			"Banned from \3%02d%s\3 since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1],
-			since, cacheColor(id, msg->params[3]), msg->params[3],
+			since, cacheGet(id, msg->params[3])->color, msg->params[3],
 			msg->params[2]
 		);
 	} else {
@@ -1058,7 +1059,7 @@ static void onList(const char *list, struct Message *msg) {
 			id, Warm, tagTime(msg),
 			"On the \3%02d%s\3 %s list since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1], list,
-			since, cacheColor(id, msg->params[3]), msg->params[3],
+			since, cacheGet(id, msg->params[3])->color, msg->params[3],
 			msg->params[2]
 		);
 	} else {
@@ -1091,7 +1092,7 @@ static void handleReplyList(struct Message *msg) {
 
 static void handleReplyWhoisUser(struct Message *msg) {
 	require(msg, false, 6);
-	cacheInsertColor(true, Network, msg->params[1], hash(msg->params[2]));
+	cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s!%s@%s (%s\17)",
@@ -1106,7 +1107,7 @@ static void handleReplyWhoisServer(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s connected to %s (%s)",
-		cacheColor(Network, msg->params[1]), msg->params[1],
+		cacheGet(Network, msg->params[1])->color, msg->params[1],
 		(replies[ReplyWhowas] ? "was" : "is"), msg->params[2], msg->params[3]
 	);
 }
@@ -1130,7 +1131,7 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis idle for %lu %s%s%s%s",
-		cacheColor(Network, msg->params[1]), msg->params[1],
+		cacheGet(Network, msg->params[1])->color, msg->params[1],
 		idle, unit, (idle != 1 ? "s" : ""),
 		(msg->params[3] ? ", signed on " : ""), (msg->params[3] ? signon : "")
 	);
@@ -1152,7 +1153,7 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis in %s",
-		cacheColor(Network, msg->params[1]), msg->params[1], buf
+		cacheGet(Network, msg->params[1])->color, msg->params[1], buf
 	);
 }
 
@@ -1166,7 +1167,7 @@ static void handleReplyWhoisGeneric(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s%s%s",
-		cacheColor(Network, msg->params[1]), msg->params[1],
+		cacheGet(Network, msg->params[1])->color, msg->params[1],
 		msg->params[2], (msg->params[3] ? " " : ""), (msg->params[3] ?: "")
 	);
 }
@@ -1180,7 +1181,7 @@ static void handleReplyEndOfWhois(struct Message *msg) {
 
 static void handleReplyWhowasUser(struct Message *msg) {
 	require(msg, false, 6);
-	cacheInsertColor(true, Network, msg->params[1], hash(msg->params[2]));
+	cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\twas %s!%s@%s (%s)",
@@ -1200,7 +1201,7 @@ static void handleReplyAway(struct Message *msg) {
 	require(msg, false, 3);
 	// Might be part of a WHOIS response.
 	uint id;
-	if (cacheColor(Network, msg->params[1]) != Default) {
+	if (cacheGet(Network, msg->params[1])->color != Default) {
 		id = Network;
 	} else {
 		id = idFor(msg->params[1]);
@@ -1208,7 +1209,7 @@ static void handleReplyAway(struct Message *msg) {
 	uiFormat(
 		id, (id == Network ? Warm : Cold), tagTime(msg),
 		"\3%02d%s\3\tis away: %s",
-		cacheColor(id, msg->params[1]), msg->params[1], msg->params[2]
+		cacheGet(id, msg->params[1])->color, msg->params[1], msg->params[2]
 	);
 	logFormat(
 		id, tagTime(msg), "%s is away: %s",
@@ -1279,7 +1280,7 @@ static char *colorMentions(char *ptr, char *end, uint id, const char *msg) {
 
 		size_t len = strcspn(msg, ",:<> ");
 		char *p = seprintf(ptr, end, "%.*s", (int)len, msg);
-		enum Color color = cacheColor(id, ptr);
+		enum Color color = cacheGet(id, ptr)->color;
 		if (color != Default) {
 			ptr = seprintf(ptr, end, "\3%02d%.*s\3", color, (int)len, msg);
 		} else {
@@ -1319,7 +1320,7 @@ static void handlePrivmsg(struct Message *msg) {
 	heat = filterCheck(heat, id, msg);
 	if (heat > Warm && !mine && !query) highlight = true;
 	if (!notice && !mine && heat > Ice) {
-		cacheInsertColor(true, id, msg->nick, hash(msg->user));
+		cacheInsert(true, id, msg->nick)->color = hash(msg->user);
 	}
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 
