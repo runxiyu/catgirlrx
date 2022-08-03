@@ -398,6 +398,7 @@ int bufferReflow(
 
 struct Entry {
 	enum Color color;
+	uint prefixBits;
 };
 struct Cursor {
 	uint gen;

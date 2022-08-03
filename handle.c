@@ -560,6 +560,12 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 	);
 }
 
+static uint prefixBit(char p) {
+	char *s = strchr(network.prefixes, p);
+	if (!s) return 0;
+	return 1 << (s - network.prefixes);
+}
+
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
@@ -571,8 +577,13 @@ static void handleReplyNames(struct Message *msg) {
 		char *nick = &prefixes[strspn(prefixes, network.prefixes)];
 		char *user = strsep(&name, "@");
 		enum Color color = (user ? hash(user) : Default);
+		uint bits = 0;
+		for (char *p = prefixes; p < nick; ++p) {
+			bits |= prefixBit(*p);
+		}
 		struct Entry *entry = cacheInsert(false, id, nick);
 		if (user) entry->color = color;
+		entry->prefixBits = bits;
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
@@ -894,6 +905,11 @@ static void handleMode(struct Message *msg) {
 			char prefix = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
 			];
+			if (set) {
+				cacheInsert(false, id, nick)->prefixBits |= prefixBit(prefix);
+			} else {
+				cacheInsert(false, id, nick)->prefixBits &= ~prefixBit(prefix);
+			}
 			uiFormat(
 				id, Cold, tagTime(msg),
 				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
