@@ -1216,12 +1216,7 @@ static void handleReplyEndOfWhowas(struct Message *msg) {
 static void handleReplyAway(struct Message *msg) {
 	require(msg, false, 3);
 	// Might be part of a WHOIS response.
-	uint id;
-	if (cacheGet(Network, msg->params[1])->color != Default) {
-		id = Network;
-	} else {
-		id = idFor(msg->params[1]);
-	}
+	uint id = (replies[ReplyWhois] ? Network : idFor(msg->params[1]));
 	uiFormat(
 		id, (id == Network ? Warm : Cold), tagTime(msg),
 		"\3%02d%s\3\tis away: %s",
