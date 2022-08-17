@@ -157,7 +157,7 @@ void uiDraw(void) {
 	if (!to_status_line) return;
 	if (!strcmp(uiTitle, prevTitle)) return;
 	strcpy(prevTitle, uiTitle);
-	putp(tiparm(to_status_line, 0));
+	putp(tparm(to_status_line, 0));
 	putp(uiTitle);
 	putp(from_status_line);
 	fflush(stdout);
