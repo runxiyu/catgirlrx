@@ -107,13 +107,13 @@ static struct Node *insert(bool touch, uint id, const char *key) {
 	}
 }
 
-struct Entry *cacheInsert(bool touch, uint id, const char *key) {
-	return &insert(touch, id, key)->entry;
-}
-
 const struct Entry *cacheGet(uint id, const char *key) {
 	struct Node *node = find(id, key);
 	return (node ? &node->entry : &DefaultEntry);
+}
+
+struct Entry *cacheInsert(bool touch, uint id, const char *key) {
+	return &insert(touch, id, key)->entry;
 }
 
 void cacheReplace(bool touch, const char *old, const char *new) {
@@ -126,60 +126,6 @@ void cacheReplace(bool touch, const char *old, const char *new) {
 		if (!node->key) err(EX_OSERR, "strdup");
 		if (touch) prepend(detach(node));
 	}
-}
-
-const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix) {
-	size_t len = strlen(prefix);
-	if (curs->gen != gen) curs->node = NULL;
-	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
-	) {
-		if (curs->node->id && curs->node->id != id) continue;
-		if (strncasecmp(curs->node->key, prefix, len)) continue;
-		return curs->node->key;
-	}
-	return NULL;
-}
-
-const char *cacheSearch(struct Cursor *curs, uint id, const char *substr) {
-	if (curs->gen != gen) curs->node = NULL;
-	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
-	) {
-		if (curs->node->id && curs->node->id != id) continue;
-		if (!strstr(curs->node->key, substr)) continue;
-		return curs->node->key;
-	}
-	return NULL;
-}
-
-uint cacheID(struct Cursor *curs, const char *key) {
-	if (curs->gen != gen) curs->node = NULL;
-	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
-	) {
-		if (!curs->node->id) continue;
-		if (strcmp(curs->node->key, key)) continue;
-		return curs->node->id;
-	}
-	return None;
-}
-
-void cacheAccept(struct Cursor *curs) {
-	if (curs->gen == gen && curs->node) {
-		prepend(detach(curs->node));
-	}
-	curs->node = NULL;
-}
-
-void cacheReject(struct Cursor *curs) {
-	curs->node = NULL;
 }
 
 void cacheRemove(uint id, const char *key) {
@@ -206,4 +152,75 @@ void cacheClear(uint id) {
 		free(node->key);
 		free(node);
 	}
+}
+
+const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix) {
+	size_t len = strlen(prefix);
+	if (curs->gen != gen) curs->node = NULL;
+	for (
+		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
+		curs->node;
+		curs->node = curs->node->next
+	) {
+		if (curs->node->id && curs->node->id != id) continue;
+		if (strncasecmp(curs->node->key, prefix, len)) continue;
+		curs->entry = &curs->node->entry;
+		return curs->node->key;
+	}
+	return NULL;
+}
+
+const char *cacheSearch(struct Cursor *curs, uint id, const char *substr) {
+	if (curs->gen != gen) curs->node = NULL;
+	for (
+		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
+		curs->node;
+		curs->node = curs->node->next
+	) {
+		if (curs->node->id && curs->node->id != id) continue;
+		if (!strstr(curs->node->key, substr)) continue;
+		curs->entry = &curs->node->entry;
+		return curs->node->key;
+	}
+	return NULL;
+}
+
+const char *cacheNextKey(struct Cursor *curs, uint id) {
+	if (curs->gen != gen) curs->node = NULL;
+	for (
+		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
+		curs->node;
+		curs->node = curs->node->next
+	) {
+		if (curs->node->id != id) continue;
+		curs->entry = &curs->node->entry;
+		return curs->node->key;
+	}
+	return NULL;
+}
+
+uint cacheNextID(struct Cursor *curs, const char *key) {
+	if (curs->gen != gen) curs->node = NULL;
+	for (
+		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
+		curs->node;
+		curs->node = curs->node->next
+	) {
+		if (!curs->node->id) continue;
+		if (strcmp(curs->node->key, key)) continue;
+		curs->entry = &curs->node->entry;
+		return curs->node->id;
+	}
+	return None;
+}
+
+void cacheAccept(struct Cursor *curs) {
+	if (curs->gen == gen && curs->node) {
+		prepend(detach(curs->node));
+	}
+	curs->node = NULL;
+}
+
+void cacheReject(struct Cursor *curs) {
+	curs->node = NULL;
 }

@@ -403,17 +403,19 @@ struct Entry {
 struct Cursor {
 	uint gen;
 	struct Node *node;
+	struct Entry *entry;
 };
-struct Entry *cacheInsert(bool touch, uint id, const char *key);
 const struct Entry *cacheGet(uint id, const char *key);
+struct Entry *cacheInsert(bool touch, uint id, const char *key);
 void cacheReplace(bool touch, const char *old, const char *new);
-const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix);
-const char *cacheSearch(struct Cursor *curs, uint id, const char *substr);
-uint cacheID(struct Cursor *curs, const char *key);
-void cacheAccept(struct Cursor *curs);
-void cacheReject(struct Cursor *curs);
 void cacheRemove(uint id, const char *key);
 void cacheClear(uint id);
+const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix);
+const char *cacheSearch(struct Cursor *curs, uint id, const char *substr);
+uint cacheNextID(struct Cursor *curs, const char *key);
+const char *cacheNextKey(struct Cursor *curs, uint id);
+void cacheAccept(struct Cursor *curs);
+void cacheReject(struct Cursor *curs);
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;

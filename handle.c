@@ -459,7 +459,7 @@ static void handleNick(struct Message *msg) {
 		inputUpdate();
 	}
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheID(&curs, msg->nick));) {
+	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {
 			set(&idNames[id], msg->params[0]);
 		}
@@ -480,7 +480,7 @@ static void handleNick(struct Message *msg) {
 static void handleSetname(struct Message *msg) {
 	require(msg, true, 1);
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheID(&curs, msg->nick));) {
+	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s\17)",
@@ -493,7 +493,7 @@ static void handleSetname(struct Message *msg) {
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheID(&curs, msg->nick));) {
+	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
 		enum Heat heat = filterCheck(Cold, id, msg);
 		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
