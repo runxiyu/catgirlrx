@@ -168,6 +168,19 @@ extern struct Network {
 	char invex;
 } network;
 
+static inline uint prefixBit(char p) {
+	char *s = strchr(network.prefixes, p);
+	if (!s) return 0;
+	return 1 << (s - network.prefixes);
+}
+
+static inline char bitPrefix(uint p) {
+	for (uint i = 0; network.prefixes[i]; ++i) {
+		if (p & (1 << i)) return network.prefixes[i];
+	}
+	return '\0';
+}
+
 #define ENUM_CAP \
 	X("causal.agency/consumer", CapConsumer) \
 	X("chghost", CapChghost) \

@@ -219,8 +219,31 @@ static void commandNames(uint id, char *params) {
 
 static void commandOps(uint id, char *params) {
 	(void)params;
-	ircFormat("WHO %s\r\n", idNames[id]);
-	replies[ReplyWho]++;
+	char buf[1024];
+	char *ptr = buf, *end = &buf[sizeof(buf)];
+	ptr = seprintf(
+		ptr, end, "The council of \3%02d%s\3 are ",
+		idColors[id], idNames[id]
+	);
+	bool first = true;
+	struct Cursor curs = {0};
+	for (const char *nick; (nick = cacheNextKey(&curs, id));) {
+		char prefix = bitPrefix(curs.entry->prefixBits);
+		if (!prefix || prefix == '+') continue;
+		ptr = seprintf(
+			ptr, end, "%s\3%02d%c%s\3",
+			(first ? "" : ", "), curs.entry->color, prefix, nick
+		);
+		first = false;
+	}
+	if (first) {
+		uiFormat(
+			id, Warm, NULL, "\3%02d%s\3 is a lawless wasteland",
+			idColors[id], idNames[id]
+		);
+	} else {
+		uiWrite(id, Warm, NULL, buf);
+	}
 }
 
 static void commandInvite(uint id, char *params) {

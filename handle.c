@@ -560,12 +560,6 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 	);
 }
 
-static uint prefixBit(char p) {
-	char *s = strchr(network.prefixes, p);
-	if (!s) return 0;
-	return 1 << (s - network.prefixes);
-}
-
 static void handleReplyNames(struct Message *msg) {
 	require(msg, false, 4);
 	uint id = idFor(msg->params[2]);
