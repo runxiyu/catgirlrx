@@ -291,7 +291,6 @@ enum Reply {
 	ReplyNamesAuto,
 	ReplyTopic,
 	ReplyTopicAuto,
-	ReplyWho,
 	ReplyWhois,
 	ReplyWhowas,
 	ReplyCap,

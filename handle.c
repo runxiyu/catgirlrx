@@ -600,41 +600,6 @@ static void handleReplyEndOfNames(struct Message *msg) {
 	}
 }
 
-static struct {
-	char buf[1024];
-	char *ptr;
-	char *end;
-} who = {
-	.ptr = who.buf,
-	.end = &who.buf[sizeof(who.buf)],
-};
-
-static void handleReplyWho(struct Message *msg) {
-	require(msg, false, 7);
-	if (who.ptr == who.buf) {
-		who.ptr = seprintf(
-			who.ptr, who.end, "The council of \3%02d%s\3 are ",
-			hash(msg->params[1]), msg->params[1]
-		);
-	}
-	char *prefixes = &msg->params[6][1];
-	if (prefixes[0] == '*') prefixes++;
-	prefixes[strspn(prefixes, network.prefixes)] = '\0';
-	if (!prefixes[0] || prefixes[0] == '+') return;
-	who.ptr = seprintf(
-		who.ptr, who.end, "%s\3%02d%s%s\3%s",
-		(who.ptr[-1] == ' ' ? "" : ", "),
-		hash(msg->params[2]), prefixes, msg->params[5],
-		(msg->params[6][0] == 'H' ? "" : " (away)")
-	);
-}
-
-static void handleReplyEndOfWho(struct Message *msg) {
-	require(msg, false, 2);
-	uiWrite(idFor(msg->params[1]), Warm, tagTime(msg), who.buf);
-	who.ptr = who.buf;
-}
-
 static void handleReplyNoTopic(struct Message *msg) {
 	require(msg, false, 2);
 	uiFormat(
@@ -1392,7 +1357,6 @@ static const struct Handler {
 	{ "312", 0, handleReplyWhoisServer },
 	{ "313", +ReplyWhois, handleReplyWhoisGeneric },
 	{ "314", +ReplyWhowas, handleReplyWhowasUser },
-	{ "315", -ReplyWho, handleReplyEndOfWho },
 	{ "317", +ReplyWhois, handleReplyWhoisIdle },
 	{ "318", -ReplyWhois, handleReplyEndOfWhois },
 	{ "319", +ReplyWhois, handleReplyWhoisChannels },
@@ -1410,7 +1374,6 @@ static const struct Handler {
 	{ "347", -ReplyInvex, NULL },
 	{ "348", +ReplyExcepts, handleReplyExceptList },
 	{ "349", -ReplyExcepts, NULL },
-	{ "352", +ReplyWho, handleReplyWho },
 	{ "353", 0, handleReplyNames },
 	{ "366", 0, handleReplyEndOfNames },
 	{ "367", +ReplyBan, handleReplyBanList },
