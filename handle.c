@@ -1055,13 +1055,13 @@ static void handleReplyInviteList(struct Message *msg) {
 }
 
 static void handleReplyList(struct Message *msg) {
-	require(msg, false, 4);
+	require(msg, false, 3);
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"In \3%02d%s\3 are %ld under the banner: %s",
 		hash(msg->params[1]), msg->params[1],
 		strtol(msg->params[2], NULL, 10),
-		msg->params[3]
+		(msg->params[3] ?: "")
 	);
 }
 
