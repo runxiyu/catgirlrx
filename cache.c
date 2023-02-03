@@ -33,194 +33,180 @@
 
 #include "chat.h"
 
-struct Node {
-	uint id;
-	char *key;
-	struct Entry entry;
-	struct Node *prev;
-	struct Node *next;
-};
-
 static const struct Entry DefaultEntry = { .color = Default };
 
+static struct Entry *entryAlloc(uint id, const char *key) {
+	struct Entry *entry = malloc(sizeof(*entry));
+	if (!entry) err(EX_OSERR, "malloc");
+	*entry = DefaultEntry;
+	entry->id = id;
+	entry->key = strdup(key);
+	if (!entry->key) err(EX_OSERR, "strdup");
+	return entry;
+}
+
+static void entryFree(struct Entry *entry) {
+	free(entry->key);
+	free(entry);
+}
+
 static uint gen;
-static struct Node *head;
-static struct Node *tail;
+static struct Entry *head;
+static struct Entry *tail;
 
-static struct Node *alloc(uint id, const char *key) {
-	struct Node *node = calloc(1, sizeof(*node));
-	if (!node) err(EX_OSERR, "calloc");
-	node->id = id;
-	node->key = strdup(key);
-	node->entry = DefaultEntry;
-	if (!node->key) err(EX_OSERR, "strdup");
-	return node;
+static struct Entry *detach(struct Entry *entry) {
+	if (entry->prev) entry->prev->next = entry->next;
+	if (entry->next) entry->next->prev = entry->prev;
+	if (head == entry) head = entry->next;
+	if (tail == entry) tail = entry->prev;
+	entry->prev = NULL;
+	entry->next = NULL;
+	return entry;
 }
 
-static struct Node *detach(struct Node *node) {
-	if (node->prev) node->prev->next = node->next;
-	if (node->next) node->next->prev = node->prev;
-	if (head == node) head = node->next;
-	if (tail == node) tail = node->prev;
-	node->prev = NULL;
-	node->next = NULL;
-	return node;
+static struct Entry *prepend(struct Entry *entry) {
+	entry->prev = NULL;
+	entry->next = head;
+	if (head) head->prev = entry;
+	head = entry;
+	tail = (tail ?: entry);
+	return entry;
 }
 
-static struct Node *prepend(struct Node *node) {
-	node->prev = NULL;
-	node->next = head;
-	if (head) head->prev = node;
-	head = node;
-	tail = (tail ?: node);
-	return node;
+static struct Entry *append(struct Entry *entry) {
+	entry->next = NULL;
+	entry->prev = tail;
+	if (tail) tail->next = entry;
+	tail = entry;
+	head = (head ?: entry);
+	return entry;
 }
 
-static struct Node *append(struct Node *node) {
-	node->next = NULL;
-	node->prev = tail;
-	if (tail) tail->next = node;
-	tail = node;
-	head = (head ?: node);
-	return node;
-}
-
-static struct Node *find(uint id, const char *key) {
-	for (struct Node *node = head; node; node = node->next) {
-		if (node->id != id) continue;
-		if (strcmp(node->key, key)) continue;
-		return node;
+static struct Entry *find(uint id, const char *key) {
+	for (struct Entry *entry = head; entry; entry = entry->next) {
+		if (entry->id != id) continue;
+		if (strcmp(entry->key, key)) continue;
+		return entry;
 	}
 	return NULL;
 }
 
-static struct Node *insert(bool touch, uint id, const char *key) {
-	struct Node *node = find(id, key);
-	if (node && touch) {
-		return prepend(detach(node));
-	} else if (node) {
-		return node;
+static struct Entry *insert(bool touch, uint id, const char *key) {
+	struct Entry *entry = find(id, key);
+	if (entry && touch) {
+		return prepend(detach(entry));
+	} else if (entry) {
+		return entry;
 	} else if (touch) {
-		return prepend(alloc(id, key));
+		return prepend(entryAlloc(id, key));
 	} else {
-		return append(alloc(id, key));
+		return append(entryAlloc(id, key));
 	}
 }
 
 const struct Entry *cacheGet(uint id, const char *key) {
-	struct Node *node = find(id, key);
-	return (node ? &node->entry : &DefaultEntry);
+	struct Entry *entry = find(id, key);
+	return (entry ?: &DefaultEntry);
 }
 
 struct Entry *cacheInsert(bool touch, uint id, const char *key) {
-	return &insert(touch, id, key)->entry;
+	return insert(touch, id, key);
 }
 
 void cacheReplace(bool touch, const char *old, const char *new) {
-	struct Node *next = NULL;
-	for (struct Node *node = head; node; node = next) {
-		next = node->next;
-		if (strcmp(node->key, old)) continue;
-		free(node->key);
-		node->key = strdup(new);
-		if (!node->key) err(EX_OSERR, "strdup");
-		if (touch) prepend(detach(node));
+	struct Entry *next = NULL;
+	for (struct Entry *entry = head; entry; entry = next) {
+		next = entry->next;
+		if (strcmp(entry->key, old)) continue;
+		free(entry->key);
+		entry->key = strdup(new);
+		if (!entry->key) err(EX_OSERR, "strdup");
+		if (touch) prepend(detach(entry));
 	}
 }
 
 void cacheRemove(uint id, const char *key) {
 	gen++;
-	struct Node *next = NULL;
-	for (struct Node *node = head; node; node = next) {
-		next = node->next;
-		if (id && node->id != id) continue;
-		if (strcmp(node->key, key)) continue;
-		detach(node);
-		free(node->key);
-		free(node);
+	struct Entry *next = NULL;
+	for (struct Entry *entry = head; entry; entry = next) {
+		next = entry->next;
+		if (id && entry->id != id) continue;
+		if (strcmp(entry->key, key)) continue;
+		detach(entry);
+		entryFree(entry);
 		if (id) break;
 	}
 }
 
 void cacheClear(uint id) {
 	gen++;
-	struct Node *next = NULL;
-	for (struct Node *node = head; node; node = next) {
-		next = node->next;
-		if (node->id != id) continue;
-		detach(node);
-		free(node->key);
-		free(node);
+	struct Entry *next = NULL;
+	for (struct Entry *entry = head; entry; entry = next) {
+		next = entry->next;
+		if (entry->id != id) continue;
+		detach(entry);
+		entryFree(entry);
 	}
 }
 
 const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix) {
 	size_t len = strlen(prefix);
-	if (curs->gen != gen) curs->node = NULL;
+	if (curs->gen != gen) curs->entry = NULL;
 	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
+		curs->gen = gen, curs->entry = (curs->entry ? curs->entry->next : head);
+		curs->entry;
+		curs->entry = curs->entry->next
 	) {
-		if (curs->node->id && curs->node->id != id) continue;
-		if (strncasecmp(curs->node->key, prefix, len)) continue;
-		curs->entry = &curs->node->entry;
-		return curs->node->key;
+		if (curs->entry->id && curs->entry->id != id) continue;
+		if (strncasecmp(curs->entry->key, prefix, len)) continue;
+		return curs->entry->key;
 	}
 	return NULL;
 }
 
 const char *cacheSearch(struct Cursor *curs, uint id, const char *substr) {
-	if (curs->gen != gen) curs->node = NULL;
+	if (curs->gen != gen) curs->entry = NULL;
 	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
+		curs->gen = gen, curs->entry = (curs->entry ? curs->entry->next : head);
+		curs->entry;
+		curs->entry = curs->entry->next
 	) {
-		if (curs->node->id && curs->node->id != id) continue;
-		if (!strstr(curs->node->key, substr)) continue;
-		curs->entry = &curs->node->entry;
-		return curs->node->key;
+		if (curs->entry->id && curs->entry->id != id) continue;
+		if (!strstr(curs->entry->key, substr)) continue;
+		return curs->entry->key;
 	}
 	return NULL;
 }
 
 const char *cacheNextKey(struct Cursor *curs, uint id) {
-	if (curs->gen != gen) curs->node = NULL;
+	if (curs->gen != gen) curs->entry = NULL;
 	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
+		curs->gen = gen, curs->entry = (curs->entry ? curs->entry->next : head);
+		curs->entry;
+		curs->entry = curs->entry->next
 	) {
-		if (curs->node->id != id) continue;
-		curs->entry = &curs->node->entry;
-		return curs->node->key;
+		if (curs->entry->id != id) continue;
+		return curs->entry->key;
 	}
 	return NULL;
 }
 
 uint cacheNextID(struct Cursor *curs, const char *key) {
-	if (curs->gen != gen) curs->node = NULL;
+	if (curs->gen != gen) curs->entry = NULL;
 	for (
-		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
-		curs->node;
-		curs->node = curs->node->next
+		curs->gen = gen, curs->entry = (curs->entry ? curs->entry->next : head);
+		curs->entry;
+		curs->entry = curs->entry->next
 	) {
-		if (!curs->node->id) continue;
-		if (strcmp(curs->node->key, key)) continue;
-		curs->entry = &curs->node->entry;
-		return curs->node->id;
+		if (!curs->entry->id) continue;
+		if (strcmp(curs->entry->key, key)) continue;
+		return curs->entry->id;
 	}
 	return None;
 }
 
-void cacheAccept(struct Cursor *curs) {
-	if (curs->gen == gen && curs->node) {
-		prepend(detach(curs->node));
+void cacheTouch(struct Cursor *curs) {
+	if (curs->gen == gen && curs->entry) {
+		prepend(detach(curs->entry));
 	}
-	curs->node = NULL;
-}
-
-void cacheReject(struct Cursor *curs) {
-	curs->node = NULL;
 }

@@ -409,12 +409,15 @@ int bufferReflow(
 );
 
 struct Entry {
+	uint id;
+	char *key;
 	enum Color color;
 	uint prefixBits;
+	struct Entry *prev;
+	struct Entry *next;
 };
 struct Cursor {
 	uint gen;
-	struct Node *node;
 	struct Entry *entry;
 };
 const struct Entry *cacheGet(uint id, const char *key);
@@ -426,8 +429,7 @@ const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix);
 const char *cacheSearch(struct Cursor *curs, uint id, const char *substr);
 uint cacheNextID(struct Cursor *curs, const char *key);
 const char *cacheNextKey(struct Cursor *curs, uint id);
-void cacheAccept(struct Cursor *curs);
-void cacheReject(struct Cursor *curs);
+void cacheTouch(struct Cursor *curs);
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;

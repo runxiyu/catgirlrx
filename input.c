@@ -300,12 +300,13 @@ static struct {
 } tab;
 
 static void tabAccept(void) {
-	cacheAccept(&tab.curs);
+	cacheTouch(&tab.curs);
+	tab.curs = (struct Cursor) {0};
 	tab.len = 0;
 }
 
 static void tabReject(void) {
-	cacheReject(&tab.curs);
+	tab.curs = (struct Cursor) {0};
 	tab.len = 0;
 }
 

@@ -419,11 +419,10 @@ static void commandWindow(uint id, char *params) {
 			windowShow(windowFor(id));
 			return;
 		}
-		struct Cursor curs = {0};
-		for (const char *match; (match = cacheSearch(&curs, None, params));) {
-			id = idFind(match);
+		for (struct Cursor curs = {0}; cacheSearch(&curs, None, params);) {
+			id = idFind(curs.entry->key);
 			if (!id) continue;
-			cacheAccept(&curs);
+			cacheTouch(&curs);
 			windowShow(windowFor(id));
 			break;
 		}
