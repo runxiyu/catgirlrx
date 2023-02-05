@@ -266,7 +266,7 @@ static void handleErrorSASLFail(struct Message *msg) {
 static void handleReplyWelcome(struct Message *msg) {
 	require(msg, false, 1);
 	set(&self.nick, msg->params[0]);
-	cacheInsert(true, Network, self.nick);
+	completePull(Network, self.nick);
 	if (self.mode) ircFormat("MODE %s %s\r\n", self.nick, self.mode);
 	if (self.join) {
 		uint count = 1;
@@ -278,7 +278,7 @@ static void handleReplyWelcome(struct Message *msg) {
 		replies[ReplyTopicAuto] += count;
 		replies[ReplyNamesAuto] += count;
 	}
-	commandCache();
+	commandCompletion();
 	handleReplyGeneric(msg);
 }
 
@@ -372,13 +372,13 @@ static void handleJoin(struct Message *msg) {
 			set(&self.host, msg->host);
 		}
 		idColors[id] = hash(msg->params[0]);
-		cacheInsert(true, None, msg->params[0])->color = idColors[id];
+		completePull(None, msg->params[0]); // color = idColors[id];
 		if (replies[ReplyJoin]) {
 			windowShow(windowFor(id));
 			replies[ReplyJoin]--;
 		}
 	}
-	cacheInsert(true, id, msg->nick)->color = hash(msg->user);
+	completePull(id, msg->nick); // color = hash(msg->user);
 	if (msg->params[2] && !strcasecmp(msg->params[2], msg->nick)) {
 		msg->params[2] = NULL;
 	}
@@ -410,9 +410,9 @@ static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
 	uint id = idFor(msg->params[0]);
 	if (!strcmp(msg->nick, self.nick)) {
-		cacheClear(id);
+		completeRemove(id, NULL);
 	}
-	cacheRemove(id, msg->nick);
+	completeRemove(id, msg->nick);
 	enum Heat heat = filterCheck(Cold, id, msg);
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
@@ -432,14 +432,14 @@ static void handleKick(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
 	bool kicked = !strcmp(msg->params[1], self.nick);
-	cacheInsert(true, id, msg->nick)->color = hash(msg->user);
+	completePull(id, msg->nick); // color = hash(msg->user);
 	urlScan(id, msg->nick, msg->params[2]);
 	uiFormat(
 		id, (kicked ? Hot : Cold), tagTime(msg),
 		"%s\3%02d%s\17\tkicks \3%02d%s\3 out of \3%02d%s\3%s%s",
 		(kicked ? "\26" : ""),
 		hash(msg->user), msg->nick,
-		cacheGet(id, msg->params[1])->color, msg->params[1],
+		Default /*cacheGet(id, msg->params[1])->color*/, msg->params[1],
 		hash(msg->params[0]), msg->params[0],
 		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
@@ -448,8 +448,8 @@ static void handleKick(struct Message *msg) {
 		msg->nick, msg->params[1], msg->params[0],
 		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
-	cacheRemove(id, msg->params[1]);
-	if (kicked) cacheClear(id);
+	completeRemove(id, msg->params[1]);
+	if (kicked) completeRemove(id, NULL);
 }
 
 static void handleNick(struct Message *msg) {
@@ -459,7 +459,7 @@ static void handleNick(struct Message *msg) {
 		inputUpdate();
 	}
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeNextID(&curs, msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {
 			set(&idNames[id], msg->params[0]);
 		}
@@ -474,13 +474,13 @@ static void handleNick(struct Message *msg) {
 			msg->nick, msg->params[0]
 		);
 	}
-	cacheReplace(true, msg->nick, msg->params[0]);
+	completeReplace(msg->nick, msg->params[0]);
 }
 
 static void handleSetname(struct Message *msg) {
 	require(msg, true, 1);
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeNextID(&curs, msg->nick));) {
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s\17)",
@@ -493,7 +493,7 @@ static void handleSetname(struct Message *msg) {
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	struct Cursor curs = {0};
-	for (uint id; (id = cacheNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeNextID(&curs, msg->nick));) {
 		enum Heat heat = filterCheck(Cold, id, msg);
 		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
@@ -509,7 +509,7 @@ static void handleQuit(struct Message *msg) {
 			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
 		);
 	}
-	cacheRemove(None, msg->nick);
+	completeRemove(None, msg->nick);
 }
 
 static void handleInvite(struct Message *msg) {
@@ -555,7 +555,7 @@ static void handleErrorUserOnChannel(struct Message *msg) {
 	uiFormat(
 		id, Warm, tagTime(msg),
 		"\3%02d%s\3 is already in \3%02d%s\3",
-		cacheGet(id, msg->params[1])->color, msg->params[1],
+		Default /*cacheGet(id, msg->params[1])->color*/, msg->params[1],
 		hash(msg->params[2]), msg->params[2]
 	);
 }
@@ -575,9 +575,12 @@ static void handleReplyNames(struct Message *msg) {
 		for (char *p = prefixes; p < nick; ++p) {
 			bits |= prefixBit(*p);
 		}
+		completePush(id, nick);
+		/*
 		struct Entry *entry = cacheInsert(false, id, nick);
 		if (user) entry->color = color;
 		entry->prefixBits = bits;
+		*/
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
@@ -609,24 +612,24 @@ static void handleReplyNoTopic(struct Message *msg) {
 	);
 }
 
-static void topicCache(uint id, const char *topic) {
+static void topicComplete(uint id, const char *topic) {
 	char buf[512];
 	struct Cursor curs = {0};
-	const char *prev = cacheComplete(&curs, id, "/topic ");
+	const char *prev = completePrefix(&curs, id, "/topic ");
 	if (prev) {
 		snprintf(buf, sizeof(buf), "%s", prev);
-		cacheRemove(id, buf);
+		completeRemove(id, buf);
 	}
 	if (topic) {
 		snprintf(buf, sizeof(buf), "/topic %s", topic);
-		cacheInsert(false, id, buf);
+		completePush(id, buf);
 	}
 }
 
 static void handleReplyTopic(struct Message *msg) {
 	require(msg, false, 3);
 	uint id = idFor(msg->params[1]);
-	topicCache(id, msg->params[2]);
+	topicComplete(id, msg->params[2]);
 	if (!replies[ReplyTopic] && !replies[ReplyTopicAuto]) return;
 	urlScan(id, NULL, msg->params[2]);
 	uiFormat(
@@ -677,7 +680,7 @@ static void handleTopic(struct Message *msg) {
 	require(msg, true, 2);
 	uint id = idFor(msg->params[0]);
 	if (!msg->params[1][0]) {
-		topicCache(id, NULL);
+		topicComplete(id, NULL);
 		uiFormat(
 			id, Warm, tagTime(msg),
 			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
@@ -691,7 +694,7 @@ static void handleTopic(struct Message *msg) {
 	}
 
 	struct Cursor curs = {0};
-	const char *prev = cacheComplete(&curs, id, "/topic ");
+	const char *prev = completePrefix(&curs, id, "/topic ");
 	if (prev) {
 		prev += 7;
 	} else {
@@ -741,7 +744,7 @@ log:
 		id, tagTime(msg), "%s places a new sign in %s: %s",
 		msg->nick, msg->params[0], msg->params[1]
 	);
-	topicCache(id, msg->params[1]);
+	topicComplete(id, msg->params[1]);
 	urlScan(id, msg->nick, msg->params[1]);
 }
 
@@ -864,16 +867,18 @@ static void handleMode(struct Message *msg) {
 			char prefix = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
 			];
+			/*
 			if (set) {
 				cacheInsert(false, id, nick)->prefixBits |= prefixBit(prefix);
 			} else {
 				cacheInsert(false, id, nick)->prefixBits &= ~prefixBit(prefix);
 			}
+			*/
 			uiFormat(
 				id, Cold, tagTime(msg),
 				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
 				hash(msg->user), msg->nick, verb,
-				cacheGet(id, nick)->color, prefix, nick,
+				Default /*cacheGet(id, nick)->color*/, prefix, nick,
 				mode, name, hash(msg->params[0]), msg->params[0]
 			);
 			logFormat(
@@ -1011,7 +1016,7 @@ static void handleReplyBanList(struct Message *msg) {
 			id, Warm, tagTime(msg),
 			"Banned from \3%02d%s\3 since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1],
-			since, cacheGet(id, msg->params[3])->color, msg->params[3],
+			since, Default /*cacheGet(id, msg->params[3])->color*/, msg->params[3],
 			msg->params[2]
 		);
 	} else {
@@ -1034,7 +1039,7 @@ static void onList(const char *list, struct Message *msg) {
 			id, Warm, tagTime(msg),
 			"On the \3%02d%s\3 %s list since %s by \3%02d%s\3: %s",
 			hash(msg->params[1]), msg->params[1], list,
-			since, cacheGet(id, msg->params[3])->color, msg->params[3],
+			since, Default /*cacheGet(id, msg->params[3])->color*/, msg->params[3],
 			msg->params[2]
 		);
 	} else {
@@ -1067,7 +1072,7 @@ static void handleReplyList(struct Message *msg) {
 
 static void handleReplyWhoisUser(struct Message *msg) {
 	require(msg, false, 6);
-	cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
+	//cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis %s!%s@%s (%s\17)",
@@ -1082,7 +1087,7 @@ static void handleReplyWhoisServer(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s connected to %s (%s)",
-		cacheGet(Network, msg->params[1])->color, msg->params[1],
+		Default /*cacheGet(Network, msg->params[1])->color*/, msg->params[1],
 		(replies[ReplyWhowas] ? "was" : "is"), msg->params[2], msg->params[3]
 	);
 }
@@ -1106,7 +1111,7 @@ static void handleReplyWhoisIdle(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis idle for %lu %s%s%s%s",
-		cacheGet(Network, msg->params[1])->color, msg->params[1],
+		Default /*cacheGet(Network, msg->params[1])->color*/, msg->params[1],
 		idle, unit, (idle != 1 ? "s" : ""),
 		(msg->params[3] ? ", signed on " : ""), (msg->params[3] ? signon : "")
 	);
@@ -1128,7 +1133,7 @@ static void handleReplyWhoisChannels(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\tis in %s",
-		cacheGet(Network, msg->params[1])->color, msg->params[1], buf
+		Default /*cacheGet(Network, msg->params[1])->color*/, msg->params[1], buf
 	);
 }
 
@@ -1142,21 +1147,23 @@ static void handleReplyWhoisGeneric(struct Message *msg) {
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\t%s%s%s",
-		cacheGet(Network, msg->params[1])->color, msg->params[1],
+		Default /*cacheGet(Network, msg->params[1])->color*/, msg->params[1],
 		msg->params[2], (msg->params[3] ? " " : ""), (msg->params[3] ?: "")
 	);
 }
 
 static void handleReplyEndOfWhois(struct Message *msg) {
 	require(msg, false, 2);
+	/*
 	if (strcmp(msg->params[1], self.nick)) {
 		cacheRemove(Network, msg->params[1]);
 	}
+	*/
 }
 
 static void handleReplyWhowasUser(struct Message *msg) {
 	require(msg, false, 6);
-	cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
+	//cacheInsert(true, Network, msg->params[1])->color = hash(msg->params[2]);
 	uiFormat(
 		Network, Warm, tagTime(msg),
 		"\3%02d%s\3\twas %s!%s@%s (%s)",
@@ -1167,9 +1174,11 @@ static void handleReplyWhowasUser(struct Message *msg) {
 
 static void handleReplyEndOfWhowas(struct Message *msg) {
 	require(msg, false, 2);
+	/*
 	if (strcmp(msg->params[1], self.nick)) {
 		cacheRemove(Network, msg->params[1]);
 	}
+	*/
 }
 
 static void handleReplyAway(struct Message *msg) {
@@ -1179,7 +1188,7 @@ static void handleReplyAway(struct Message *msg) {
 	uiFormat(
 		id, (id == Network ? Warm : Cold), tagTime(msg),
 		"\3%02d%s\3\tis away: %s",
-		cacheGet(id, msg->params[1])->color, msg->params[1], msg->params[2]
+		Default /*cacheGet(id, msg->params[1])->color*/, msg->params[1], msg->params[2]
 	);
 	logFormat(
 		id, tagTime(msg), "%s is away: %s",
@@ -1250,7 +1259,7 @@ static char *colorMentions(char *ptr, char *end, uint id, const char *msg) {
 
 		size_t len = strcspn(msg, ",:<> ");
 		char *p = seprintf(ptr, end, "%.*s", (int)len, msg);
-		enum Color color = cacheGet(id, ptr)->color;
+		enum Color color = Default /*cacheGet(id, ptr)->color*/;
 		if (color != Default) {
 			ptr = seprintf(ptr, end, "\3%02d%.*s\3", color, (int)len, msg);
 		} else {
@@ -1290,7 +1299,7 @@ static void handlePrivmsg(struct Message *msg) {
 	heat = filterCheck(heat, id, msg);
 	if (heat > Warm && !mine && !query) highlight = true;
 	if (!notice && !mine && heat > Ice) {
-		cacheInsert(true, id, msg->nick)->color = hash(msg->user);
+		completePull(id, msg->nick); // color = hash(msg->user)
 	}
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 

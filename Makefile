@@ -13,9 +13,9 @@ LDADD.ncursesw = -lncursesw
 LDLIBS = ${LDADD.libtls} ${LDADD.ncursesw}
 
 OBJS += buffer.o
-OBJS += cache.o
 OBJS += chat.o
 OBJS += command.o
+OBJS += complete.o
 OBJS += config.o
 OBJS += edit.o
 OBJS += filter.o

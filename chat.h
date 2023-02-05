@@ -304,7 +304,7 @@ const char *commandIsPrivmsg(uint id, const char *input);
 const char *commandIsNotice(uint id, const char *input);
 const char *commandIsAction(uint id, const char *input);
 size_t commandWillSplit(uint id, const char *input);
-void commandCache(void);
+void commandCompletion(void);
 
 enum Heat {
 	Ice,
@@ -346,7 +346,7 @@ void inputWait(void);
 void inputUpdate(void);
 bool inputPending(uint id);
 void inputRead(void);
-void inputCache(void);
+void inputCompletion(void);
 int inputSave(FILE *file);
 void inputLoad(FILE *file, size_t version);
 
@@ -408,28 +408,19 @@ int bufferReflow(
 	struct Buffer *buffer, int cols, enum Heat thresh, size_t tail
 );
 
-struct Entry {
-	uint id;
-	char *key;
-	enum Color color;
-	uint prefixBits;
-	struct Entry *prev;
-	struct Entry *next;
-};
 struct Cursor {
 	uint gen;
-	struct Entry *entry;
+	struct Node *node;
 };
-const struct Entry *cacheGet(uint id, const char *key);
-struct Entry *cacheInsert(bool touch, uint id, const char *key);
-void cacheReplace(bool touch, const char *old, const char *new);
-void cacheRemove(uint id, const char *key);
-void cacheClear(uint id);
-const char *cacheComplete(struct Cursor *curs, uint id, const char *prefix);
-const char *cacheSearch(struct Cursor *curs, uint id, const char *substr);
-uint cacheNextID(struct Cursor *curs, const char *key);
-const char *cacheNextKey(struct Cursor *curs, uint id);
-void cacheTouch(struct Cursor *curs);
+void completePush(uint id, const char *str);
+void completePull(uint id, const char *str);
+void completeReplace(const char *old, const char *new);
+void completeRemove(uint id, const char *str);
+const char *completePrefix(struct Cursor *curs, uint id, const char *prefix);
+const char *completeSubstr(struct Cursor *curs, uint id, const char *substr);
+uint completeNextID(struct Cursor *curs, const char *str);
+void completeAccept(struct Cursor *curs);
+void completeReject(struct Cursor *curs);
 
 extern struct Util urlOpenUtil;
 extern struct Util urlCopyUtil;

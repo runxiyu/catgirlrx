@@ -138,9 +138,10 @@ static void commandMsg(uint id, char *params) {
 	if (!params) return;
 	char *nick = strsep(&params, " ");
 	uint msg = idFor(nick);
-	if (idColors[msg] == Default) {
-		idColors[msg] = cacheGet(id, nick)->color;
-	}
+	(void)id;
+	//if (idColors[msg] == Default) {
+	//	idColors[msg] = cacheGet(id, nick)->color;
+	//}
 	if (params) {
 		splitMessage("PRIVMSG", msg, params);
 	} else {
@@ -226,16 +227,16 @@ static void commandOps(uint id, char *params) {
 		idColors[id], idNames[id]
 	);
 	bool first = true;
-	struct Cursor curs = {0};
-	for (const char *nick; (nick = cacheNextKey(&curs, id));) {
-		char prefix = bitPrefix(curs.entry->prefixBits);
-		if (!prefix || prefix == '+') continue;
-		ptr = seprintf(
-			ptr, end, "%s\3%02d%c%s\3",
-			(first ? "" : ", "), curs.entry->color, prefix, nick
-		);
-		first = false;
-	}
+	//struct Cursor curs = {0};
+	//for (const char *nick; (nick = cacheNextKey(&curs, id));) {
+	//	char prefix = bitPrefix(curs.entry->prefixBits);
+	//	if (!prefix || prefix == '+') continue;
+	//	ptr = seprintf(
+	//		ptr, end, "%s\3%02d%c%s\3",
+	//		(first ? "" : ", "), curs.entry->color, prefix, nick
+	//	);
+	//	first = false;
+	//}
 	if (first) {
 		uiFormat(
 			id, Warm, NULL, "\3%02d%s\3 is a lawless wasteland",
@@ -402,9 +403,10 @@ static void commandCS(uint id, char *params) {
 static void commandQuery(uint id, char *params) {
 	if (!params) return;
 	uint query = idFor(params);
-	if (idColors[query] == Default) {
-		idColors[query] = cacheGet(id, params)->color;
-	}
+	(void)id;
+	//if (idColors[query] == Default) {
+	//	idColors[query] = cacheGet(id, params)->color;
+	//}
 	windowShow(windowFor(query));
 }
 
@@ -419,10 +421,11 @@ static void commandWindow(uint id, char *params) {
 			windowShow(windowFor(id));
 			return;
 		}
-		for (struct Cursor curs = {0}; cacheSearch(&curs, None, params);) {
-			id = idFind(curs.entry->key);
+		struct Cursor curs = {0};
+		for (const char *str; (str = completeSubstr(&curs, None, params));) {
+			id = idFind(str);
 			if (!id) continue;
-			cacheTouch(&curs);
+			completeAccept(&curs);
 			windowShow(windowFor(id));
 			break;
 		}
@@ -694,8 +697,8 @@ void command(uint id, char *input) {
 
 	struct Cursor curs = {0};
 	const char *cmd = strsep(&input, " ");
-	const char *unique = cacheComplete(&curs, None, cmd);
-	if (unique && !cacheComplete(&curs, None, cmd)) {
+	const char *unique = completePrefix(&curs, None, cmd);
+	if (unique && !completePrefix(&curs, None, cmd)) {
 		cmd = unique;
 	}
 
@@ -723,9 +726,9 @@ void command(uint id, char *input) {
 	handler->fn(id, input);
 }
 
-void commandCache(void) {
+void commandCompletion(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
 		if (!commandAvailable(&Commands[i])) continue;
-		cacheInsert(false, None, Commands[i].cmd);
+		completePush(None, Commands[i].cmd);
 	}
 }

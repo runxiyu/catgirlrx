@@ -374,7 +374,7 @@ int main(int argc, char *argv[]) {
 	set(&network.name, host);
 	set(&self.nick, "*");
 
-	inputCache();
+	inputCompletion();
 
 	ircConfig(insecure, trust, cert, priv);
 
