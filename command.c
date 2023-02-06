@@ -138,10 +138,9 @@ static void commandMsg(uint id, char *params) {
 	if (!params) return;
 	char *nick = strsep(&params, " ");
 	uint msg = idFor(nick);
-	(void)id;
-	//if (idColors[msg] == Default) {
-	//	idColors[msg] = cacheGet(id, nick)->color;
-	//}
+	if (idColors[msg] == Default) {
+		idColors[msg] = completeColor(id, nick);
+	}
 	if (params) {
 		splitMessage("PRIVMSG", msg, params);
 	} else {
@@ -403,10 +402,9 @@ static void commandCS(uint id, char *params) {
 static void commandQuery(uint id, char *params) {
 	if (!params) return;
 	uint query = idFor(params);
-	(void)id;
-	//if (idColors[query] == Default) {
-	//	idColors[query] = cacheGet(id, params)->color;
-	//}
+	if (idColors[query] == Default) {
+		idColors[query] = completeColor(id, params);
+	}
 	windowShow(windowFor(query));
 }
 
@@ -729,6 +727,6 @@ void command(uint id, char *input) {
 void commandCompletion(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Commands); ++i) {
 		if (!commandAvailable(&Commands[i])) continue;
-		completePush(None, Commands[i].cmd);
+		completePush(None, Commands[i].cmd, Default);
 	}
 }

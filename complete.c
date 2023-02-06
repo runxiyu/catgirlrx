@@ -35,6 +35,7 @@
 struct Node {
 	uint id;
 	char *str;
+	enum Color color;
 	struct Node *prev;
 	struct Node *next;
 };
@@ -43,12 +44,13 @@ static uint gen;
 static struct Node *head;
 static struct Node *tail;
 
-static struct Node *alloc(uint id, const char *str) {
+static struct Node *alloc(uint id, const char *str, enum Color color) {
 	struct Node *node = calloc(1, sizeof(*node));
 	if (!node) err(EX_OSERR, "calloc");
 	node->id = id;
 	node->str = strdup(str);
 	if (!node->str) err(EX_OSERR, "strdup");
+	node->color = color;
 	return node;
 }
 
@@ -87,13 +89,23 @@ static struct Node *find(uint id, const char *str) {
 	return NULL;
 }
 
-void completePush(uint id, const char *str) {
-	if (!find(id, str)) append(alloc(id, str));
+void completePush(uint id, const char *str, enum Color color) {
+	struct Node *node = find(id, str);
+	if (node) {
+		if (color != Default) node->color = color;
+	} else {
+		append(alloc(id, str, color));
+	}
 }
 
-void completePull(uint id, const char *str) {
+void completePull(uint id, const char *str, enum Color color) {
 	struct Node *node = find(id, str);
-	prepend(node ? detach(node) : alloc(id, str));
+	if (node) {
+		if (color != Default) node->color = color;
+		prepend(detach(node));
+	} else {
+		prepend(alloc(id, str, color));
+	}
 }
 
 void completeReplace(const char *old, const char *new) {
@@ -119,6 +131,11 @@ void completeRemove(uint id, const char *str) {
 		free(node);
 	}
 	gen++;
+}
+
+enum Color completeColor(uint id, const char *str) {
+	struct Node *node = find(id, str);
+	return (node ? node->color : Default);
 }
 
 const char *completePrefix(struct Cursor *curs, uint id, const char *prefix) {

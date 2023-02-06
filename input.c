@@ -266,7 +266,7 @@ void inputCompletion(void) {
 	for (size_t i = 0; i < ARRAY_LEN(Macros); ++i) {
 		size_t n = wcstombs(mbs, Macros[i].name, sizeof(mbs));
 		assert(n != (size_t)-1);
-		completePush(None, mbs);
+		completePush(None, mbs, Default);
 	}
 }
 

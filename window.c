@@ -118,7 +118,7 @@ uint windowFor(uint id) {
 		window->thresh = windowThreshold;
 	}
 	window->buffer = bufferAlloc();
-	completePush(None, idNames[id]); // color = idColors[id]
+	completePush(None, idNames[id], idColors[id]);
 
 	return windowPush(window);
 }
