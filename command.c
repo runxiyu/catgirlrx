@@ -226,16 +226,16 @@ static void commandOps(uint id, char *params) {
 		idColors[id], idNames[id]
 	);
 	bool first = true;
-	//struct Cursor curs = {0};
-	//for (const char *nick; (nick = cacheNextKey(&curs, id));) {
-	//	char prefix = bitPrefix(curs.entry->prefixBits);
-	//	if (!prefix || prefix == '+') continue;
-	//	ptr = seprintf(
-	//		ptr, end, "%s\3%02d%c%s\3",
-	//		(first ? "" : ", "), curs.entry->color, prefix, nick
-	//	);
-	//	first = false;
-	//}
+	struct Cursor curs = {0};
+	for (const char *nick; (nick = completeEach(&curs, id));) {
+		char prefix = bitPrefix(*completeBits(id, nick));
+		if (!prefix || prefix == '+') continue;
+		ptr = seprintf(
+			ptr, end, "%s\3%02d%c%s\3",
+			(first ? "" : ", "), completeColor(id, nick), prefix, nick
+		);
+		first = false;
+	}
 	if (first) {
 		uiFormat(
 			id, Warm, NULL, "\3%02d%s\3 is a lawless wasteland",

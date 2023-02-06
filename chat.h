@@ -417,9 +417,11 @@ void completePull(uint id, const char *str, enum Color color);
 void completeReplace(const char *old, const char *new);
 void completeRemove(uint id, const char *str);
 enum Color completeColor(uint id, const char *str);
+uint *completeBits(uint id, const char *str);
 const char *completePrefix(struct Cursor *curs, uint id, const char *prefix);
 const char *completeSubstr(struct Cursor *curs, uint id, const char *substr);
-uint completeNextID(struct Cursor *curs, const char *str);
+const char *completeEach(struct Cursor *curs, uint id);
+uint completeEachID(struct Cursor *curs, const char *str);
 void completeAccept(struct Cursor *curs);
 void completeReject(struct Cursor *curs);
 

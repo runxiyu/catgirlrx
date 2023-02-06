@@ -459,7 +459,7 @@ static void handleNick(struct Message *msg) {
 		inputUpdate();
 	}
 	struct Cursor curs = {0};
-	for (uint id; (id = completeNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeEachID(&curs, msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {
 			set(&idNames[id], msg->params[0]);
 		}
@@ -480,7 +480,7 @@ static void handleNick(struct Message *msg) {
 static void handleSetname(struct Message *msg) {
 	require(msg, true, 1);
 	struct Cursor curs = {0};
-	for (uint id; (id = completeNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeEachID(&curs, msg->nick));) {
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
 			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s\17)",
@@ -493,7 +493,7 @@ static void handleSetname(struct Message *msg) {
 static void handleQuit(struct Message *msg) {
 	require(msg, true, 0);
 	struct Cursor curs = {0};
-	for (uint id; (id = completeNextID(&curs, msg->nick));) {
+	for (uint id; (id = completeEachID(&curs, msg->nick));) {
 		enum Heat heat = filterCheck(Cold, id, msg);
 		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
@@ -576,11 +576,7 @@ static void handleReplyNames(struct Message *msg) {
 			bits |= prefixBit(*p);
 		}
 		completePush(id, nick, color);
-		/*
-		struct Entry *entry = cacheInsert(false, id, nick);
-		if (user) entry->color = color;
-		entry->prefixBits = bits;
-		*/
+		*completeBits(id, nick) = bits;
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
@@ -867,13 +863,12 @@ static void handleMode(struct Message *msg) {
 			char prefix = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
 			];
-			/*
+			completePush(id, nick, Default);
 			if (set) {
-				cacheInsert(false, id, nick)->prefixBits |= prefixBit(prefix);
+				*completeBits(id, nick) |= prefixBit(prefix);
 			} else {
-				cacheInsert(false, id, nick)->prefixBits &= ~prefixBit(prefix);
+				*completeBits(id, nick) &= ~prefixBit(prefix);
 			}
-			*/
 			uiFormat(
 				id, Cold, tagTime(msg),
 				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",

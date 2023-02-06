@@ -36,6 +36,7 @@ struct Node {
 	uint id;
 	char *str;
 	enum Color color;
+	uint bits;
 	struct Node *prev;
 	struct Node *next;
 };
@@ -51,6 +52,7 @@ static struct Node *alloc(uint id, const char *str, enum Color color) {
 	node->str = strdup(str);
 	if (!node->str) err(EX_OSERR, "strdup");
 	node->color = color;
+	node->bits = 0;
 	return node;
 }
 
@@ -138,6 +140,11 @@ enum Color completeColor(uint id, const char *str) {
 	return (node ? node->color : Default);
 }
 
+uint *completeBits(uint id, const char *str) {
+	struct Node *node = find(id, str);
+	return (node ? &node->bits : NULL);
+}
+
 const char *completePrefix(struct Cursor *curs, uint id, const char *prefix) {
 	size_t len = strlen(prefix);
 	if (curs->gen != gen) curs->node = NULL;
@@ -165,7 +172,19 @@ const char *completeSubstr(struct Cursor *curs, uint id, const char *substr) {
 	return NULL;
 }
 
-uint completeNextID(struct Cursor *curs, const char *str) {
+const char *completeEach(struct Cursor *curs, uint id) {
+	if (curs->gen != gen) curs->node = NULL;
+	for (
+		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
+		curs->node;
+		curs->node = curs->node->next
+	) {
+		if (curs->node->id == id) return curs->node->str;
+	}
+	return NULL;
+}
+
+uint completeEachID(struct Cursor *curs, const char *str) {
 	if (curs->gen != gen) curs->node = NULL;
 	for (
 		curs->gen = gen, curs->node = (curs->node ? curs->node->next : head);
