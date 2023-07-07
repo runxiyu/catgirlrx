@@ -248,6 +248,7 @@ int main(int argc, char *argv[]) {
 		{ .val = 'K', .name = "kiosk", no_argument },
 		{ .val = 'N', .name = "notify", required_argument },
 		{ .val = 'O', .name = "open", required_argument },
+		{ .val = 'P', .name = "prefix", no_argument },
 		{ .val = 'R', .name = "restrict", no_argument },
 		{ .val = 'S', .name = "bind", required_argument },
 		{ .val = 'T', .name = "timestamp", optional_argument },
@@ -289,6 +290,7 @@ int main(int argc, char *argv[]) {
 			break; case 'K': self.kiosk = true;
 			break; case 'N': utilPush(&uiNotifyUtil, optarg);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
+			break; case 'P': self.showPrefix = true;
 			break; case 'R': self.restricted = true;
 			break; case 'S': bind = optarg;
 			break; case 'T': {

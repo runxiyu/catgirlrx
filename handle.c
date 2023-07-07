@@ -406,19 +406,26 @@ static void handleChghost(struct Message *msg) {
 	}
 }
 
+static const char *prefix(uint id, const char *nick) {
+	if (!self.showPrefix) return "";
+	uint *bits = completeBits(id, nick);
+	if (!bits) return "";
+	for (uint i = 0; network.prefixes[i]; ++i) {
+		if (*bits & (1 << i)) return &network.prefixes[i];
+	}
+	return "";
+}
+
 static void handlePart(struct Message *msg) {
 	require(msg, true, 1);
 	uint id = idFor(msg->params[0]);
-	if (!strcmp(msg->nick, self.nick)) {
-		completeRemove(id, NULL);
-	}
-	completeRemove(id, msg->nick);
 	enum Heat heat = filterCheck(Cold, id, msg);
 	if (heat > Ice) urlScan(id, msg->nick, msg->params[1]);
 	uiFormat(
 		id, heat, tagTime(msg),
-		"\3%02d%s\3\tleaves \3%02d%s\3%s%s",
-		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
+		"\3%02d%s%s\3\tleaves \3%02d%s\3%s%s",
+		hash(msg->user), prefix(id, msg->nick), msg->nick,
+		hash(msg->params[0]), msg->params[0],
 		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
 	);
 	logFormat(
@@ -426,6 +433,11 @@ static void handlePart(struct Message *msg) {
 		msg->nick, msg->params[0],
 		(msg->params[1] ? ": " : ""), (msg->params[1] ?: "")
 	);
+	if (!strcmp(msg->nick, self.nick)) {
+		completeRemove(id, NULL);
+		inputUpdate();
+	}
+	completeRemove(id, msg->nick);
 }
 
 static void handleKick(struct Message *msg) {
@@ -436,10 +448,11 @@ static void handleKick(struct Message *msg) {
 	urlScan(id, msg->nick, msg->params[2]);
 	uiFormat(
 		id, (kicked ? Hot : Cold), tagTime(msg),
-		"%s\3%02d%s\17\tkicks \3%02d%s\3 out of \3%02d%s\3%s%s",
+		"%s\3%02d%s%s\17\tkicks \3%02d%s%s\3 out of \3%02d%s\3%s%s",
 		(kicked ? "\26" : ""),
-		hash(msg->user), msg->nick,
-		completeColor(id, msg->params[1]), msg->params[1],
+		hash(msg->user), prefix(id, msg->nick), msg->nick,
+		completeColor(id, msg->params[1]),
+		prefix(id, msg->params[1]), msg->params[1],
 		hash(msg->params[0]), msg->params[0],
 		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
@@ -449,15 +462,14 @@ static void handleKick(struct Message *msg) {
 		(msg->params[2] ? ": " : ""), (msg->params[2] ?: "")
 	);
 	completeRemove(id, msg->params[1]);
-	if (kicked) completeRemove(id, NULL);
+	if (kicked) {
+		completeRemove(id, NULL);
+		inputUpdate();
+	}
 }
 
 static void handleNick(struct Message *msg) {
 	require(msg, true, 1);
-	if (!strcmp(msg->nick, self.nick)) {
-		set(&self.nick, msg->params[0]);
-		inputUpdate();
-	}
 	struct Cursor curs = {0};
 	for (uint id; (id = completeEachID(&curs, msg->nick));) {
 		if (!strcmp(idNames[id], msg->nick)) {
@@ -465,8 +477,9 @@ static void handleNick(struct Message *msg) {
 		}
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
-			"\3%02d%s\3\tis now known as \3%02d%s\3",
-			hash(msg->user), msg->nick, hash(msg->user), msg->params[0]
+			"\3%02d%s%s\3\tis now known as \3%02d%s%s\3",
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
+			hash(msg->user), prefix(id, msg->nick), msg->params[0]
 		);
 		if (id == Network) continue;
 		logFormat(
@@ -475,6 +488,10 @@ static void handleNick(struct Message *msg) {
 		);
 	}
 	completeReplace(msg->nick, msg->params[0]);
+	if (!strcmp(msg->nick, self.nick)) {
+		set(&self.nick, msg->params[0]);
+		inputUpdate();
+	}
 }
 
 static void handleSetname(struct Message *msg) {
@@ -483,8 +500,9 @@ static void handleSetname(struct Message *msg) {
 	for (uint id; (id = completeEachID(&curs, msg->nick));) {
 		uiFormat(
 			id, filterCheck(Cold, id, msg), tagTime(msg),
-			"\3%02d%s\3\tis now known as \3%02d%s\3 (%s\17)",
-			hash(msg->user), msg->nick, hash(msg->user), msg->nick,
+			"\3%02d%s%s\3\tis now known as \3%02d%s%s\3 (%s\17)",
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
 			msg->params[0]
 		);
 	}
@@ -498,8 +516,8 @@ static void handleQuit(struct Message *msg) {
 		if (heat > Ice) urlScan(id, msg->nick, msg->params[0]);
 		uiFormat(
 			id, heat, tagTime(msg),
-			"\3%02d%s\3\tleaves%s%s",
-			hash(msg->user), msg->nick,
+			"\3%02d%s%s\3\tleaves%s%s",
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
 			(msg->params[0] ? ": " : ""), (msg->params[0] ?: "")
 		);
 		if (id == Network) continue;
@@ -525,8 +543,8 @@ static void handleInvite(struct Message *msg) {
 		uint id = idFor(msg->params[1]);
 		uiFormat(
 			id, Cold, tagTime(msg),
-			"\3%02d%s\3\tinvites %s to \3%02d%s\3",
-			hash(msg->user), msg->nick,
+			"\3%02d%s%s\3\tinvites %s to \3%02d%s\3",
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
 			msg->params[0],
 			hash(msg->params[1]), msg->params[1]
 		);
@@ -577,6 +595,7 @@ static void handleReplyNames(struct Message *msg) {
 		}
 		completePush(id, nick, color);
 		*completeBits(id, nick) = bits;
+		if (!strcmp(nick, self.nick)) inputUpdate();
 		if (!replies[ReplyNames] && !replies[ReplyNamesAuto]) continue;
 		ptr = seprintf(
 			ptr, end, "%s\3%02d%s\3", (ptr > buf ? ", " : ""), color, prefixes
@@ -679,8 +698,9 @@ static void handleTopic(struct Message *msg) {
 		topicComplete(id, NULL);
 		uiFormat(
 			id, Warm, tagTime(msg),
-			"\3%02d%s\3\tremoves the sign in \3%02d%s\3",
-			hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+			"\3%02d%s%s\3\tremoves the sign in \3%02d%s\3",
+			hash(msg->user), prefix(id, msg->nick), msg->nick,
+			hash(msg->params[0]), msg->params[0]
 		);
 		logFormat(
 			id, tagTime(msg), "%s removes the sign in %s",
@@ -714,15 +734,17 @@ static void handleTopic(struct Message *msg) {
 	char buf[1024];
 	char *ptr = buf, *end = &buf[sizeof(buf)];
 	ptr = seprintf(
-		ptr, end, "\3%02d%s\3\ttakes down the sign in \3%02d%s\3: ",
-		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+		ptr, end, "\3%02d%s%s\3\ttakes down the sign in \3%02d%s\3: ",
+		hash(msg->user), prefix(id, msg->nick), msg->nick,
+		hash(msg->params[0]), msg->params[0]
 	);
 	ptr = highlightMiddle(ptr, end, Brown, old, pre, osuf);
 	if (osuf != pre) uiWrite(id, Cold, tagTime(msg), buf);
 	ptr = buf;
 	ptr = seprintf(
-		ptr, end, "\3%02d%s\3\tplaces a new sign in \3%02d%s\3: ",
-		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0]
+		ptr, end, "\3%02d%s%s\3\tplaces a new sign in \3%02d%s\3: ",
+		hash(msg->user), prefix(id, msg->nick), msg->nick,
+		hash(msg->params[0]), msg->params[0]
 	);
 	ptr = highlightMiddle(ptr, end, Green, new, pre, nsuf);
 	uiWrite(id, Warm, tagTime(msg), buf);
@@ -731,8 +753,9 @@ static void handleTopic(struct Message *msg) {
 plain:
 	uiFormat(
 		id, Warm, tagTime(msg),
-		"\3%02d%s\3\tplaces a new sign in \3%02d%s\3: %s",
-		hash(msg->user), msg->nick, hash(msg->params[0]), msg->params[0],
+		"\3%02d%s%s\3\tplaces a new sign in \3%02d%s\3: %s",
+		hash(msg->user), prefix(id, msg->nick), msg->nick,
+		hash(msg->params[0]), msg->params[0],
 		msg->params[1]
 	);
 log:
@@ -860,26 +883,27 @@ static void handleMode(struct Message *msg) {
 				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
 			}
 			char *nick = msg->params[i++];
-			char prefix = network.prefixes[
+			char p = network.prefixes[
 				strchr(network.prefixModes, *ch) - network.prefixModes
 			];
 			completePush(id, nick, Default);
-			if (set) {
-				*completeBits(id, nick) |= prefixBit(prefix);
-			} else {
-				*completeBits(id, nick) &= ~prefixBit(prefix);
-			}
 			uiFormat(
 				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
-				hash(msg->user), msg->nick, verb,
-				completeColor(id, nick), prefix, nick,
+				"\3%02d%s%s\3\t%s \3%02d%c%s\3 %s%s in \3%02d%s\3",
+				hash(msg->user), prefix(id, msg->nick), msg->nick, verb,
+				completeColor(id, nick), p, nick,
 				mode, name, hash(msg->params[0]), msg->params[0]
 			);
 			logFormat(
 				id, tagTime(msg), "%s %s %c%s %s%s in %s",
-				msg->nick, verb, prefix, nick, mode, name, msg->params[0]
+				msg->nick, verb, p, nick, mode, name, msg->params[0]
 			);
+			if (set) {
+				*completeBits(id, nick) |= prefixBit(p);
+			} else {
+				*completeBits(id, nick) &= ~prefixBit(p);
+			}
+			if (!strcmp(nick, self.nick)) inputUpdate();
 		}
 
 		if (strchr(network.listModes, *ch)) {
@@ -891,8 +915,9 @@ static void handleMode(struct Message *msg) {
 				verb = (set ? "bans" : "unbans");
 				uiFormat(
 					id, Cold, tagTime(msg),
-					"\3%02d%s\3\t%s %c%c %s from \3%02d%s\3",
-					hash(msg->user), msg->nick, verb, set["-+"], *ch, mask,
+					"\3%02d%s%s\3\t%s %c%c %s from \3%02d%s\3",
+					hash(msg->user), prefix(id, msg->nick), msg->nick,
+					verb, set["-+"], *ch, mask,
 					hash(msg->params[0]), msg->params[0]
 				);
 				logFormat(
@@ -904,8 +929,9 @@ static void handleMode(struct Message *msg) {
 				const char *to = (set ? "to" : "from");
 				uiFormat(
 					id, Cold, tagTime(msg),
-					"\3%02d%s\3\t%s %s %s the \3%02d%s\3 %s%s list",
-					hash(msg->user), msg->nick, verb, mask, to,
+					"\3%02d%s%s\3\t%s %s %s the \3%02d%s\3 %s%s list",
+					hash(msg->user), prefix(id, msg->nick), msg->nick,
+					verb, mask, to,
 					hash(msg->params[0]), msg->params[0], mode, name
 				);
 				logFormat(
@@ -922,8 +948,8 @@ static void handleMode(struct Message *msg) {
 			char *param = msg->params[i++];
 			uiFormat(
 				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%s\3 %s%s %s",
-				hash(msg->user), msg->nick, verb,
+				"\3%02d%s%s\3\t%s \3%02d%s\3 %s%s %s",
+				hash(msg->user), prefix(id, msg->nick), msg->nick, verb,
 				hash(msg->params[0]), msg->params[0], mode, name, param
 			);
 			logFormat(
@@ -939,8 +965,8 @@ static void handleMode(struct Message *msg) {
 			char *param = msg->params[i++];
 			uiFormat(
 				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%s\3 %s%s %s",
-				hash(msg->user), msg->nick, verb,
+				"\3%02d%s%s\3\t%s \3%02d%s\3 %s%s %s",
+				hash(msg->user), prefix(id, msg->nick), msg->nick, verb,
 				hash(msg->params[0]), msg->params[0], mode, name, param
 			);
 			logFormat(
@@ -950,8 +976,8 @@ static void handleMode(struct Message *msg) {
 		} else if (strchr(network.setParamModes, *ch)) {
 			uiFormat(
 				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%s\3 %s%s",
-				hash(msg->user), msg->nick, verb,
+				"\3%02d%s%s\3\t%s \3%02d%s\3 %s%s",
+				hash(msg->user), prefix(id, msg->nick), msg->nick, verb,
 				hash(msg->params[0]), msg->params[0], mode, name
 			);
 			logFormat(
@@ -963,8 +989,8 @@ static void handleMode(struct Message *msg) {
 		if (strchr(network.channelModes, *ch)) {
 			uiFormat(
 				id, Cold, tagTime(msg),
-				"\3%02d%s\3\t%s \3%02d%s\3 %s%s",
-				hash(msg->user), msg->nick, verb,
+				"\3%02d%s%s\3\t%s \3%02d%s\3 %s%s",
+				hash(msg->user), prefix(id, msg->nick), msg->nick, verb,
 				hash(msg->params[0]), msg->params[0], mode, name
 			);
 			logFormat(
@@ -1306,20 +1332,22 @@ static void handlePrivmsg(struct Message *msg) {
 			logFormat(id, tagTime(msg), "-%s- %s", msg->nick, msg->params[1]);
 		}
 		ptr = seprintf(
-			ptr, end, "\3%d-%s-\3%d\t",
-			hash(msg->user), msg->nick, LightGray
+			ptr, end, "\3%d-%s%s-\3%d\t",
+			hash(msg->user), prefix(id, msg->nick), msg->nick, LightGray
 		);
 	} else if (action) {
 		logFormat(id, tagTime(msg), "* %s %s", msg->nick, msg->params[1]);
 		ptr = seprintf(
-			ptr, end, "%s\35\3%d* %s\17\35\t",
-			(highlight ? "\26" : ""), hash(msg->user), msg->nick
+			ptr, end, "%s\35\3%d* %s%s\17\35\t",
+			(highlight ? "\26" : ""),
+			hash(msg->user), prefix(id, msg->nick), msg->nick
 		);
 	} else {
 		logFormat(id, tagTime(msg), "<%s> %s", msg->nick, msg->params[1]);
 		ptr = seprintf(
-			ptr, end, "%s\3%d<%s>\17\t",
-			(highlight ? "\26" : ""), hash(msg->user), msg->nick
+			ptr, end, "%s\3%d<%s%s>\17\t",
+			(highlight ? "\26" : ""),
+			hash(msg->user), prefix(id, msg->nick), msg->nick
 		);
 	}
 	if (notice) {

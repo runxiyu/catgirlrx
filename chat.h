@@ -204,6 +204,7 @@ extern struct Self {
 	bool debug;
 	bool kiosk;
 	bool restricted;
+	bool showPrefix;
 	size_t pos;
 	enum Cap caps;
 	const char *plainUser;
