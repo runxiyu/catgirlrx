@@ -174,45 +174,37 @@ void inputUpdate(void) {
 	const char *ptr = editString(&edits[id], &buf, &cap, &pos);
 	if (!ptr) err(EX_OSERR, "editString");
 
-	const char *head = "";
-	char prefix[2] = "";
+	const char *prefix = "";
 	const char *prompt = self.nick;
-	const char *tail = "";
+	const char *suffix = "";
 	const char *skip = buf;
 	struct Style stylePrompt = { .fg = self.color, .bg = Default };
 	struct Style styleInput = StyleDefault;
-	if (self.showPrefix) {
-		uint *bits = completeBits(id, self.nick);
-		if (bits) prefix[0] = bitPrefix(*bits);
-	}
 
 	size_t split = commandWillSplit(id, buf);
 	const char *privmsg = commandIsPrivmsg(id, buf);
 	const char *notice = commandIsNotice(id, buf);
 	const char *action = commandIsAction(id, buf);
 	if (privmsg) {
-		head = "<"; tail = "> ";
+		prefix = "<"; suffix = "> ";
 		skip = privmsg;
 	} else if (notice) {
-		head = "-"; tail = "- ";
+		prefix = "-"; suffix = "- ";
 		styleInput.fg = LightGray;
 		skip = notice;
 	} else if (action) {
-		head = "* "; tail = " ";
+		prefix = "* "; suffix = " ";
 		stylePrompt.attr |= Italic;
 		styleInput.attr |= Italic;
 		skip = action;
 	} else if (id == Debug && buf[0] != '/') {
-		prefix[0] = '\0';
 		prompt = "<< ";
 		stylePrompt.fg = Gray;
 	} else {
-		prefix[0] = '\0';
 		prompt = "";
 	}
 	if (skip > &buf[pos]) {
-		prefix[0] = '\0';
-		head = prompt = tail = "";
+		prefix = prompt = suffix = "";
 		skip = buf;
 	}
 
@@ -223,10 +215,9 @@ void inputUpdate(void) {
 		wmove(uiInput, 0, windowTime.width);
 	}
 	wattr_set(uiInput, uiAttr(stylePrompt), uiPair(stylePrompt), NULL);
-	waddstr(uiInput, head);
 	waddstr(uiInput, prefix);
 	waddstr(uiInput, prompt);
-	waddstr(uiInput, tail);
+	waddstr(uiInput, suffix);
 	getyx(uiInput, y, x);
 
 	int posx;

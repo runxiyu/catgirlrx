@@ -1,4 +1,4 @@
-.Dd February  5, 2023
+.Dd May 29, 2022
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl KPRelqv
+.Op Fl KRelqv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl I Ar highlight
@@ -187,15 +187,6 @@ as an argument.
 The default is the first available of
 .Xr open 1 ,
 .Xr xdg-open 1 .
-.
-.It Fl P | Cm prefix
-Show nick prefixes corresponding to modes.
-The standard prefixes are
-.Sy @
-for operator and
-.Sy +
-for voice.
-Other prefixes are server software specific.
 .
 .It Fl R | Cm restrict
 Disable the
