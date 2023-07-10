@@ -1,5 +1,5 @@
 .\" To view this file: $ man ./README.7
-.Dd July 30, 2022
+.Dd July  9, 2023
 .Dt README 7
 .Os "Causal Agency"
 .
@@ -173,10 +173,10 @@ wrapper is provided for macOS
 to stop and start
 .Nm
 on system sleep and wake.
-Install it as follows:
+To enable it,
+configure with:
 .Bd -literal -offset indent
-$ make -C scripts sandman
-# make -C scripts install
+$ ./configure --enable-sandman
 .Ed
 .
 .Sh FILES
@@ -213,6 +213,8 @@ chat logging
 configuration parsing
 .It Pa xdg.c
 XDG base directories
+.It Pa sandman.m
+sleep/wake wrapper for macOS
 .El
 .
 .Pp
@@ -222,8 +224,6 @@ example
 .Xr tmux 1
 configuration for multiple networks
 and automatic reconnects
-.It Pa scripts/sandman.m
-sleep/wake wrapper for macOS
 .It Pa scripts/notify-send.scpt
 .Xr notify-send 1
 in AppleScript
@@ -257,7 +257,8 @@ Monetary contributions can be
 .Lk https://liberapay.com/june/donate "donated via Liberapay" .
 .
 .Sh SEE ALSO
-.Xr catgirl 1
+.Xr catgirl 1 ,
+.Xr sandman 1
 .
 .Pp
 IRC bouncer:

@@ -8,9 +8,13 @@ CFLAGS += ${CEXTS:%=-Wno-%}
 LDADD.libtls = -ltls
 LDADD.ncursesw = -lncursesw
 
+BINS = catgirl
+MANS = ${BINS:=.1}
+
 -include config.mk
 
 LDLIBS = ${LDADD.libtls} ${LDADD.ncursesw}
+LDLIBS.sandman = -framework Cocoa
 
 OBJS += buffer.o
 OBJS += chat.o
@@ -28,11 +32,13 @@ OBJS += url.o
 OBJS += window.o
 OBJS += xdg.o
 
+OBJS.sandman = sandman.o
+
 TESTS += edit.t
 
 dev: tags all check
 
-all: catgirl
+all: ${BINS}
 
 catgirl: ${OBJS}
 	${CC} ${LDFLAGS} ${OBJS} ${LDLIBS} -o $@
@@ -40,6 +46,9 @@ catgirl: ${OBJS}
 ${OBJS}: chat.h
 
 edit.o edit.t input.o: edit.h
+
+sandman: ${OBJS.sandman}
+	${CC} ${LDFLAGS} ${OBJS.$@} ${LDLIBS.$@} -o $@
 
 check: ${TESTS}
 
@@ -53,15 +62,16 @@ tags: *.[ch]
 	ctags -w *.[ch]
 
 clean:
-	rm -f catgirl ${OBJS} ${TESTS} tags
+	rm -f ${BINS} ${OBJS} ${OBJS.sandman} ${TESTS} tags
 
-install: catgirl catgirl.1
+install: ${BINS} ${MANS}
 	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
-	install catgirl ${DESTDIR}${BINDIR}
-	install -m 644 catgirl.1 ${DESTDIR}${MANDIR}/man1
+	install ${BINS} ${DESTDIR}${BINDIR}
+	install -m 644 ${MANS} ${DESTDIR}${MANDIR}/man1
 
 uninstall:
-	rm -f ${DESTDIR}${BINDIR}/catgirl ${DESTDIR}${MANDIR}/man1/catgirl.1
+	rm -f ${BINS:%=${DESTDIR}${BINDIR}/%}
+	rm -f ${MANS:%=${DESTDIR}${MANDIR}/man1/%}
 
 CHROOT_USER = chat
 CHROOT_GROUP = ${CHROOT_USER}
