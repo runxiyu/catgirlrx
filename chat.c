@@ -245,7 +245,6 @@ int main(int argc, char *argv[]) {
 		{ .val = 'C', .name = "copy", required_argument },
 		{ .val = 'H', .name = "hash", required_argument },
 		{ .val = 'I', .name = "highlight", required_argument },
-		{ .val = 'K', .name = "kiosk", no_argument },
 		{ .val = 'N', .name = "notify", required_argument },
 		{ .val = 'O', .name = "open", required_argument },
 		{ .val = 'R', .name = "restrict", no_argument },
@@ -286,7 +285,6 @@ int main(int argc, char *argv[]) {
 			break; case 'C': utilPush(&urlCopyUtil, optarg);
 			break; case 'H': parseHash(optarg);
 			break; case 'I': filterAdd(Hot, optarg);
-			break; case 'K': self.kiosk = true;
 			break; case 'N': utilPush(&uiNotifyUtil, optarg);
 			break; case 'O': utilPush(&urlOpenUtil, optarg);
 			break; case 'R': self.restricted = true;
@@ -340,13 +338,6 @@ int main(int argc, char *argv[]) {
 	if (!self.nicks[0]) errx(EX_CONFIG, "USER unset");
 	if (!user) user = self.nicks[0];
 	if (!real) real = self.nicks[0];
-
-	if (self.kiosk) {
-		char *hash;
-		int n = asprintf(&hash, "%08" PRIx32, _hash(user));
-		if (n < 0) err(EX_OSERR, "asprintf");
-		user = hash;
-	}
 
 	if (pass && !pass[0]) {
 		char *buf = malloc(512);
@@ -418,8 +409,7 @@ int main(int argc, char *argv[]) {
 	signal(SIGTERM, signalHandler);
 	signal(SIGCHLD, signalHandler);
 
-	bool pipes = !self.kiosk && !self.restricted;
-	if (pipes) {
+	if (!self.restricted) {
 		int error = pipe(utilPipe) || pipe(execPipe);
 		if (error) err(EX_OSERR, "pipe");
 
@@ -437,7 +427,7 @@ int main(int argc, char *argv[]) {
 		{ .events = POLLIN, .fd = execPipe[0] },
 	};
 	while (!self.quit) {
-		int nfds = poll(fds, (pipes ? ARRAY_LEN(fds) : 2), -1);
+		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), -1);
 		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
 		if (nfds > 0) {
 			if (fds[0].revents) inputRead();

@@ -560,7 +560,6 @@ static void commandHelp(uint id, char *params) {
 enum Flag {
 	BIT(Multiline),
 	BIT(Restrict),
-	BIT(Kiosk),
 };
 
 static const struct Handler {
@@ -572,37 +571,37 @@ static const struct Handler {
 	{ "/away", commandAway, 0, 0 },
 	{ "/ban", commandBan, 0, 0 },
 	{ "/close", commandClose, 0, 0 },
-	{ "/copy", commandCopy, Restrict | Kiosk, 0 },
+	{ "/copy", commandCopy, Restrict, 0 },
 	{ "/cs", commandCS, 0, 0 },
-	{ "/debug", commandDebug, Kiosk, 0 },
+	{ "/debug", commandDebug, 0, 0 },
 	{ "/deop", commandDeop, 0, 0 },
 	{ "/devoice", commandDevoice, 0, 0 },
 	{ "/except", commandExcept, 0, 0 },
-	{ "/exec", commandExec, Multiline | Restrict | Kiosk, 0 },
+	{ "/exec", commandExec, Multiline | Restrict, 0 },
 	{ "/help", commandHelp, 0, 0 }, // Restrict special case.
 	{ "/highlight", commandHighlight, 0, 0 },
 	{ "/ignore", commandIgnore, 0, 0 },
 	{ "/invex", commandInvex, 0, 0 },
 	{ "/invite", commandInvite, 0, 0 },
-	{ "/join", commandJoin, Kiosk, 0 },
+	{ "/join", commandJoin, 0, 0 },
 	{ "/kick", commandKick, 0, 0 },
-	{ "/list", commandList, Kiosk, 0 },
+	{ "/list", commandList, 0, 0 },
 	{ "/me", commandMe, Multiline, 0 },
 	{ "/mode", commandMode, 0, 0 },
 	{ "/move", commandMove, 0, 0 },
-	{ "/msg", commandMsg, Multiline | Kiosk, 0 },
+	{ "/msg", commandMsg, Multiline, 0 },
 	{ "/names", commandNames, 0, 0 },
 	{ "/nick", commandNick, 0, 0 },
 	{ "/notice", commandNotice, Multiline, 0 },
 	{ "/ns", commandNS, 0, 0 },
-	{ "/o", commandOpen, Restrict | Kiosk, 0 },
+	{ "/o", commandOpen, Restrict, 0 },
 	{ "/op", commandOp, 0, 0 },
-	{ "/open", commandOpen, Restrict | Kiosk, 0 },
+	{ "/open", commandOpen, Restrict, 0 },
 	{ "/ops", commandOps, 0, 0 },
-	{ "/part", commandPart, Kiosk, 0 },
-	{ "/query", commandQuery, Kiosk, 0 },
+	{ "/part", commandPart, 0, 0 },
+	{ "/query", commandQuery, 0, 0 },
 	{ "/quit", commandQuit, 0, 0 },
-	{ "/quote", commandQuote, Multiline | Kiosk, 0 },
+	{ "/quote", commandQuote, Multiline, 0 },
 	{ "/say", commandPrivmsg, Multiline, 0 },
 	{ "/setname", commandSetname, 0, CapSetname },
 	{ "/topic", commandTopic, 0, 0 },
@@ -672,7 +671,6 @@ size_t commandWillSplit(uint id, const char *input) {
 
 static bool commandAvailable(const struct Handler *handler) {
 	if (handler->flags & Restrict && self.restricted) return false;
-	if (handler->flags & Kiosk && self.kiosk) return false;
 	if (handler->caps && (handler->caps & self.caps) != handler->caps) {
 		return false;
 	}

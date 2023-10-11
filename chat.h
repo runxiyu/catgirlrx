@@ -202,7 +202,6 @@ enum Cap {
 
 extern struct Self {
 	bool debug;
-	bool kiosk;
 	bool restricted;
 	size_t pos;
 	enum Cap caps;

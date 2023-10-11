@@ -1,4 +1,4 @@
-.Dd May 29, 2022
+.Dd October 11, 2023
 .Dt CATGIRL 1
 .Os
 .
@@ -8,7 +8,7 @@
 .
 .Sh SYNOPSIS
 .Nm
-.Op Fl KRelqv
+.Op Fl Relqv
 .Op Fl C Ar copy
 .Op Fl H Ar hash
 .Op Fl I Ar highlight
@@ -144,22 +144,6 @@ The commands which can be matched are:
 .Sy PRIVMSG ,
 .Sy QUIT ,
 .Sy SETNAME .
-.
-.It Fl K | Cm kiosk
-Disable the
-.Ic /copy ,
-.Ic /debug ,
-.Ic /exec ,
-.Ic /join ,
-.Ic /list ,
-.Ic /msg ,
-.Ic /open ,
-.Ic /part ,
-.Ic /query ,
-.Ic /quote
-commands.
-Replace the username
-with a hash of its original value.
 .
 .It Fl N Ar util | Cm notify No = Ar util
 Send notifications using a utility.
