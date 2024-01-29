@@ -622,7 +622,7 @@ static time_t readTime(FILE *file) {
 	time_t time;
 	fread(&time, sizeof(time), 1, file);
 	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
+	if (feof(file)) errx(EX_DATAERR, "unexpected end of save file");
 	return time;
 }
 

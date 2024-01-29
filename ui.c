@@ -296,7 +296,7 @@ static size_t signatureVersion(uint64_t signature) {
 	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
 		if (signature == Signatures[i]) return i;
 	}
-	errx(EX_DATAERR, "unknown file signature %" PRIX64, signature);
+	errx(EX_DATAERR, "unknown save file signature %" PRIX64, signature);
 }
 
 static int writeUint64(FILE *file, uint64_t u) {
@@ -318,7 +318,7 @@ static uint64_t readUint64(FILE *file) {
 	uint64_t u;
 	fread(&u, sizeof(u), 1, file);
 	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) errx(EX_DATAERR, "unexpected eof");
+	if (feof(file)) errx(EX_DATAERR, "unexpected end of save file");
 	return u;
 }
 
