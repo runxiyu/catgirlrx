@@ -147,6 +147,7 @@ static int styleAdd(WINDOW *win, struct Style init, const char *str) {
 	struct Style style = init;
 	while (*str) {
 		size_t len = styleParse(&style, &str);
+		if (!len) continue;
 		wattr_set(win, uiAttr(style), uiPair(style), NULL);
 		if (waddnstr(win, str, len) == ERR)
 			return -1;
