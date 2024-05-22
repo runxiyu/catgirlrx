@@ -38,7 +38,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sysexits.h>
 #include <tls.h>
 #include <unistd.h>
 
@@ -54,7 +53,7 @@ void ircConfig(
 	char buf[PATH_MAX];
 
 	config = tls_config_new();
-	if (!config) errx(EX_SOFTWARE, "tls_config_new");
+	if (!config) errx(1, "tls_config_new");
 
 	if (insecure) {
 		tls_config_insecure_noverifycert(config);
@@ -66,7 +65,7 @@ void ircConfig(
 			error = tls_config_set_ca_file(config, buf);
 			if (!error) break;
 		}
-		if (error) errx(EX_NOINPUT, "%s: %s", trust, tls_config_error(config));
+		if (error) errx(1, "%s: %s", trust, tls_config_error(config));
 	}
 
 	// Explicitly load the default CA cert file on OpenBSD now so it doesn't
@@ -76,7 +75,7 @@ void ircConfig(
 	if (!insecure && !trust) {
 		const char *ca = tls_default_ca_cert_file();
 		error = tls_config_set_ca_file(config, ca);
-		if (error) errx(EX_OSFILE, "%s: %s", ca, tls_config_error(config));
+		if (error) errx(1, "%s: %s", ca, tls_config_error(config));
 	}
 #endif
 
@@ -89,21 +88,21 @@ void ircConfig(
 			}
 			if (!error) break;
 		}
-		if (error) errx(EX_NOINPUT, "%s: %s", cert, tls_config_error(config));
+		if (error) errx(1, "%s: %s", cert, tls_config_error(config));
 	}
 	if (priv) {
 		for (int i = 0; configPath(buf, sizeof(buf), priv, i); ++i) {
 			error = tls_config_set_key_file(config, buf);
 			if (!error) break;
 		}
-		if (error) errx(EX_NOINPUT, "%s: %s", priv, tls_config_error(config));
+		if (error) errx(1, "%s: %s", priv, tls_config_error(config));
 	}
 
 	client = tls_client();
-	if (!client) errx(EX_SOFTWARE, "tls_client");
+	if (!client) errx(1, "tls_client");
 
 	error = tls_configure(client, config);
-	if (error) errx(EX_SOFTWARE, "tls_configure: %s", tls_error(client));
+	if (error) errx(1, "tls_configure: %s", tls_error(client));
 }
 
 int ircConnect(const char *bindHost, const char *host, const char *port) {
@@ -120,11 +119,11 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 
 	if (bindHost) {
 		error = getaddrinfo(bindHost, NULL, &hints, &head);
-		if (error) errx(EX_NOHOST, "%s: %s", bindHost, gai_strerror(error));
+		if (error) errx(1, "%s: %s", bindHost, gai_strerror(error));
 
 		for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
 			sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-			if (sock < 0) err(EX_OSERR, "socket");
+			if (sock < 0) err(1, "socket");
 
 			error = bind(sock, ai->ai_addr, ai->ai_addrlen);
 			if (!error) {
@@ -135,17 +134,17 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 			close(sock);
 			sock = -1;
 		}
-		if (sock < 0) err(EX_UNAVAILABLE, "%s", bindHost);
+		if (sock < 0) err(1, "%s", bindHost);
 		freeaddrinfo(head);
 	}
 
 	error = getaddrinfo(host, port, &hints, &head);
-	if (error) errx(EX_NOHOST, "%s:%s: %s", host, port, gai_strerror(error));
+	if (error) errx(1, "%s:%s: %s", host, port, gai_strerror(error));
 
 	for (struct addrinfo *ai = head; ai; ai = ai->ai_next) {
 		if (sock < 0) {
 			sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-			if (sock < 0) err(EX_OSERR, "socket");
+			if (sock < 0) err(1, "socket");
 		}
 
 		error = connect(sock, ai->ai_addr, ai->ai_addrlen);
@@ -155,12 +154,12 @@ int ircConnect(const char *bindHost, const char *host, const char *port) {
 		close(sock);
 		sock = -1;
 	}
-	if (sock < 0) err(EX_UNAVAILABLE, "%s:%s", host, port);
+	if (sock < 0) err(69, "%s:%s", host, port);
 	freeaddrinfo(head);
 
 	fcntl(sock, F_SETFD, FD_CLOEXEC);
 	error = tls_connect_socket(client, sock, host);
-	if (error) errx(EX_PROTOCOL, "tls_connect: %s", tls_error(client));
+	if (error) errx(1, "tls_connect: %s", tls_error(client));
 
 	return sock;
 }
@@ -170,7 +169,7 @@ void ircHandshake(void) {
 	do {
 		error = tls_handshake(client);
 	} while (error == TLS_WANT_POLLIN || error == TLS_WANT_POLLOUT);
-	if (error) errx(EX_PROTOCOL, "tls_handshake: %s", tls_error(client));
+	if (error) errx(1, "tls_handshake: %s", tls_error(client));
 
 	tls_config_clear_keys(config);
 }
@@ -202,7 +201,7 @@ void ircSend(const char *ptr, size_t len) {
 	while (len) {
 		ssize_t ret = tls_write(client, ptr, len);
 		if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT) continue;
-		if (ret < 0) errx(EX_IOERR, "tls_write: %s", tls_error(client));
+		if (ret < 0) errx(1, "tls_write: %s", tls_error(client));
 		ptr += ret;
 		len -= ret;
 	}
@@ -287,8 +286,8 @@ void ircRecv(void) {
 	assert(client);
 	ssize_t ret = tls_read(client, &buf[len], sizeof(buf) - len);
 	if (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT) return;
-	if (ret < 0) errx(EX_IOERR, "tls_read: %s", tls_error(client));
-	if (!ret) errx(EX_PROTOCOL, "server closed connection");
+	if (ret < 0) errx(1, "tls_read: %s", tls_error(client));
+	if (!ret) errx(69, "server closed connection");
 	len += ret;
 
 	char *crlf;

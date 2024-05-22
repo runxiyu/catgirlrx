@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <wchar.h>
 
 #include "chat.h"
@@ -83,7 +82,7 @@ static void require(struct Message *msg, bool origin, uint len) {
 	}
 	for (uint i = 0; i < len; ++i) {
 		if (msg->params[i]) continue;
-		errx(EX_PROTOCOL, "%s missing parameter %u", msg->cmd, 1 + i);
+		errx(1, "%s missing parameter %u", msg->cmd, 1 + i);
 	}
 }
 
@@ -162,7 +161,7 @@ static void handleErrorNicknameInUse(struct Message *msg) {
 static void handleErrorErroneousNickname(struct Message *msg) {
 	require(msg, false, 3);
 	if (!strcmp(self.nick, "*")) {
-		errx(EX_CONFIG, "%s: %s", msg->params[1], msg->params[2]);
+		errx(1, "%s: %s", msg->params[1], msg->params[2]);
 	} else {
 		handleErrorGeneric(msg);
 	}
@@ -193,7 +192,7 @@ static void handleCap(struct Message *msg) {
 		}
 		if (!(self.caps & CapSASL)) ircFormat("CAP END\r\n");
 	} else if (!strcmp(msg->params[1], "NAK")) {
-		errx(EX_CONFIG, "server does not support %s", msg->params[2]);
+		errx(1, "server does not support %s", msg->params[2]);
 	}
 }
 
@@ -237,7 +236,7 @@ static void handleAuthenticate(struct Message *msg) {
 	size_t userLen = strlen(self.plainUser);
 	size_t passLen = strlen(self.plainPass);
 	size_t len = 1 + userLen + 1 + passLen;
-	if (sizeof(buf) < len) errx(EX_USAGE, "SASL PLAIN is too long");
+	if (sizeof(buf) < len) errx(1, "SASL PLAIN is too long");
 	memcpy(&buf[1], self.plainUser, userLen);
 	memcpy(&buf[1 + userLen + 1], self.plainPass, passLen);
 
@@ -260,7 +259,7 @@ static void handleReplyLoggedIn(struct Message *msg) {
 
 static void handleErrorSASLFail(struct Message *msg) {
 	require(msg, false, 2);
-	errx(EX_CONFIG, "%s", msg->params[1]);
+	errx(1, "%s", msg->params[1]);
 }
 
 static void handleReplyWelcome(struct Message *msg) {
@@ -315,7 +314,7 @@ static void handleReplyISupport(struct Message *msg) {
 			char *modes = strsep(&msg->params[i], ")");
 			char *prefixes = msg->params[i];
 			if (!modes || !prefixes || strlen(modes) != strlen(prefixes)) {
-				errx(EX_PROTOCOL, "invalid PREFIX value");
+				errx(1, "invalid PREFIX value");
 			}
 			set(&network.prefixModes, modes);
 			set(&network.prefixes, prefixes);
@@ -325,7 +324,7 @@ static void handleReplyISupport(struct Message *msg) {
 			char *setParam = strsep(&msg->params[i], ",");
 			char *channel = strsep(&msg->params[i], ",");
 			if (!list || !param || !setParam || !channel) {
-				errx(EX_PROTOCOL, "invalid CHANMODES value");
+				errx(1, "invalid CHANMODES value");
 			}
 			set(&network.listModes, list);
 			set(&network.paramModes, param);
@@ -857,7 +856,7 @@ static void handleMode(struct Message *msg) {
 
 		if (strchr(network.prefixModes, *ch)) {
 			if (i >= ParamCap || !msg->params[i]) {
-				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+				errx(1, "MODE missing %s parameter", mode);
 			}
 			char *nick = msg->params[i++];
 			char prefix = network.prefixes[
@@ -884,7 +883,7 @@ static void handleMode(struct Message *msg) {
 
 		if (strchr(network.listModes, *ch)) {
 			if (i >= ParamCap || !msg->params[i]) {
-				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+				errx(1, "MODE missing %s parameter", mode);
 			}
 			char *mask = msg->params[i++];
 			if (*ch == 'b') {
@@ -917,7 +916,7 @@ static void handleMode(struct Message *msg) {
 
 		if (strchr(network.paramModes, *ch)) {
 			if (i >= ParamCap || !msg->params[i]) {
-				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+				errx(1, "MODE missing %s parameter", mode);
 			}
 			char *param = msg->params[i++];
 			uiFormat(
@@ -934,7 +933,7 @@ static void handleMode(struct Message *msg) {
 
 		if (strchr(network.setParamModes, *ch) && set) {
 			if (i >= ParamCap || !msg->params[i]) {
-				errx(EX_PROTOCOL, "MODE missing %s parameter", mode);
+				errx(1, "MODE missing %s parameter", mode);
 			}
 			char *param = msg->params[i++];
 			uiFormat(
@@ -1337,7 +1336,7 @@ static void handlePing(struct Message *msg) {
 
 static void handleError(struct Message *msg) {
 	require(msg, false, 1);
-	errx(EX_UNAVAILABLE, "%s", msg->params[0]);
+	errx(69, "%s", msg->params[0]);
 }
 
 static const struct Handler {

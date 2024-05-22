@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-#include <sysexits.h>
 #include <time.h>
 #include <wchar.h>
 
@@ -131,7 +130,7 @@ static inline uint idFor(const char *name) {
 	if (idNext == IDCap) return Network;
 	idNames[idNext] = strdup(name);
 	idColors[idNext] = Default;
-	if (!idNames[idNext]) err(EX_OSERR, "strdup");
+	if (!idNames[idNext]) err(1, "strdup");
 	return idNext++;
 }
 
@@ -221,7 +220,7 @@ extern struct Self {
 static inline void set(char **field, const char *value) {
 	free(*field);
 	*field = strdup(value);
-	if (!*field) err(EX_OSERR, "strdup");
+	if (!*field) err(1, "strdup");
 }
 
 #define ENUM_TAG \
@@ -273,7 +272,7 @@ static inline void utilPush(struct Util *util, const char *arg) {
 	if (1 + util->argc < UtilCap) {
 		util->argv[util->argc++] = arg;
 	} else {
-		errx(EX_CONFIG, "too many utility arguments");
+		errx(1, "too many utility arguments");
 	}
 }
 

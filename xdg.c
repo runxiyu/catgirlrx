@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sysexits.h>
 
 #include "chat.h"
 
@@ -90,7 +89,7 @@ static char *basePath(
 	} else if (home) {
 		snprintf(buf, cap, "%s/%s/" SUBDIR "/%s", home, base.defHome, path);
 	} else {
-		errx(EX_USAGE, "HOME unset");
+		errx(1, "HOME unset");
 	}
 	return buf;
 }

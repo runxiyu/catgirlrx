@@ -28,7 +28,6 @@
 #include <err.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 
 #include "chat.h"
 
@@ -47,10 +46,10 @@ static struct Node *tail;
 
 static struct Node *alloc(uint id, const char *str, enum Color color) {
 	struct Node *node = calloc(1, sizeof(*node));
-	if (!node) err(EX_OSERR, "calloc");
+	if (!node) err(1, "calloc");
 	node->id = id;
 	node->str = strdup(str);
-	if (!node->str) err(EX_OSERR, "strdup");
+	if (!node->str) err(1, "strdup");
 	node->color = color;
 	node->bits = 0;
 	return node;
@@ -117,7 +116,7 @@ void completeReplace(const char *old, const char *new) {
 		if (strcmp(node->str, old)) continue;
 		free(node->str);
 		node->str = strdup(new);
-		if (!node->str) err(EX_OSERR, "strdup");
+		if (!node->str) err(1, "strdup");
 		prepend(detach(node));
 	}
 }

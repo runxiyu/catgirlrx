@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <time.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -50,7 +49,7 @@ struct Buffer {
 
 struct Buffer *bufferAlloc(void) {
 	struct Buffer *buffer = calloc(1, sizeof(*buffer));
-	if (!buffer) err(EX_OSERR, "calloc");
+	if (!buffer) err(1, "calloc");
 	return buffer;
 }
 
@@ -107,7 +106,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 	line->heat = soft->heat;
 	line->time = soft->time;
 	line->str = strdup(soft->str);
-	if (!line->str) err(EX_OSERR, "strdup");
+	if (!line->str) err(1, "strdup");
 
 	int width = 0;
 	int align = 0;
@@ -185,7 +184,7 @@ static int flow(struct Lines *hard, int cols, const struct Line *soft) {
 
 		size_t cap = StyleCap + align + strlen(&wrap[n]) + 1;
 		line->str = malloc(cap);
-		if (!line->str) err(EX_OSERR, "malloc");
+		if (!line->str) err(1, "malloc");
 
 		char *end = &line->str[cap];
 		str = seprintf(line->str, end, "%*s", (width = align), "");
@@ -209,7 +208,7 @@ int bufferPush(
 	soft->heat = heat;
 	soft->time = time;
 	soft->str = strdup(str);
-	if (!soft->str) err(EX_OSERR, "strdup");
+	if (!soft->str) err(1, "strdup");
 	if (heat < thresh) return 0;
 	return flow(&buffer->hard, cols, soft);
 }

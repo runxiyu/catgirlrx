@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <unistd.h>
 
 #include "chat.h"
@@ -67,7 +66,7 @@ static void compile(void) {
 	if (!error) return;
 	char buf[256];
 	regerror(error, &Regex, buf, sizeof(buf));
-	errx(EX_SOFTWARE, "regcomp: %s: %s", buf, Pattern);
+	errx(1, "regcomp: %s: %s", buf, Pattern);
 }
 
 struct URL {
@@ -92,10 +91,10 @@ static void push(uint id, const char *nick, const char *str, size_t len) {
 	url->nick = NULL;
 	if (nick) {
 		url->nick = strdup(nick);
-		if (!url->nick) err(EX_OSERR, "strdup");
+		if (!url->nick) err(1, "strdup");
 	}
 	url->url = malloc(len + 1);
-	if (!url->url) err(EX_OSERR, "malloc");
+	if (!url->url) err(1, "malloc");
 
 	char buf[1024];
 	snprintf(buf, sizeof(buf), "%.*s", (int)len, str);
@@ -120,7 +119,7 @@ static const struct Util OpenUtils[] = {
 
 static void urlOpen(const char *url) {
 	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) return;
 
 	setsid();
@@ -132,7 +131,7 @@ static void urlOpen(const char *url) {
 		utilPush(&util, url);
 		execvp(util.argv[0], (char *const *)util.argv);
 		warn("%s", util.argv[0]);
-		_exit(EX_CONFIG);
+		_exit(127);
 	}
 	for (size_t i = 0; i < ARRAY_LEN(OpenUtils); ++i) {
 		struct Util util = OpenUtils[i];
@@ -140,11 +139,11 @@ static void urlOpen(const char *url) {
 		execvp(util.argv[0], (char *const *)util.argv);
 		if (errno != ENOENT) {
 			warn("%s", util.argv[0]);
-			_exit(EX_CONFIG);
+			_exit(127);
 		}
 	}
 	warnx("no open utility found");
-	_exit(EX_CONFIG);
+	_exit(127);
 }
 
 struct Util urlCopyUtil;
@@ -158,18 +157,18 @@ static const struct Util CopyUtils[] = {
 static void urlCopy(const char *url) {
 	int rw[2];
 	int error = pipe(rw);
-	if (error) err(EX_OSERR, "pipe");
+	if (error) err(1, "pipe");
 
 	size_t len = strlen(url);
 	if (len > PIPE_BUF) len = PIPE_BUF;
 	ssize_t n = write(rw[1], url, len);
-	if (n < 0) err(EX_IOERR, "write");
+	if (n < 0) err(1, "write");
 
 	error = close(rw[1]);
-	if (error) err(EX_IOERR, "close");
+	if (error) err(1, "close");
 
 	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) {
 		close(rw[0]);
 		return;
@@ -183,17 +182,17 @@ static void urlCopy(const char *url) {
 	if (urlCopyUtil.argc) {
 		execvp(urlCopyUtil.argv[0], (char *const *)urlCopyUtil.argv);
 		warn("%s", urlCopyUtil.argv[0]);
-		_exit(EX_CONFIG);
+		_exit(127);
 	}
 	for (size_t i = 0; i < ARRAY_LEN(CopyUtils); ++i) {
 		execvp(CopyUtils[i].argv[0], (char *const *)CopyUtils[i].argv);
 		if (errno != ENOENT) {
 			warn("%s", CopyUtils[i].argv[0]);
-			_exit(EX_CONFIG);
+			_exit(127);
 		}
 	}
 	warnx("no copy utility found");
-	_exit(EX_CONFIG);
+	_exit(127);
 }
 
 void urlOpenCount(uint id, uint count) {
@@ -239,7 +238,7 @@ static int writeString(FILE *file, const char *str) {
 }
 static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 	ssize_t len = getdelim(buf, cap, '\0', file);
-	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	if (len < 0 && !feof(file)) err(1, "getdelim");
 	return len;
 }
 
@@ -269,11 +268,11 @@ void urlLoad(FILE *file, size_t version) {
 		readString(file, &buf, &cap);
 		if (buf[0]) {
 			url->nick = strdup(buf);
-			if (!url->nick) err(EX_OSERR, "strdup");
+			if (!url->nick) err(1, "strdup");
 		}
 		readString(file, &buf, &cap);
 		url->url = strdup(buf);
-		if (!url->url) err(EX_OSERR, "strdup");
+		if (!url->url) err(1, "strdup");
 	}
 	free(buf);
 }

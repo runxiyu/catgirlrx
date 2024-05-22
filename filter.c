@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 
 #include "chat.h"
 
@@ -48,14 +47,14 @@ struct Filter filterParse(enum Heat heat, char *pattern) {
 }
 
 struct Filter filterAdd(enum Heat heat, const char *pattern) {
-	if (len == FilterCap) errx(EX_CONFIG, "filter limit exceeded");
+	if (len == FilterCap) errx(1, "filter limit exceeded");
 	char *own;
 	if (!strchr(pattern, '!') && !strchr(pattern, ' ')) {
 		int n = asprintf(&own, "%s!*@*", pattern);
-		if (n < 0) err(EX_OSERR, "asprintf");
+		if (n < 0) err(1, "asprintf");
 	} else {
 		own = strdup(pattern);
-		if (!own) err(EX_OSERR, "strdup");
+		if (!own) err(1, "strdup");
 	}
 	struct Filter filter = filterParse(heat, own);
 	filters[len++] = filter;
@@ -105,7 +104,7 @@ static void icedPush(const char *msgID) {
 	size_t i = iced.len % IcedCap;
 	free(iced.msgIDs[i]);
 	iced.msgIDs[i] = strdup(msgID);
-	if (!iced.msgIDs[i]) err(EX_OSERR, "strdup");
+	if (!iced.msgIDs[i]) err(1, "strdup");
 	iced.len++;
 }
 

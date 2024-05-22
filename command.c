@@ -516,7 +516,7 @@ static void commandExec(uint id, char *params) {
 	execID = id;
 
 	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) return;
 
 	setsid();
@@ -527,7 +527,7 @@ static void commandExec(uint id, char *params) {
 	const char *shell = getenv("SHELL") ?: "/bin/sh";
 	execl(shell, shell, "-c", params, NULL);
 	warn("%s", shell);
-	_exit(EX_UNAVAILABLE);
+	_exit(127);
 }
 
 static void commandHelp(uint id, char *params) {
@@ -545,7 +545,7 @@ static void commandHelp(uint id, char *params) {
 
 	uiHide();
 	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) return;
 
 	char buf[256];
@@ -554,7 +554,7 @@ static void commandHelp(uint id, char *params) {
 	execlp("man", "man", "1", "catgirl", NULL);
 	dup2(utilPipe[1], STDERR_FILENO);
 	warn("man");
-	_exit(EX_UNAVAILABLE);
+	_exit(127);
 }
 
 enum Flag {

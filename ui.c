@@ -39,7 +39,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
-#include <sysexits.h>
 #include <term.h>
 #include <time.h>
 #include <unistd.h>
@@ -122,13 +121,13 @@ void uiInit(void) {
 	}
 
 	uiStatus = newwin(StatusLines, COLS, 0, 0);
-	if (!uiStatus) err(EX_OSERR, "newwin");
+	if (!uiStatus) err(1, "newwin");
 
 	uiMain = newwin(MAIN_LINES, COLS, StatusLines, 0);
-	if (!uiMain) err(EX_OSERR, "newwin");
+	if (!uiMain) err(1, "newwin");
 
 	uiInput = newpad(InputLines, InputCols);
-	if (!uiInput) err(EX_OSERR, "newpad");
+	if (!uiInput) err(1, "newpad");
 
 	windowInit();
 	uiShow();
@@ -240,7 +239,7 @@ static void notify(uint id, const char *str) {
 	utilPush(&util, buf);
 
 	pid_t pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) return;
 
 	setsid();
@@ -249,7 +248,7 @@ static void notify(uint id, const char *str) {
 	dup2(utilPipe[1], STDERR_FILENO);
 	execvp(util.argv[0], (char *const *)util.argv);
 	warn("%s", util.argv[0]);
-	_exit(EX_CONFIG);
+	_exit(127);
 }
 
 void uiWrite(uint id, enum Heat heat, const time_t *src, const char *str) {
@@ -296,7 +295,7 @@ static size_t signatureVersion(uint64_t signature) {
 	for (size_t i = 0; i < ARRAY_LEN(Signatures); ++i) {
 		if (signature == Signatures[i]) return i;
 	}
-	errx(EX_DATAERR, "unknown save file signature %" PRIX64, signature);
+	errx(1, "unknown save file signature %" PRIX64, signature);
 }
 
 static int writeUint64(FILE *file, uint64_t u) {
@@ -317,32 +316,32 @@ int uiSave(void) {
 static uint64_t readUint64(FILE *file) {
 	uint64_t u;
 	fread(&u, sizeof(u), 1, file);
-	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) errx(EX_DATAERR, "unexpected end of save file");
+	if (ferror(file)) err(1, "fread");
+	if (feof(file)) errx(1, "unexpected end of save file");
 	return u;
 }
 
 void uiLoad(const char *name) {
 	int error;
 	saveFile = dataOpen(name, "a+e");
-	if (!saveFile) exit(EX_CANTCREAT);
+	if (!saveFile) exit(1);
 	rewind(saveFile);
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
 	cap_rights_init(&rights, CAP_READ, CAP_WRITE, CAP_FLOCK, CAP_FTRUNCATE);
 	error = caph_rights_limit(fileno(saveFile), &rights);
-	if (error) err(EX_OSERR, "cap_rights_limit");
+	if (error) err(1, "cap_rights_limit");
 #endif
 
 	error = flock(fileno(saveFile), LOCK_EX | LOCK_NB);
 	if (error && errno == EWOULDBLOCK) {
-		errx(EX_CANTCREAT, "%s: save file in use", name);
+		errx(1, "%s: save file in use", name);
 	}
 
 	time_t signature;
 	fread(&signature, sizeof(signature), 1, saveFile);
-	if (ferror(saveFile)) err(EX_IOERR, "fread");
+	if (ferror(saveFile)) err(1, "fread");
 	if (feof(saveFile)) {
 		return;
 	}

@@ -19,7 +19,6 @@
 #import <signal.h>
 #import <stdio.h>
 #import <stdlib.h>
-#import <sysexits.h>
 #import <unistd.h>
 
 typedef unsigned uint;
@@ -27,17 +26,17 @@ typedef unsigned uint;
 static pid_t pid;
 static void spawn(char *argv[]) {
 	pid = fork();
-	if (pid < 0) err(EX_OSERR, "fork");
+	if (pid < 0) err(1, "fork");
 	if (pid) return;
 	execvp(argv[0], argv);
-	err(EX_CONFIG, "%s", argv[0]);
+	err(127, "%s", argv[0]);
 }
 
 static void handler(int signal) {
 	(void)signal;
 	int status;
 	pid_t pid = wait(&status);
-	if (pid < 0) _exit(EX_OSERR);
+	if (pid < 0) _exit(1);
 	_exit(status);
 }
 
@@ -47,12 +46,12 @@ int main(int argc, char *argv[]) {
 	for (int opt; 0 < (opt = getopt(argc, argv, "t:"));) {
 		switch (opt) {
 			break; case 't': delay = strtoul(optarg, NULL, 10);
-			break; default:  return EX_USAGE;
+			break; default:  return 1;
 		}
 	}
 	argc -= optind;
 	argv += optind;
-	if (!argc) errx(EX_USAGE, "command required");
+	if (!argc) errx(1, "command required");
 
 	NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
 	NSNotificationCenter *notifCenter = [workspace notificationCenter];
@@ -64,7 +63,7 @@ int main(int argc, char *argv[]) {
 							 (void)notif;
 							 signal(SIGCHLD, SIG_IGN);
 							 int error = kill(pid, SIGHUP);
-							 if (error) err(EX_UNAVAILABLE, "kill");
+							 if (error) err(1, "kill");
 							 int status;
 							 wait(&status);
 						 }];

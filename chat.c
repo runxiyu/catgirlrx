@@ -41,7 +41,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
-#include <sysexits.h>
 #include <time.h>
 #include <tls.h>
 #include <unistd.h>
@@ -70,7 +69,7 @@ static void genCert(const char *path) {
 		"-nodes", "-subj", subj, "-out", path, "-keyout", path,
 		NULL
 	);
-	err(EX_UNAVAILABLE, "openssl");
+	err(127, "openssl");
 }
 
 char *idNames[IDCap] = {
@@ -93,7 +92,7 @@ static void exitSave(void) {
 	int error = uiSave();
 	if (error) {
 		warn("%s", save);
-		_exit(EX_IOERR);
+		_exit(1);
 	}
 }
 
@@ -104,7 +103,7 @@ int utilPipe[2] = { -1, -1 };
 static void execRead(void) {
 	char buf[1024];
 	ssize_t len = read(execPipe[0], buf, sizeof(buf) - 1);
-	if (len < 0) err(EX_IOERR, "read");
+	if (len < 0) err(1, "read");
 	if (!len) return;
 	buf[len] = '\0';
 	for (char *ptr = buf; ptr;) {
@@ -116,7 +115,7 @@ static void execRead(void) {
 static void utilRead(void) {
 	char buf[1024];
 	ssize_t len = read(utilPipe[0], buf, sizeof(buf) - 1);
-	if (len < 0) err(EX_IOERR, "read");
+	if (len < 0) err(1, "read");
 	if (!len) return;
 	buf[len] = '\0';
 	for (char *ptr = buf; ptr;) {
@@ -135,7 +134,7 @@ static void parseHash(char *str) {
 
 static void parsePlain(char *str) {
 	self.plainUser = strsep(&str, ":");
-	if (!str) errx(EX_USAGE, "SASL PLAIN missing colon");
+	if (!str) errx(1, "SASL PLAIN missing colon");
 	self.plainPass = str;
 }
 
@@ -159,27 +158,27 @@ static void sandboxEarly(bool log) {
 	if (log) {
 		char buf[PATH_MAX];
 		int error = unveil(dataPath(buf, sizeof(buf), "log", 0), "wc");
-		if (error) err(EX_OSERR, "unveil");
+		if (error) err(1, "unveil");
 		ptr = seprintf(ptr, end, " wpath cpath");
 	}
 
 	if (!self.restricted) {
 		int error = unveil("/", "x");
-		if (error) err(EX_OSERR, "unveil");
+		if (error) err(1, "unveil");
 		ptr = seprintf(ptr, end, " proc exec");
 	}
 
 	promisesInitial = ptr;
 	ptr = seprintf(ptr, end, " inet dns");
 	int error = pledge(promises, NULL);
-	if (error) err(EX_OSERR, "pledge");
+	if (error) err(1, "pledge");
 }
 
 static void sandboxLate(int irc) {
 	(void)irc;
 	*promisesInitial = '\0';
 	int error = pledge(promises, NULL);
-	if (error) err(EX_OSERR, "pledge");
+	if (error) err(1, "pledge");
 }
 
 #elif defined __FreeBSD__
@@ -202,7 +201,7 @@ static void sandboxLate(int irc) {
 		|| caph_rights_limit(
 			irc, cap_rights_init(&rights, CAP_SEND, CAP_RECV, CAP_EVENT)
 		);
-	if (error) err(EX_OSERR, "cap_rights_limit");
+	if (error) err(1, "cap_rights_limit");
 
 	// caph_cache_tzdata(3) doesn't load UTC info, which we need for
 	// certificate verification. gmtime(3) does.
@@ -210,7 +209,7 @@ static void sandboxLate(int irc) {
 	gmtime(&(time_t) { time(NULL) });
 
 	error = cap_enter();
-	if (error) err(EX_OSERR, "cap_enter");
+	if (error) err(1, "cap_enter");
 }
 
 #else
@@ -317,40 +316,40 @@ int main(int argc, char *argv[]) {
 			break; case 'u': user = optarg;
 			break; case 'v': self.debug = true;
 			break; case 'w': pass = optarg;
-			break; default:  return EX_USAGE;
+			break; default:  return 1;
 		}
 	}
-	if (!host) errx(EX_USAGE, "host required");
+	if (!host) errx(1, "host required");
 
 	if (printCert) {
 #ifdef __OpenBSD__
 		int error = pledge("stdio inet dns", NULL);
-		if (error) err(EX_OSERR, "pledge");
+		if (error) err(1, "pledge");
 #endif
 		ircConfig(true, NULL, NULL, NULL);
 		ircConnect(bind, host, port);
 		ircPrintCert();
 		ircClose();
-		return EX_OK;
+		return 0;
 	}
 
 	if (!self.nicks[0]) self.nicks[0] = getenv("USER");
-	if (!self.nicks[0]) errx(EX_CONFIG, "USER unset");
+	if (!self.nicks[0]) errx(1, "USER unset");
 	if (!user) user = self.nicks[0];
 	if (!real) real = self.nicks[0];
 
 	if (pass && !pass[0]) {
 		char *buf = malloc(512);
-		if (!buf) err(EX_OSERR, "malloc");
+		if (!buf) err(1, "malloc");
 		pass = readpassphrase("Server password: ", buf, 512, 0);
-		if (!pass) errx(EX_IOERR, "unable to read passphrase");
+		if (!pass) errx(1, "unable to read passphrase");
 	}
 
 	if (self.plainPass && !self.plainPass[0]) {
 		char *buf = malloc(512);
-		if (!buf) err(EX_OSERR, "malloc");
+		if (!buf) err(1, "malloc");
 		self.plainPass = readpassphrase("Account password: ", buf, 512, 0);
-		if (!self.plainPass) errx(EX_IOERR, "unable to read passphrase");
+		if (!self.plainPass) errx(1, "unable to read passphrase");
 	}
 
 	// Modes defined in RFC 1459:
@@ -411,7 +410,7 @@ int main(int argc, char *argv[]) {
 
 	if (!self.restricted) {
 		int error = pipe(utilPipe) || pipe(execPipe);
-		if (error) err(EX_OSERR, "pipe");
+		if (error) err(1, "pipe");
 
 		fcntl(utilPipe[0], F_SETFD, FD_CLOEXEC);
 		fcntl(utilPipe[1], F_SETFD, FD_CLOEXEC);
@@ -428,7 +427,7 @@ int main(int argc, char *argv[]) {
 	};
 	while (!self.quit) {
 		int nfds = poll(fds, (self.restricted ? 2 : ARRAY_LEN(fds)), -1);
-		if (nfds < 0 && errno != EINTR) err(EX_IOERR, "poll");
+		if (nfds < 0 && errno != EINTR) err(1, "poll");
 		if (nfds > 0) {
 			if (fds[0].revents) inputRead();
 			if (fds[1].revents) ircRecv();
@@ -446,12 +445,12 @@ int main(int argc, char *argv[]) {
 				.it_interval.tv_sec = 30,
 			};
 			int error = setitimer(ITIMER_REAL, &timer, NULL);
-			if (error) err(EX_OSERR, "setitimer");
+			if (error) err(1, "setitimer");
 		}
 		if (signals[SIGALRM]) {
 			signals[SIGALRM] = 0;
 			if (ping) {
-				errx(EX_UNAVAILABLE, "ping timeout");
+				errx(69, "ping timeout");
 			} else {
 				ircFormat("PING nyaa\r\n");
 				ping = true;

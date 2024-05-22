@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <termios.h>
 #include <unistd.h>
 #include <wchar.h>
@@ -100,7 +99,7 @@ void inputInit(void) {
 
 	struct termios term;
 	int error = tcgetattr(STDOUT_FILENO, &term);
-	if (error) err(EX_OSERR, "tcgetattr");
+	if (error) err(1, "tcgetattr");
 
 	// Gain use of C-q, C-s, C-c, C-z, C-y, C-v, C-o.
 	term.c_iflag &= ~IXON;
@@ -113,7 +112,7 @@ void inputInit(void) {
 	term.c_cc[VDISCARD] = _POSIX_VDISABLE;
 
 	error = tcsetattr(STDOUT_FILENO, TCSANOW, &term);
-	if (error) err(EX_OSERR, "tcsetattr");
+	if (error) err(1, "tcsetattr");
 
 	def_prog_mode();
 
@@ -172,7 +171,7 @@ void inputUpdate(void) {
 
 	size_t pos = 0;
 	const char *ptr = editString(&edits[id], &buf, &cap, &pos);
-	if (!ptr) err(EX_OSERR, "editString");
+	if (!ptr) err(1, "editString");
 
 	const char *prefix = "";
 	const char *prompt = self.nick;
@@ -394,7 +393,7 @@ fail:
 static void inputEnter(void) {
 	uint id = windowID();
 	char *cmd = editString(&edits[id], &buf, &cap, NULL);
-	if (!cmd) err(EX_OSERR, "editString");
+	if (!cmd) err(1, "editString");
 
 	tabAccept();
 	editFn(&edits[id], EditClear);
@@ -450,7 +449,7 @@ static void keyCode(int code) {
 		break; case KEY_SHOME: windowScroll(ScrollAll, +1);
 		break; case KEY_UP: windowScroll(ScrollOne, +1);
 	}
-	if (error) err(EX_OSERR, "editFn");
+	if (error) err(1, "editFn");
 }
 
 static void keyCtrl(wchar_t ch) {
@@ -480,7 +479,7 @@ static void keyCtrl(wchar_t ch) {
 		break; case L'X': error = macroExpand(edit); tabAccept();
 		break; case L'Y': error = editFn(edit, EditPaste);
 	}
-	if (error) err(EX_OSERR, "editFn");
+	if (error) err(1, "editFn");
 }
 
 static void keyStyle(wchar_t ch) {
@@ -516,7 +515,7 @@ static void keyStyle(wchar_t ch) {
 	struct Edit *edit = &edits[windowID()];
 	for (char *ch = buf; *ch; ++ch) {
 		int error = editInsert(edit, *ch);
-		if (error) err(EX_OSERR, "editInsert");
+		if (error) err(1, "editInsert");
 	}
 }
 
@@ -552,7 +551,7 @@ void inputRead(void) {
 			paste ^= true;
 		} else if (paste || literal) {
 			int error = editInsert(&edits[windowID()], ch);
-			if (error) err(EX_OSERR, "editInsert");
+			if (error) err(1, "editInsert");
 		} else if (ret == KEY_CODE_YES) {
 			keyCode(ch);
 		} else if (ch == (L'Z' ^ L'@')) {
@@ -568,7 +567,7 @@ void inputRead(void) {
 			keyCtrl(ch);
 		} else {
 			int error = editInsert(&edits[windowID()], ch);
-			if (error) err(EX_OSERR, "editInsert");
+			if (error) err(1, "editInsert");
 		}
 		style = false;
 		literal = false;
@@ -609,7 +608,7 @@ int inputSave(FILE *file) {
 
 static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 	ssize_t len = getdelim(buf, cap, '\0', file);
-	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	if (len < 0 && !feof(file)) err(1, "getdelim");
 	return len;
 }
 
@@ -620,7 +619,7 @@ void inputLoad(FILE *file, size_t version) {
 		readString(file, &buf, &cap);
 		size_t max = strlen(buf);
 		int error = editReserve(&edits[id], 0, max);
-		if (error) err(EX_OSERR, "editReserve");
+		if (error) err(1, "editReserve");
 		size_t len = mbstowcs(edits[id].buf, buf, max);
 		assert(len != (size_t)-1);
 		edits[id].len = len;

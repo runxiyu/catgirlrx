@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <sysexits.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -49,13 +48,13 @@ static int logDir = -1;
 void logOpen(void) {
 	char buf[PATH_MAX];
 	int error = mkdir(dataPath(buf, sizeof(buf), "", 0), S_IRWXU);
-	if (error && errno != EEXIST) err(EX_CANTCREAT, "%s", buf);
+	if (error && errno != EEXIST) err(1, "%s", buf);
 
 	error = mkdir(dataPath(buf, sizeof(buf), "log", 0), S_IRWXU);
-	if (error && errno != EEXIST) err(EX_CANTCREAT, "%s", buf);
+	if (error && errno != EEXIST) err(1, "%s", buf);
 
 	logDir = open(buf, O_RDONLY | O_CLOEXEC);
-	if (logDir < 0) err(EX_CANTCREAT, "%s", buf);
+	if (logDir < 0) err(1, "%s", buf);
 
 #ifdef __FreeBSD__
 	cap_rights_t rights;
@@ -64,13 +63,13 @@ void logOpen(void) {
 		/* for fdopen(3) */ CAP_FCNTL, CAP_FSTAT
 	);
 	error = caph_rights_limit(logDir, &rights);
-	if (error) err(EX_OSERR, "cap_rights_limit");
+	if (error) err(1, "cap_rights_limit");
 #endif
 }
 
 static void logMkdir(const char *path) {
 	int error = mkdirat(logDir, path, S_IRWXU);
-	if (error && errno != EEXIST) err(EX_CANTCREAT, "log/%s", path);
+	if (error && errno != EEXIST) err(1, "log/%s", path);
 }
 
 static void sanitize(char *ptr, char *end) {
@@ -99,7 +98,7 @@ static FILE *logFile(uint id, const struct tm *tm) {
 
 	if (logs[id].file) {
 		int error = fclose(logs[id].file);
-		if (error) err(EX_IOERR, "%s", idNames[id]);
+		if (error) err(1, "%s", idNames[id]);
 	}
 
 	logs[id].year = tm->tm_year;
@@ -119,16 +118,16 @@ static FILE *logFile(uint id, const struct tm *tm) {
 	logMkdir(path);
 
 	size_t len = strftime(ptr, end - ptr, "/%F.log", tm);
-	if (!len) errx(EX_CANTCREAT, "log path too long");
+	if (!len) errx(1, "log path too long");
 
 	int fd = openat(
 		logDir, path,
 		O_WRONLY | O_APPEND | O_CREAT | O_CLOEXEC,
 		S_IRUSR | S_IWUSR
 	);
-	if (fd < 0) err(EX_CANTCREAT, "log/%s", path);
+	if (fd < 0) err(1, "log/%s", path);
 	logs[id].file = fdopen(fd, "a");
-	if (!logs[id].file) err(EX_OSERR, "fdopen");
+	if (!logs[id].file) err(1, "fdopen");
 
 	setlinebuf(logs[id].file);
 	return logs[id].file;
@@ -139,7 +138,7 @@ void logClose(void) {
 	for (uint id = 0; id < IDCap; ++id) {
 		if (!logs[id].file) continue;
 		int error = fclose(logs[id].file);
-		if (error) err(EX_IOERR, "%s", idNames[id]);
+		if (error) err(1, "%s", idNames[id]);
 	}
 	close(logDir);
 }
@@ -149,21 +148,21 @@ void logFormat(uint id, const time_t *src, const char *format, ...) {
 
 	time_t ts = (src ? *src : time(NULL));
 	struct tm *tm = localtime(&ts);
-	if (!tm) err(EX_OSERR, "localtime");
+	if (!tm) err(1, "localtime");
 
 	FILE *file = logFile(id, tm);
 
 	char buf[sizeof("0000-00-00T00:00:00+0000")];
 	strftime(buf, sizeof(buf), "%FT%T%z", tm);
 	int n = fprintf(file, "[%s] ", buf);
-	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
+	if (n < 0) err(1, "%s", idNames[id]);
 
 	va_list ap;
 	va_start(ap, format);
 	n = vfprintf(file, format, ap);
 	va_end(ap);
-	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
+	if (n < 0) err(1, "%s", idNames[id]);
 
 	n = fprintf(file, "\n");
-	if (n < 0) err(EX_IOERR, "%s", idNames[id]);
+	if (n < 0) err(1, "%s", idNames[id]);
 }

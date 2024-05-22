@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <time.h>
 
 #include "chat.h"
@@ -107,7 +106,7 @@ uint windowFor(uint id) {
 	}
 
 	struct Window *window = calloc(1, sizeof(*window));
-	if (!window) err(EX_OSERR, "malloc");
+	if (!window) err(1, "malloc");
 
 	window->id = id;
 	window->mark = true;
@@ -132,7 +131,7 @@ void windowInit(void) {
 
 	struct tm *time = localtime(&(time_t) { -22100400 });
 	size_t len = strftime(buf, sizeof(buf), fmt, time);
-	if (!len) errx(EX_CONFIG, "invalid timestamp format: %s", fmt);
+	if (!len) errx(1, "invalid timestamp format: %s", fmt);
 
 	int y;
 	waddstr(uiMain, buf);
@@ -622,14 +621,14 @@ int windowSave(FILE *file) {
 static time_t readTime(FILE *file) {
 	time_t time;
 	fread(&time, sizeof(time), 1, file);
-	if (ferror(file)) err(EX_IOERR, "fread");
-	if (feof(file)) errx(EX_DATAERR, "unexpected end of save file");
+	if (ferror(file)) err(1, "fread");
+	if (feof(file)) errx(1, "unexpected end of save file");
 	return time;
 }
 
 static ssize_t readString(FILE *file, char **buf, size_t *cap) {
 	ssize_t len = getdelim(buf, cap, '\0', file);
-	if (len < 0 && !feof(file)) err(EX_IOERR, "getdelim");
+	if (len < 0 && !feof(file)) err(1, "getdelim");
 	return len;
 }
 
