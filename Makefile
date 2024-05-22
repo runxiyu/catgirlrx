@@ -72,16 +72,3 @@ install: ${BINS} ${MANS}
 uninstall:
 	rm -f ${BINS:%=${DESTDIR}${BINDIR}/%}
 	rm -f ${MANS:%=${DESTDIR}${MANDIR}/man1/%}
-
-CHROOT_USER = chat
-CHROOT_GROUP = ${CHROOT_USER}
-
-chroot.tar: catgirl catgirl.1 scripts/chroot-prompt.sh scripts/chroot-man.sh
-chroot.tar: scripts/build-chroot.sh
-	sh scripts/build-chroot.sh ${CHROOT_USER} ${CHROOT_GROUP}
-
-install-chroot: chroot.tar
-	tar -px -f chroot.tar -C /home/${CHROOT_USER}
-
-clean-chroot:
-	rm -fr chroot.tar root

@@ -1,9 +1,0 @@
-UsePAM no
-
-Match User chat
-	PasswordAuthentication yes
-	PermitEmptyPasswords yes
-	ChrootDirectory /home/chat
-	ForceCommand catgirl-prompt
-	DisableForwarding yes
-	MaxSessions 1
