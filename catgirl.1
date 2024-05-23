@@ -504,13 +504,13 @@ trust example.pem
 The
 .Nm
 interface is split
-into three areas.
+into three main areas.
 .
 .Ss Status Line
 The top line of the terminal
 shows window statuses.
 Only the currently active window
-and windows with activity are listed.
+and windows with activity are shown.
 The status line for a window
 might look like this:
 .Bd -literal -offset indent
@@ -521,7 +521,8 @@ The number on the left
 is the window number.
 Following it may be one of
 .Ql - ,
-.Ql + ,
+.Ql +
+or
 .Ql ++ ,
 as well as
 .Ql = .
@@ -537,11 +538,11 @@ indicates the number of unread messages.
 The number following
 .Ql ~
 indicates how many lines
-are below the scroll position.
+are below the current scroll position.
 An
 .Ql @
 indicates that there is unsent input
-in the window's
+waiting in the window's
 .Sx Input Line .
 .Pp
 .Nm
@@ -571,7 +572,11 @@ with the nick between
 hyphens.
 .Pp
 Blank lines are inserted into the chat
-as unread markers.
+as unread markers
+whenever there are messages
+in a window that is not active
+or the terminal is not focused
+(in some terminal emulators).
 .Pp
 While scrolling,
 the most recent 5 lines of chat
