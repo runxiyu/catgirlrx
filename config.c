@@ -97,13 +97,6 @@ int getopt_config(
 			}
 
 			char *equal = &name[len] + strspn(&name[len], WS);
-			if (*equal && *equal != '=') {
-				warnx(
-					"%s:%zu: option `%s' missing equals sign",
-					path, num, option->name
-				);
-				return clean('?');
-			}
 			if (option->has_arg == no_argument && *equal) {
 				warnx(
 					"%s:%zu: option `%s' doesn't allow an argument",
@@ -121,8 +114,11 @@ int getopt_config(
 
 			optarg = NULL;
 			if (*equal) {
-				char *arg = &equal[1] + strspn(&equal[1], WS);
-				optarg = strdup(arg);
+				if (*equal == '=') {
+					optarg = strdup(&equal[1] + strspn(&equal[1], WS));
+				} else {
+					optarg = strdup(equal);
+				}
 				if (!optarg) {
 					warn("getopt_config");
 					return clean('?');
