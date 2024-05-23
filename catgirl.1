@@ -445,6 +445,10 @@ starts.
 .El
 .
 .Ss Configuring CertFP
+CertFP allows you to
+authenticate with NickServ during connection
+using a TLS client certificate
+rather than your account password.
 .Bl -enum
 .It
 Generate a new TLS client certificate:
@@ -452,32 +456,34 @@ Generate a new TLS client certificate:
 $ catgirl -g ~/.config/catgirl/example.pem
 .Ed
 .It
-Connect to the server using the certificate:
+Connect to the server using the certificate
+by adding the following configuration:
 .Bd -literal -offset indent
-cert = example.pem
-# or: $ catgirl -c example.pem
+cert example.pem
 .Ed
 .It
-Identify with services or use
-.Cm sasl-plain ,
+Identify with NickServ,
 then add the certificate fingerprint
 to your account:
 .Bd -literal -offset indent
 /ns CERT ADD
 .Ed
 .It
-Enable SASL EXTERNAL
+Enable SASL EXTERNAL in your configuration
 to require successful authentication
 when connecting
 (not possible on all networks):
 .Bd -literal -offset indent
-cert = example.pem
+cert example.pem
 sasl-external
-# or: $ catgirl -e -c example.pem
 .Ed
 .El
 .
 .Ss Connecting to Servers with Self-signed Certificates
+If connecting to a server fails
+with a certificate verification error
+due to a self-signed certificate,
+it needs to be trusted manually.
 .Bl -enum
 .It
 Connect to the server
@@ -490,8 +496,7 @@ Configure
 .Nm
 to trust the certificate:
 .Bd -literal -offset indent
-trust = example.pem
-# or: $ catgirl -t example.pem
+trust example.pem
 .Ed
 .El
 .
