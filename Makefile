@@ -11,7 +11,7 @@ LDADD.ncursesw = -lncursesw
 BINS = catgirl
 MANS = ${BINS:=.1}
 
--include config.mk
+include config.mk
 
 LDLIBS = ${LDADD.libtls} ${LDADD.ncursesw}
 
