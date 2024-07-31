@@ -377,8 +377,9 @@ int main(int argc, char *argv[]) {
 	windowShow(windowFor(Network));
 	uiFormat(
 		Network, Cold, NULL,
-		"\3%dcatgirl\3\tis GPLv3 fwee softwawe ^w^  "
-		"code is avaiwable fwom https://git.causal.agency/catgirl",
+		"\3%dcatgirlrx\3\tis free software; you can distribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. "
+		"This is a soft fork of June's original catgirl. "
+		"Code is available fwom https://git.sr.ht/~runxiyu/catgirlrx.",
 		Pink
 	);
 	uiFormat(Network, Cold, NULL, "Traveling...");
