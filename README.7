@@ -166,19 +166,6 @@ to find it.
 $ PKG_CONFIG_PATH=/usr/local/lib/pkgconfig ./configure
 .Ed
 .
-.Pp
-The
-.Nm sandman
-wrapper is provided for macOS
-to stop and start
-.Nm
-on system sleep and wake.
-To enable him,
-configure with:
-.Bd -literal -offset indent
-$ ./configure --enable-sandman
-.Ed
-.
 .Sh FILES
 .Bl -tag -width "complete.c" -compact
 .It Pa chat.h
@@ -213,8 +200,6 @@ chat logging
 configuration parsing
 .It Pa xdg.c
 XDG base directories
-.It Pa sandman.m
-sleep/wake wrapper for macOS
 .El
 .
 .Pp
@@ -244,8 +229,7 @@ Mailing list archives are available at
 .Aq Lk https://causal.agency/list/catgirl.html .
 .
 .Sh SEE ALSO
-.Xr catgirl 1 ,
-.Xr sandman 1
+.Xr catgirl 1
 .
 .Pp
 IRC bouncer:

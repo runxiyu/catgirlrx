@@ -14,7 +14,6 @@ MANS = ${BINS:=.1}
 -include config.mk
 
 LDLIBS = ${LDADD.libtls} ${LDADD.ncursesw}
-LDLIBS.sandman = -framework Cocoa
 
 OBJS += buffer.o
 OBJS += chat.o
@@ -32,8 +31,6 @@ OBJS += url.o
 OBJS += window.o
 OBJS += xdg.o
 
-OBJS.sandman = sandman.o
-
 TESTS += edit.t
 
 dev: tags all check
@@ -47,9 +44,6 @@ ${OBJS}: chat.h
 
 edit.o edit.t input.o: edit.h
 
-sandman: ${OBJS.sandman}
-	${CC} ${LDFLAGS} ${OBJS.$@} ${LDLIBS.$@} -o $@
-
 check: ${TESTS}
 
 .SUFFIXES: .t
@@ -62,7 +56,7 @@ tags: *.[ch]
 	ctags -w *.[ch]
 
 clean:
-	rm -f ${BINS} ${OBJS} ${OBJS.sandman} ${TESTS} tags
+	rm -f ${BINS} ${OBJS} ${TESTS} tags
 
 install: ${BINS} ${MANS}
 	install -d ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
